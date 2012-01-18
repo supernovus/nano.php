@@ -9,8 +9,10 @@
 // any application-specific common controller methods.
 
 abstract class CoreController 
-{ public $models = array(); ## Any Models we have loaded.
-  public $layout;           ## The default layout to use.
+{ public $models = array(); // Any Models we have loaded.
+  public $layout;           // The default layout to use.
+
+  // Process a screen template with the given data.
   public function process_template ($screen, $data, $layout=NULL)
   { load_core('templates');
     if (is_null($layout))
@@ -29,9 +31,18 @@ abstract class CoreController
       return $page;
     }
   }
+
+  // Load a data model.
   public function load_model ($model, $opts=array())
   { load_core('models');
     $this->models[] = load_model($model, $opts);
   }
+
+  // Return our controller name.
+  public function name ()
+  {
+    return get_controller_id($this);
+  }
+
 }
 
