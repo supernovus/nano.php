@@ -5,6 +5,8 @@
    protected member for storing the replacement data in.
  */
 
+load_core('controller');
+
 abstract class EasyController extends CoreController
 {
   protected $data;         // Our data to send to the templates.
