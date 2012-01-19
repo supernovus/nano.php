@@ -2,7 +2,9 @@
 
 /* EasyController: An extention to CoreController that offers more features.
    This has display(), redirect() and url() methods, as well as a $data
-   protected member for storing the replacement data in.
+   protected member for storing the replacement data in. 
+   It also offers a model() method, along with a $model_opts private member
+   for making working with models easier.
  */
 
 load_core('controller');
@@ -11,7 +13,9 @@ abstract class EasyController extends CoreController
 {
   protected $data;         // Our data to send to the templates.
   protected $default_url;  // Where redirect() goes if no URL is specified.
+  protected $model_opts;   // Options to pass to load_model(), via model().
 
+  // Display our screen.
   public function display ($data=null, $screen=null)
   {
     if (isset($data) && is_array($data))
@@ -50,6 +54,7 @@ abstract class EasyController extends CoreController
     exit;
   }
 
+  // Return our URL.
   public function url ()
   {
     if (isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] === "on")
@@ -62,6 +67,14 @@ abstract class EasyController extends CoreController
     }
     $port = ($_SERVER["SERVER_PORT"] == $defport) ? '' : (":".$_SERVER["SERVER_PORT"]);
     return $proto."://".$_SERVER['SERVER_NAME'].$port;
+  }
+
+  // Return a model object. We will load these on demand.
+  protected function model ($model)
+  {
+    if (!isset($this->models[$model]))
+      $this->load_model($model, $this->model_opts);
+    return $this->models[$model];
   }
 
 }
