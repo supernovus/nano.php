@@ -33,9 +33,9 @@ abstract class CoreController
   }
 
   // Load a data model.
-  public function load_model ($model, $opts=array())
+  protected function load_model ($model, $opts=array())
   { load_core('models');
-    $this->models[] = load_model($model, $opts);
+    $this->models[$model] = load_model($model, $opts);
   }
 
   // Return our controller name.
