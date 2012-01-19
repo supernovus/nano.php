@@ -14,7 +14,10 @@ abstract class DBModel
   {
     if (!isset($opts['dsn']))
       throw new Exception("Must have a database DSN");
-    $this->db = new PDO($opts['dsn'], $opts['user'], $opts['pass']);
+    if (isset($opts['user']) && isset($opts['pass']))
+      $this->db = new PDO($opts['dsn'], $opts['user'], $opts['pass']);
+    else
+      $this->db = new PDO($opts['dsn']);
   }
 
   // Create a prepared statement, and set its default fetch style.
