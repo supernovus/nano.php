@@ -70,10 +70,30 @@ abstract class EasyController extends CoreController
   }
 
   // Return a model object. We will load these on demand.
-  protected function model ($model)
+  protected function model ($model, $opts=null)
   {
     if (!isset($this->models[$model]))
-      $this->load_model($model, $this->model_opts);
+    { 
+      if (is_null($opts))
+      { 
+        if (isset($this->model_opts))
+        { 
+          if (isset($this->model_opts[$model]))
+          { 
+            $opts = $this->model_opts[$model];
+          }
+          else
+          {
+            $opts = $this->model_opts;
+          }
+        }
+        else
+        {
+          $opts = array();
+        }
+      }
+      $this->load_model($model, $opts);
+    }
     return $this->models[$model];
   }
 
