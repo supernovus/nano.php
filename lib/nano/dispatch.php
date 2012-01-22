@@ -130,7 +130,7 @@ function dispatch_controller ($reverse=false)
   global $__nano_default_controller_method;
 
   $path  = get_path();
-  $paths = get_routing($path);
+  $our_paths = get_routing($path);
 
   if ($reverse)
     $controllers = array_reverse($__nano_controllers);
@@ -142,6 +142,7 @@ function dispatch_controller ($reverse=false)
     $matches    = array(); // Used for storing matches.
     $controller = null;    // This must be set, otherwise we will fail.
     $method     = $__nano_default_controller_method;
+    $paths      = $our_paths;
 
     if (isset($ctrl['matchpath']))
     { // Check for regular expression matches against the full path string.
@@ -175,6 +176,8 @@ function dispatch_controller ($reverse=false)
     if (!isset($controller)) continue;
     if (!file_exists("$__nano_controller_dir/$controller.php")) continue;
 
+#    error_log("going to dispatch: '$controller'");
+
     // Load the controller using the magic from the controllers extension.
     $controller = load_controller($controller);
 
@@ -203,6 +206,8 @@ function dispatch_controller ($reverse=false)
       else
         array_splice($paths, 0, $ctrl['cutpath']);
     }
+
+#    error_log("dispatching with data: ".json_encode($data));
 
     // Finally, if we've made it this far, let's process the controller
     // and return the output.

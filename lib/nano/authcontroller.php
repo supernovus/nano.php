@@ -27,7 +27,9 @@ abstract class AuthController extends EasyController
     $token  = gets('auth.token');
     $ahash  = gets('auth.hash');
 
-    if (!isset($userid) || !isset($login) || !isset($hash))
+#    error_log("u: '$userid', t: '$token', h: '$ahash'");
+
+    if (!isset($userid) || !isset($token) || !isset($ahash))
     {
       if ($redirect)
         return $this->redirect($this->login_url);
@@ -36,6 +38,8 @@ abstract class AuthController extends EasyController
     }
 
     $user = $this->get_user_info($userid);
+
+#    error_log("checking user");
 
     if (!$user)
     {
@@ -47,12 +51,16 @@ abstract class AuthController extends EasyController
 
     $uhash = $user['hash'];
 
+#    error_log("checking authorization");
+
     if (!check_authorization($userid, $token, $uhash, $ahash))
     { if ($redirect)
         return $this->redirect($this->login_url);
       else
         return false;
     }
+
+#    error_log("we succeeded.");
 
     if ($adddata)
       $this->data['user'] = $user;
