@@ -144,6 +144,11 @@ function dispatch_controller ($reverse=false)
     $method     = $__nano_default_controller_method;
     $paths      = $our_paths;
 
+    if (isset($ctrl['root']) && $ctrl['root'])
+    { // This only matches if $path is '/' or ''.
+      if ($path != '/' && $path != '')
+        continue;
+    }
     if (isset($ctrl['matchpath']))
     { // Check for regular expression matches against the full path string.
       $match = $ctrl['matchpath'];
@@ -200,8 +205,18 @@ function dispatch_controller ($reverse=false)
 
     if (isset($ctrl['paths']))
       $paths = $ctrl['paths'];
+    elseif (isset($ctrl['setpath']))
+    { // We only want one of the paths.
+      if (count($paths)>=$ctrl['setpath']+1)  // Use a specific path bit.
+        $paths = $paths[$ctrl['setpath']];
+      elseif (isset($ctrl['defpath']))        // Use a specified default.
+        $paths = $ctrl['defpath'];
+      else
+        $paths = null;                        // Use nothing, sorry.
+    }
     elseif (isset($ctrl['cutpath']))
-    { if (is_array($ctrl['cutpath']))
+    { // Let's remove selected elements from the paths array.
+      if (is_array($ctrl['cutpath']))
         array_splice($paths, $ctrl['cutpath'][0], $ctrl['cutpath'][1]);
       else
         array_splice($paths, 0, $ctrl['cutpath']);

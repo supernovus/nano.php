@@ -12,6 +12,7 @@ load_core('controller');
 abstract class EasyController extends CoreController
 {
   protected $data;         // Our data to send to the templates.
+  protected $screen;       // Set if needed, otherwise uses $this->name().
   protected $default_url;  // Where redirect() goes if no URL is specified.
   protected $model_opts;   // Options to pass to load_model(), via model().
 
@@ -37,7 +38,11 @@ abstract class EasyController extends CoreController
       }
     }
     if (is_null($screen))
-      $screen = $this->name();
+    { if (isset($this->screen))
+        $screen = $this->screen;
+      else
+        $screen = $this->name();
+    }
     return $this->process_template($screen, $data);
   }
 
