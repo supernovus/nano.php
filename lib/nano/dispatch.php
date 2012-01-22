@@ -166,9 +166,9 @@ function dispatch_controller ($reverse=false)
     if (isset($ctrl['method']))
       $method = $ctrl['method'];
     elseif (isset($ctrl['mmatch']) && count($matches)>=$ctrl['mmatch']+1)
-      $method = $matches[$ctrl['mmatch']];
+      $method = "handle_".$matches[$ctrl['mmatch']];
     elseif (isset($ctrl['mpath']) && count($paths)>=$ctrl['mpath']+1)
-      $method = $paths[$ctrl['mpath']];
+      $method = "handle_".$paths[$ctrl['mpath']];
 
 #    error_log("Okay, after tests, looking for '$controller'");
 
