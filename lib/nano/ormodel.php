@@ -82,9 +82,9 @@ abstract class ORModel
   }
 
   // Get a row based on the value of the primary key, here called Id.
-  public function getRowById ($id)
+  public function getRowById ($id, $ashash=false)
   {
-    return $this->getRowByField($this->primary_key, $id);
+    return $this->getRowByField($this->primary_key, $id, $ashash);
   }
 
   // Make wrappers for this in your classes.
