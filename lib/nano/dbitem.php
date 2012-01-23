@@ -9,7 +9,7 @@
 
 class DBItemException extends Exception {}
 
-class DBItem
+class DBItem implements ArrayAccess
 {
   protected $data;             // The hash data returned from a query.
   protected $parent;           // The DBModel object that created us.
@@ -25,6 +25,7 @@ class DBItem
     $this->primary_key = $primary_key;
   }
 
+  // Ensure a requested field exists in our schema.
   protected function __is_field ($name)
   {
     if (array_key_exists($name, $this->data))
@@ -36,6 +37,9 @@ class DBItem
   // Set a database field.
   public function __set ($name, $value)
   {
+    if ($name == $this->primary_key)
+      throw new DBItemException('Cannot overwrite primary key.');
+
     if ($this->__is_field($name))
       $this->data[$name] = $value;
   }
@@ -58,8 +62,31 @@ class DBItem
   // Sets a field to null.
   public function __unset ($name)
   {
+    if ($name == $this->primary_key)
+      throw new DBItemException('Cannot unset primary key');
+
     if ($this->__is_field($name))
       $this->data[$name] = null;
+  }
+
+  public function offsetExists ($name)
+  {
+    return $this->__isset($name);
+  }
+
+  public function offsetSet ($name, $value)
+  {
+    return $this->__set($name, $value);
+  }
+
+  public function offsetUnset ($name)
+  {
+    return $this->__unset($name);
+  }
+
+  public function offsetGet ($name)
+  {
+    return $this->__get($name);
   }
 
   // Save our data back to the database.
