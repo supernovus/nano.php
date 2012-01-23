@@ -17,7 +17,7 @@ class DBItem implements ArrayAccess
   protected $primary_key;      // The key for our identifier (default 'id'.)
 
   // Can't get much easier than this.
-  public function __construct ($data, $parent, $table, $primary_key='id');
+  public function __construct ($data, $parent, $table, $primary_key='id')
   {
     $this->data        = $data;
     $this->parent      = $parent;
