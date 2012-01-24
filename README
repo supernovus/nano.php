@@ -1,4 +1,4 @@
-The Nano Micro-Framework Toolkit
+The Nano Framework Toolkit
 ----------------------------------
 
 A PHP toolkit for building micro-frameworks.
@@ -21,4 +21,6 @@ and cleaner than the ones for v1.
 Any projects using Nano v1 should be migrated to Nano v2. In some cases, it
 may make sense to create wrapper methods, as large code-bases may have a lot
 of calls to now non-existent global functions.
+
+The Nano Framework is created by Timothy Totten.
 
