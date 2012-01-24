@@ -7,6 +7,11 @@
    one that needs to be called using native PHP methods. All the rest can
    be loaded using load_core() and related loader methods.
 
+   NOTE: This is Nano v1, and is deprecated and no longer recommended.
+   Please look at upgrading to Nano v2, which is an object-oriented
+   version that is far cleaner and does not polute your namespace with
+   tons of functions and global variables.
+
 */
 
 // The only loader we have by default is load_core() which loads extensions

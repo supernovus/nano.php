@@ -2,4 +2,23 @@ The Nano Micro-Framework Toolkit
 ----------------------------------
 
 A PHP toolkit for building micro-frameworks.
-Not much docs in here, see the individual php files for more details.
+This now contains two versions of Nano.
+
+The lib/nano folder contains Nano v1. This version is deprecated
+and will eventually be removed once I've ported any projects using it over
+to v2. Nano v1 is based on a lot of "magic" code including "eval" statements
+and plenty more. It also pollutes the global namespace with tons of
+functions, variables and more.
+
+The lib/nano2 folder contains Nano v2. This is the path forward for Nano.
+It's object oriented and exports only two functions (get_php_content and
+get_nano_instance), one global variable ($__nano__instance) and a bunch
+of classes all with the Nano prefix (e.g. Nano, NanoException, NanoLoader, etc.)
+
+The extensions and base classes provided with Nano v2 are also far simpler
+and cleaner than the ones for v1.
+
+Any projects using Nano v1 should be migrated to Nano v2. In some cases, it
+may make sense to create wrapper methods, as large code-bases may have a lot
+of calls to now non-existent global functions.
+
