@@ -86,6 +86,23 @@ class NanoDispatch
       array_push($this->controllers, $rules);
   }
 
+  // Add a single controller that handles multiple routes.
+  // NOTE: pre-existing prefix rule will be appended to
+  // the method for the prefix to look for.
+  public function addRoutes ($rules, $methods)
+  {
+    if (isset($rules['prefix']))
+      $prefix = $rules['prefix'];
+    else
+      $prefix = '';
+    foreach ($methods as $method)
+    {
+      $rules['prefix'] = $prefix . $method;
+      $rules['method'] = "handle_$method";
+      $this->addRoute($rules);
+    }
+  }
+
   // Add a CodeIgniter-style controller.
   public function addDynamicController ($splice=true)
   {
