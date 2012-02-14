@@ -112,5 +112,15 @@ class DBItem implements ArrayAccess
     $query->execute($data);
   }
 
+  // Delete this item from the database.
+  public function delete ()
+  {
+    $pk = $this->primary_key;
+    $sql = "DELETE FROM {$this->table} WHERE $pk = :$pk";
+    $query = $this->parent->query($sql);
+    $data = array (":$pk" => $this->data[$pk]);
+    $query->execute($data);
+  }
+
 }
 
