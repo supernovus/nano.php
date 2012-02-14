@@ -29,7 +29,8 @@ abstract class DBModel implements Iterator
 
   public function name ()
   {
-    return get_model_id($this);
+    $nano = get_nano_instance();
+    return $nano->models->id($this);
   }
 
   public function __construct ($opts=array())

@@ -1,18 +1,18 @@
 <?php
 
-// This class represents a controller foundation.
-// The controller can have multiple models, and can load
-// templates consisting of a layout, and a screen.
-// The contents of the screen will be made available as the
-// $view_content variable in the layout.
-// You should create a base class to extend this that provides
-// any application-specific common controller methods.
-// The Nano instance must have the 'controllers' extension in its
-// loaded library list for this to work.
+/* This class represents a controller foundation.
+   The controller can have multiple models, and can load
+   templates consisting of a layout, and a screen.
+   The contents of the screen will be made available as the
+   $view_content variable in the layout.
+   You should create a base class to extend this that provides
+   any application-specific common controller methods.
+ */
 
 $nano = get_nano_instance();
-$nano->loadMeta('templates');
-$nano->loadMeta('models');
+$nano->loadMeta('templates');     // We use layouts and screens.
+$nano->loadMeta('models');        // And models.
+$nano->loadMeta('controllers');   // Just a sanity check.
 
 abstract class CoreController 
 { public $models = array(); // Any Models we have loaded.
@@ -25,12 +25,12 @@ abstract class CoreController
     if (is_null($layout))
       $layout = $this->layout;
     // Okay, let's get the view screen output.
-    $page = $nano->lib['screens']->load($screen, $data);
+    $page = $nano->screens->load($screen, $data);
     if (isset($layout))
     { // We're using a layout model.
       // Please ensure your layout has a view_content variable.
       $data['view_content'] = $page;
-      $template = $nano->lib['layouts']->load($layout, $data);
+      $template = $nano->layouts->load($layout, $data);
       return $template;
     }
     else
@@ -42,14 +42,14 @@ abstract class CoreController
   // Load a data model.
   protected function load_model ($model, $opts=array())
   { $nano = get_nano_instance();
-    $this->models[$model] = $nano->lib['models']->load($model, $opts);
+    $this->models[$model] = $nano->models->load($model, $opts);
   }
 
   // Return our controller name.
   public function name ()
   {
     $nano = get_nano_instance();
-    return $nano->lib['controllers']->id($this);
+    return $nano->controllers->id($this);
   }
 
   // Redirect to another page. This ends the current PHP process.

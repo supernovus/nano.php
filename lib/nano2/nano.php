@@ -216,26 +216,48 @@ class Nano implements ArrayAccess
     $this->lib['nano']->load("utils/$name");
   }
 
-  /* The ArrayAccess interface lets us call libraries much more easily. */
+  /* We're using psuedo-accessors to make life easier */
 
-  public function offsetExists ($offset)
+  public function __isset ($offset)
   {
     return isset($this->lib[$offset]);
   }
 
-  public function offsetSet($offset, $value)
+  public function __set($offset, $value)
   {
     throw new Exception("Use methods to add extensions to Nano.");
   }
 
-  public function offsetUnset ($offset)
+  public function __unset ($offset)
   {
     throw new Exception("You cannot remove Nano extensions.");
   }
 
-  public function offsetGet ($offset)
+  public function __get ($offset)
   {
     return isset($this->lib[$offset]) ? $this->lib[$offset] : Null;
+  }
+
+  /* Plus the ArrayAccess interface for extra flexibility. */
+
+  public function offsetExists ($name)
+  {
+    return $this->__isset($name);
+  }
+
+  public function offsetSet ($name, $value)
+  {
+    return $this->__set($name, $value);
+  }
+
+  public function offsetUnset ($name)
+  {
+    return $this->__unset($name);
+  }
+
+  public function offsetGet ($name)
+  {
+    return $this->__get($name);
   }
 
   /* The __call() method makes things like loadController() work. */
@@ -248,8 +270,10 @@ class Nano implements ArrayAccess
       $loaders = $loader . 's'; ## Try with plurals.
       foreach (array($loader, $loaders) as $load)
       {
-        if (isset($this->lib[$load]) && is_callable(array($this->lib[$load], 'load')))
-          return call_user_func_array(array($this->lib[$load], 'load'), $arguments);
+        if (isset($this->lib[$load]) 
+          && is_callable(array($this->lib[$load], 'load')))
+          return call_user_func_array
+            (array($this->lib[$load], 'load'), $arguments);
       }
       throw new NanoException("Unknown loader '$method' called.");
     }

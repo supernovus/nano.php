@@ -131,8 +131,8 @@ class NanoDispatch
     $our_paths = get_routing($path);
 
     // We need these to check validity.
-    $cdir = $nano->lib['controllers']->dir;
-    $cext = $nano->lib['controllers']->ext;
+    $cdir = $nano->controllers->dir;
+    $cext = $nano->controllers->ext;
 
     if ($reverse)
       $controllers = array_reverse($this->controllers);
@@ -186,7 +186,7 @@ class NanoDispatch
 #      error_log("going to dispatch: '$controller'");
 
       // Load the controller using the magic from the controllers extension.
-      $controller = $nano->lib['controllers']->load($controller);
+      $controller = $nano->controllers->load($controller);
 
       // Okay, now let's ensure the method is valid.
       if (!isset($method)) continue;
