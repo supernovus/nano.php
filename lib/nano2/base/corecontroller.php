@@ -18,6 +18,7 @@ abstract class CoreController
 { public $models = array(); // Any Models we have loaded.
   public $layout;           // The default layout to use.
   protected $default_url;   // Where redirect() goes if no URL is specified.
+  protected $json_method;   // Method to convert object to JSON.
 
   // Process a screen template with the given data.
   public function process_template ($screen, $data, $layout=NULL)
@@ -37,6 +38,36 @@ abstract class CoreController
     { // We're going to directly return the content of the view.
       return $page;
     }
+  }
+
+  // Sometimes we want to send JSON data instead of a template.
+  public function sendJSON ($data)
+  { $nano =  get_nano_instance();
+    $nano->loadMeta('no-cache');    // Don't cache this.
+    header('Content-Type: application/json');
+    if (is_array($data)) 
+    { // Basic usage is to send simple arrays.
+      $json = json_encode($data);
+    }
+    elseif (is_string($data))
+    { // A passthrough for JSON strings.
+      $json = $data;
+    }
+    elseif (is_object($data) && isset($this->json_method))
+    { // Magic for converting objects to JSON.
+      $method = $this->json_method;
+      if (is_callable(array($data, $method)))
+        $json = $data->$method();
+      elseif (is_callable(array($this, $method)))
+        $json = $this->$method($data);
+      else
+        throw new NanoException('Unsupported object sent to sendJSON');
+    }
+    else
+    {
+      throw new NanoException('Unsupported data type sent to sendJSON');
+    }
+    return $json;
   }
 
   // Load a data model.
