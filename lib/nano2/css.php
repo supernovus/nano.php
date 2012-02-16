@@ -82,3 +82,32 @@ function horizontal_gradient ($start, $end, $browsers=All)
     css3_linear_gradient($start, $end, 'left');
 }
 
+// Generate a CSS3 border-radius statement with optional brower prefix.
+function css3_border_radius ($radius, $prefix=Null)
+{
+  if ($prefix)
+    echo "-$prefix-";
+  echo "border-radius: $radius;\n";
+}
+
+// A border radius for multiple browsers.
+function border_radius ($radius, $browsers=All)
+{
+  if ($browsers & IE9)
+  {
+    css3_border_radius($radius, 'ms');
+  }
+  if ($browsers & Mozilla)
+  {
+    css3_border_radius($radius, 'moz');
+  }
+  if ($browsers & Webkit)
+  {
+    css3_border_radius($radius, 'webkit');
+  }
+  if ($browsers & Opera || $browsers & IE10 || $browsers & CSS3)
+  {
+    css3_border_radius($radius);
+  }
+}
+
