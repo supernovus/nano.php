@@ -48,7 +48,7 @@ class DBResultSet implements Iterator
 
   public function valid ()
   {
-    if ($this->results)
+    if ($this->current)
       return true;
     return false;
   }
