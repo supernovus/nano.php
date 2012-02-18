@@ -16,9 +16,9 @@ abstract class DBModel implements Iterator
 
   protected $table;          // Our database table.
   protected $childclass;     // The class name for our children.
-                             // Must extend the default DBItem class.
+                             // Must extend the DBItem class.
   protected $resultclass;    // Class name for iterable result set. 
-                             // Must extend the default DBResultSet class.
+                             // Must extend the DBResultSet class.
 
   protected $primary_key;    // The primary key on the database table.
                              // Defaults to 'id' if not specified.
@@ -47,18 +47,8 @@ abstract class DBModel implements Iterator
       $this->table = $this->name();
     if (isset($opts['childclass']))
       $this->childclass = $opts['childclass'];
-    else
-    { // We use DBItem by default.
-      $nano->loadBase('dbitem');
-      $this->childclass = 'DBItem';
-    }
     if (isset($opts['resultclass']))
       $this->resultclass = $opts['resultclass'];
-    else
-    { // We use DBResultSet by default.
-      $nano->loadBase('dbresultset');
-      $this->resultclass = 'DBResultSet';
-    }
     if (isset($opts['primary_key']))
       $this->primary_key = $opts['primary_key'];
     else
