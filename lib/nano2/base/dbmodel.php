@@ -178,7 +178,7 @@ abstract class DBModel implements Iterator
   // things will break, badly. Just don't do it.
   public function rewind ()
   {
-    $resultset = $this->all();
+    $this->resultset = $this->all();
     return $this->resultset->rewind();
   }
 
