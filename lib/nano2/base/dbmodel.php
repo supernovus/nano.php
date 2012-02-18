@@ -75,10 +75,13 @@ abstract class DBModel implements Iterator
 
   // Wrap the results of fetch() in a nice object.
   // If the hash is not set, or is false it returns null.
+  // If our childclass is false, we return the unchanged row.
   public function wrapRow ($rowhash)
   { if ($rowhash)
     {
       $class = $this->childclass;
+      if (!$class)
+        return $rowhash;
       $object = new $class($rowhash, $this, $this->table, $this->primary_key);
       return $object;
     }

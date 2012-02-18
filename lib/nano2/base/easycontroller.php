@@ -45,26 +45,26 @@ abstract class EasyController extends CoreController
   }
 
   // Return a model object. We will load these on demand.
-  protected function model ($model, $opts=null)
+  protected function model ($model, $opts=array())
   {
     if (!isset($this->models[$model]))
-    { 
-      if (is_null($opts))
-      { 
-        if (isset($this->model_opts))
-        { 
-          if (isset($this->model_opts[$model]))
-          { 
-            $opts = $this->model_opts[$model];
-          }
-          else
-          {
-            $opts = $this->model_opts;
-          }
+    { // No model has been loaded yet.
+      if (isset($this->model_opts) && is_array($this->model_opts))
+      { // We have model options in the controller.
+        $found_options = false;
+        if (isset($this->model_opts['common']))
+        { // Common options used by all models.
+          $opts += $this->model_opts['common'];
+          $found_options = true;
         }
-        else
-        {
-          $opts = array();
+        if (isset($this->model_opts[$model]))
+        { // There is model-specific options.
+          $opts += $this->model_opts[$model];
+          $found_options = true;
+        }
+        if (!$found_options)
+        { // No model-specific or common options found.
+          $opts += $this->model_opts;
         }
       }
       $this->load_model($model, $opts);
