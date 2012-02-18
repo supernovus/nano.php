@@ -57,7 +57,7 @@ abstract class DBModel implements Iterator
     else
     { // We use DBResultSet by default.
       $nano->loadBase('dbresultset');
-      $this->childclass = 'DBResultSet';
+      $this->resultclass = 'DBResultSet';
     }
     if (isset($opts['primary_key']))
       $this->primary_key = $opts['primary_key'];
