@@ -16,9 +16,8 @@ In addition, several simple base classes for controllers and models are
 included, as well as a few simple helper libraries providing some useful
 functions for your applications.
 
-Finally, Nano+ Components are optional pre-fab objects which are easily
-integrated with your application using simple APIs and provide simple
-solutions to common web application needs.
+A few pre-fab classes are also available in the 'base' category which make
+building common web application components easier.
 
 This is the second generation of the Nano framework, and it lives in the
 'lib/nano2' directory. The older v1 of the framework is no longer maintained

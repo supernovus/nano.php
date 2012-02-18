@@ -14,18 +14,16 @@ abstract class DBModel implements Iterator
 {
   protected $db;             // Our database object.
 
-  protected $all_rows;       // A cache of all rows.
-  protected $current_row;    // The currently iterated item.
   protected $table;          // Our database table.
   protected $childclass;     // The class name for our children.
-                             // Must already be loaded, and must extend the
-                             // DBItem parent class. If you don't specify
-                             // this, it defaults to a raw DBItem.
+                             // Must extend the default DBItem class.
+  protected $resultclass;    // Class name for iterable result set. 
+                             // Must extend the default DBResultSet class.
+
   protected $primary_key;    // The primary key on the database table.
                              // Defaults to 'id' if not specified.
 
-  protected $sql;            // The query to be used for iteration.
-  protected $bind;           // The binding rules for your query.
+  protected $resultset;      // Used if you use the iterator interface.
 
   public function name ()
   {
@@ -35,6 +33,7 @@ abstract class DBModel implements Iterator
 
   public function __construct ($opts=array())
   {
+    $nano = get_nano_instance();
     if (!isset($opts['dsn']))
       throw new DBModelException("Must have a database DSN");
     if (isset($opts['user']) && isset($opts['pass']))
@@ -49,16 +48,21 @@ abstract class DBModel implements Iterator
     if (isset($opts['childclass']))
       $this->childclass = $opts['childclass'];
     else
-    { $nano = get_nano_instance();
+    { // We use DBItem by default.
       $nano->loadBase('dbitem');
       $this->childclass = 'DBItem';
+    }
+    if (isset($opts['resultclass']))
+      $this->resultclass = $opts['resultclass'];
+    else
+    { // We use DBResultSet by default.
+      $nano->loadBase('dbresultset');
+      $this->childclass = 'DBResultSet';
     }
     if (isset($opts['primary_key']))
       $this->primary_key = $opts['primary_key'];
     else
       $this->primary_key = 'id';
-    // By default we our iterator returns everything.
-    $this->setQuery();
 
   }
 
@@ -89,6 +93,22 @@ abstract class DBModel implements Iterator
       return null;
   }
 
+  // Return a DBResultSet representing an executed query.
+  // If it cannot find the resultclass, it instead executes the statement
+  // and returns the PDOResult object.
+  public function execute ($statement, $data=array())
+  {
+    $class = $this->resultclass;
+    if (!$class)
+    {
+      $query = $this->query($statement);
+      $query->execute($data);
+      return $query; // The raw query object.
+    }
+    $object = new $class($statement, $data, $this, $this->primary_key);
+    return $object;
+  }
+
   // Get a row based on the value of a field
   public function getRowByField ($field, $value, $ashash=false)
   {
@@ -108,16 +128,11 @@ abstract class DBModel implements Iterator
     return $this->getRowByField($this->primary_key, $id, $ashash);
   }
 
-  // Make wrappers for this in your classes.
-  public function setQuery ($query=null, $bind=array())
-  { // Set the SQL itself.
-    if (isset($query))
-      $this->sql = $query;
-    else
-      $this->sql = "SELECT * FROM {$this->table}";
-
-    // And set the array values.
-    $this->bind = $bind;
+  // Return a result set for all rows in our table.
+  public function all ()
+  {
+    $query = "SELECT * FROM {$this->table}";
+    return $this->execute($query);
   }
 
   // Insert a new row. Note this does no checking to ensure
@@ -158,29 +173,33 @@ abstract class DBModel implements Iterator
     return $query;
   }
 
-  // Let's perform a query against the database.
-  // This is only applicable if we want to iterate against
-  // the entire table.
-  public function rewind () { 
-    $query = $this->query($this->sql);
-    $query->execute($this->bind);
-    $this->all_rows = $query;
-    $this->next();
+  // Iterator interface to use a DBModel in a foreach loop.
+  // If you attempt to use this with resultclass set to false,
+  // things will break, badly. Just don't do it.
+  public function rewind ()
+  {
+    $resultset = $this->all();
+    return $this->resultset->rewind();
   }
-  public function next () { 
-    $this->current_row = $this->all_rows->fetch();
+
+  public function current ()
+  {
+    return $this->resultset->current();
   }
-  public function current () { 
-    return $this->wrapRow($this->current_row);
+
+  public function next ()
+  {
+    return $this->resultset->next();
   }
-  public function key () {
-    $pk = $this->primary_key;
-    return $this->current_row[$pk];
+
+  public function key ()
+  {
+    return $this->resultset->key();
   }
-  public function valid () {
-    if ($this->current_row)
-      return true;
-    return false;
+
+  public function valid ()
+  {
+    return $this->resultset->valid();
   }
 
 }
