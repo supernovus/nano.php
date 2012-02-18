@@ -1,7 +1,8 @@
 <?php
 
-/* EasyController: An extension of CoreController that adds a lot of
-   extra functionality that makes it more useful.
+/* EasyController: An extension of CoreController with a simple
+   authentication system built-in. It's a good starting point if you want
+   something easy to get going with.
  */
 
 $nano = get_nano_instance();
@@ -16,67 +17,6 @@ function easy_password_hash ($user, $pass)
 
 abstract class EasyController extends CoreController
 {
-  protected $data;         // Our data to send to the templates.
-  protected $screen;       // Set if needed, otherwise uses $this->name().
-  protected $model_opts;   // Options to pass to load_model(), via model().
-
-  // Display our screen.
-  public function display ($data=null, $screen=null)
-  {
-    if (isset($data) && is_array($data))
-    {
-      if (isset($this->data) && is_array($this->data))
-      {
-        $data += $this->data;
-      }
-    }
-    else
-    {
-      if (isset($this->data) && is_array($this->data))
-      {
-        $data = $this->data;
-      }
-      else
-      {
-        $data = array();
-      }
-    }
-    if (is_null($screen))
-    { if (isset($this->screen))
-        $screen = $this->screen;
-      else
-        $screen = $this->name();
-    }
-    return $this->process_template($screen, $data);
-  }
-
-  // Return a model object. We will load these on demand.
-  protected function model ($model, $opts=array())
-  {
-    if (!isset($this->models[$model]))
-    { // No model has been loaded yet.
-      if (isset($this->model_opts) && is_array($this->model_opts))
-      { // We have model options in the controller.
-        $found_options = false;
-        if (isset($this->model_opts['common']))
-        { // Common options used by all models.
-          $opts += $this->model_opts['common'];
-          $found_options = true;
-        }
-        if (isset($this->model_opts[$model]))
-        { // There is model-specific options.
-          $opts += $this->model_opts[$model];
-          $found_options = true;
-        }
-        if (!$found_options)
-        { // No model-specific or common options found.
-          $opts += $this->model_opts;
-        }
-      }
-      $this->load_model($model, $opts);
-    }
-    return $this->models[$model];
-  }
 
   // get_user_info() must return an assoc array that contains at least a 'hash'
   // member, representing the SHA1 of the userid and password concatted.

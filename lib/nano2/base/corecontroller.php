@@ -16,7 +16,12 @@ $nano->loadMeta('controllers');   // Just a sanity check.
 
 abstract class CoreController 
 { public $models = array(); // Any Models we have loaded.
-  public $layout;           // The default layout to use.
+
+  protected $data;          // Our data to send to the templates.
+  protected $screen;        // Set if needed, otherwise uses $this->name().
+  protected $model_opts;    // Options to pass to load_model(), via model().
+
+  protected $layout;        // The default layout to use.
   protected $default_url;   // Where redirect() goes if no URL is specified.
   protected $json_method;   // Method to convert object to JSON.
 
@@ -38,6 +43,36 @@ abstract class CoreController
     { // We're going to directly return the content of the view.
       return $page;
     }
+  }
+
+  // A wrapper for process_template that is more friendly.
+  public function display ($data=null, $screen=null)
+  {
+    if (isset($data) && is_array($data))
+    {
+      if (isset($this->data) && is_array($this->data))
+      {
+        $data += $this->data;
+      }
+    }
+    else
+    {
+      if (isset($this->data) && is_array($this->data))
+      {
+        $data = $this->data;
+      }
+      else
+      {
+        $data = array();
+      }
+    }
+    if (is_null($screen))
+    { if (isset($this->screen))
+        $screen = $this->screen;
+      else
+        $screen = $this->name();
+    }
+    return $this->process_template($screen, $data);
   }
 
   // Sometimes we want to send JSON data instead of a template.
@@ -74,6 +109,34 @@ abstract class CoreController
   protected function load_model ($model, $opts=array())
   { $nano = get_nano_instance();
     $this->models[$model] = $nano->models->load($model, $opts);
+  }
+
+  // A wrapper for load_model with caching and more options.
+  protected function model ($model, $opts=array())
+  {
+    if (!isset($this->models[$model]))
+    { // No model has been loaded yet.
+      if (isset($this->model_opts) && is_array($this->model_opts))
+      { // We have model options in the controller.
+        $found_options = false;
+        if (isset($this->model_opts['common']))
+        { // Common options used by all models.
+          $opts += $this->model_opts['common'];
+          $found_options = true;
+        }
+        if (isset($this->model_opts[$model]))
+        { // There is model-specific options.
+          $opts += $this->model_opts[$model];
+          $found_options = true;
+        }
+        if (!$found_options)
+        { // No model-specific or common options found.
+          $opts += $this->model_opts;
+        }
+      }
+      $this->load_model($model, $opts);
+    }
+    return $this->models[$model];
   }
 
   // Return our controller name.
