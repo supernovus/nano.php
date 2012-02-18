@@ -8,6 +8,12 @@ $nano = get_nano_instance();
 $nano->loadBase('corecontroller');
 $nano->loadUtil('session');
 
+// Use this to return a password hash.
+function easy_password_hash ($user, $pass)
+{
+  return sha1(trim($user.$pass));
+}
+
 abstract class EasyController extends CoreController
 {
   protected $data;         // Our data to send to the templates.
@@ -140,7 +146,7 @@ abstract class EasyController extends CoreController
 
     $uhash = $uconf['hash'];
 
-    $chash = sha1(trim($user.$pass));
+    $chash = easy_password_hash($user, $pass);
     if (strcmp($uhash, $chash) == 0)
     {
       // We logged in successfully.
