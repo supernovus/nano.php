@@ -111,3 +111,5 @@ function border_radius ($radius, $browsers=All)
   }
 }
 
+// End of library.
+

@@ -185,3 +185,5 @@ abstract class DBModel implements Iterator
 
 }
 
+// End of base class.
+

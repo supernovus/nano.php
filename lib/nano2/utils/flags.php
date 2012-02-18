@@ -19,3 +19,4 @@ function set_flag (&$flags, $flag, $value=true)
     $flags = $flags - ($flags & $flag);
 }
 
+// End of library.

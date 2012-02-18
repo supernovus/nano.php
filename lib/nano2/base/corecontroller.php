@@ -114,3 +114,4 @@ abstract class CoreController
 
 }
 
+// End of base class.

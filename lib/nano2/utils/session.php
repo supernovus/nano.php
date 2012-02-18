@@ -15,4 +15,4 @@ function puts ($name, $value)
   $_SESSION[$name] = $value;
 }
 
-## End of library.
+// End of library.

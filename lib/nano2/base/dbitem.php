@@ -124,3 +124,4 @@ class DBItem implements ArrayAccess
 
 }
 
+// End of base class.

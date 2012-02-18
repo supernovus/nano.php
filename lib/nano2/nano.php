@@ -35,6 +35,14 @@ function get_php_content ($__view_file, $__view_data=NULL)
   return $buffer;
 }
 
+// Get a class identifier, stripping the 'type' portion.
+function get_class_identifier ($type, $object)
+{
+    $classname = strtolower(get_class($object));
+    $identifier = str_replace($type, '', $classname);
+    return $identifier;
+}
+
 /* The base class for Nano Exceptions */
 class NanoException extends Exception {}
 
@@ -115,10 +123,7 @@ class NanoClassLoader extends NanoLoader
   // Get the identifier of an object, strips off the _$type suffix.
   public function id ($object)
   {
-    $type = $this->type;
-    $classname = strtolower(get_class($object));
-    $identifier = str_replace("_$type", '', $classname);
-    return $identifier;
+    return get_class_identifier('_'.$this->type, $object);
   }
 
 }
@@ -292,4 +297,6 @@ class Nano implements ArrayAccess
   }
 
 }
+
+// End of library.
 
