@@ -75,7 +75,6 @@ class NanoDispatch
   protected $controllers = array();                // Known controllers.
   protected $default_method = 'handle_dispatch';   // Default method to call.
 
-
   // Add a controller to the explicit controllers list.
   // Catchall rules should be added last.
   public function addRoute ($rules, $top=false)
@@ -117,6 +116,13 @@ class NanoDispatch
   {
     $ctrl = array('name'=>$name);
     $this->addRoute($ctrl);
+  }
+
+  // Add a controller that see's if it can handle the path.
+  public function addLookupController ($name, $method)
+  {
+     $ctrl = array('name'=>$name, 'lookup'=>$method);
+     $this->addRoute($ctrl);
   }
 
   // Find a controller based on the path.
@@ -162,6 +168,7 @@ class NanoDispatch
         if (count($paths)==0 || $paths[0] != $ctrl['prefix'])
           continue;
       }
+
       // Now try to find the controller name.
       if (isset($ctrl['name']))
         $controller = $ctrl['name'];
@@ -191,6 +198,14 @@ class NanoDispatch
       // Okay, now let's ensure the method is valid.
       if (!isset($method)) continue;
       if (!is_callable(array($controller, $method))) continue;
+
+      // Now, one last filter rule, for controllers that have their
+      // own method of determining if they handle a path.
+      if (isset($ctrl['lookup']))
+      { $lookup = $ctrl['lookup'];
+	if (!is_callable(array($controller, $lookup))) continue;
+        if (!$method->$lookup($path)) continue;
+      }
 
       // Okay, now let's figure out what all data we need to send to the
       // controller. Typically we send the $_REQUEST and $paths, but this
