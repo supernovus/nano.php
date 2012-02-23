@@ -48,7 +48,7 @@ class NanoException extends Exception {}
 
 // The following can be used to find the Nano object.
 global $__nano__instance;
-function get_nano_instance ($useSession=False)
+function get_nano_instance ()
 {
   global $__nano__instance;
   if (isset($__nano__instance))
@@ -57,17 +57,7 @@ function get_nano_instance ($useSession=False)
   }
   else
   {
-    if ($useSession)
-    {
-      $nano =& $_SESSION['nano.session'];
-      if (!is_object($nano))
-        $nano = new Nano();
-      return $nano;
-    }
-    else
-    {
-      return new Nano();
-    }
+    return new Nano();
   }
 }
 
