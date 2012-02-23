@@ -209,7 +209,7 @@ class Nano implements ArrayAccess
     $this->addLoader('nano', $nano_dir);
 
     // Set the global variable so we can find this later.
-    $__nano__instance =& $this;
+    $__nano__instance = $this;
 
   }
 
