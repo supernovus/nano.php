@@ -48,13 +48,27 @@ class NanoException extends Exception {}
 
 // The following can be used to find the Nano object.
 global $__nano__instance;
-function get_nano_instance ()
+function get_nano_instance ($useSession=False)
 {
   global $__nano__instance;
   if (isset($__nano__instance))
+  {
     return $__nano__instance;
+  }
   else
-    throw new NanoException('Nano instance not created yet.');
+  {
+    if ($useSession)
+    {
+      $nano =& $_SESSION['nano.session'];
+      if (!is_object($nano))
+        $nano = new Nano();
+      return $nano;
+    }
+    else
+    {
+      return new Nano();
+    }
+  }
 }
 
 /* The base class for Nano loaders. 
@@ -194,8 +208,8 @@ class Nano implements ArrayAccess
     // Now register this as the 'nano' loader.
     $this->addLoader('nano', $nano_dir);
 
-    // Finally, set the global variable so we can find this later.
-    $__nano__instance = $this;
+    // Set the global variable so we can find this later.
+    $__nano__instance =& $this;
 
   }
 
