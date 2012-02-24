@@ -15,4 +15,9 @@ function puts ($name, $value)
   $_SESSION[$name] = $value;
 }
 
+function dels ($name)
+{
+  unset($_SESSION[$name]);
+}
+
 // End of library.
