@@ -50,7 +50,7 @@ abstract class DBModel implements Iterator
 
     if (isset($opts['table']))
       $this->table = $opts['table'];
-    else
+    elseif (!isset($this->table))
       $this->table = $this->name();
     if (isset($opts['childclass']))
       $this->childclass = $opts['childclass'];
@@ -58,7 +58,7 @@ abstract class DBModel implements Iterator
       $this->resultclass = $opts['resultclass'];
     if (isset($opts['primary_key']))
       $this->primary_key = $opts['primary_key'];
-    else
+    elseif (!isset($this->primary_key))
       $this->primary_key = 'id';
 
   }

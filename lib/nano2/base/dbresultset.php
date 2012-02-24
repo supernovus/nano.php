@@ -13,14 +13,15 @@ class DBResultSet implements Iterator
   protected $results;     // The PDOResult object representing our results.
   protected $current;     // The current item.
 
-  protected $primary_key; // The primary key used by our table.
+  protected $primary_key = 'id'; // The primary key used by our table.
 
-  public function __construct ($query, $bind, $parent, $primary_key='id')
+  public function __construct ($query, $bind, $parent, $primary_key=Null)
   {
     $this->query       = $query;
     $this->bind        = $bind;
     $this->parent      = $parent;
-    $this->primary_key = $primary_key;
+    if (isset($primary_key))
+      $this->primary_key = $primary_key;
   }
 
   public function rewind ()

@@ -14,15 +14,17 @@ class DBItem implements ArrayAccess
   protected $data;             // The hash data returned from a query.
   protected $parent;           // The DBModel object that created us.
   protected $table;            // The database table to update with save().
-  protected $primary_key;      // The key for our identifier (default 'id'.)
+
+  protected $primary_key = 'id';  // The key for our identifier (default 'id'.)
 
   // Can't get much easier than this.
-  public function __construct ($data, $parent, $table, $primary_key='id')
+  public function __construct ($data, $parent, $table, $primary_key=Null)
   {
     $this->data        = $data;
     $this->parent      = $parent;
     $this->table       = $table;
-    $this->primary_key = $primary_key;
+    if (isset($primary_key))
+      $this->primary_key = $primary_key;
   }
 
   // Ensure a requested field exists in our schema.
