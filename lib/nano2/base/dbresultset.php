@@ -17,9 +17,10 @@ class DBResultSet implements Iterator
 
   public function __construct ($query, $bind, $parent, $primary_key='id')
   {
-    $this->query = $query;
-    $this->bind  = $bind;
-    $this->parent = $parent;
+    $this->query       = $query;
+    $this->bind        = $bind;
+    $this->parent      = $parent;
+    $this->primary_key = $primary_key;
   }
 
   public function rewind ()
