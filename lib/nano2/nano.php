@@ -101,7 +101,7 @@ class NanoLoader
   {
     $file = $this->file($class);
     if (file_exists($file))
-      require_once $this->filename($class);
+      require_once $file;
     else
       throw new NanoException("Attempt to load invalid class: $file");
   }
