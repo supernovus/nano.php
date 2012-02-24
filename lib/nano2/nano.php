@@ -88,7 +88,7 @@ class NanoLoader
   // Return the filename associated with the given class.
   public function file ($class)
   {
-    $filename = $this->dir . '/' . $class . $this->ext;
+    return $this->dir . '/' . $class . $this->ext;
   }
   // Does the given class exist?
   public function is ($class)
