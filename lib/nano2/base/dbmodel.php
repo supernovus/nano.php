@@ -32,6 +32,7 @@ abstract class DBModel implements Iterator
     return $table;
   }
 
+  // This expects we were loaded using the Models extension.
   public function name ()
   {
     $nano = get_nano_instance();
@@ -40,7 +41,6 @@ abstract class DBModel implements Iterator
 
   public function __construct ($opts=array())
   {
-    $nano = get_nano_instance();
     if (!isset($opts['dsn']))
       throw new DBModelException("Must have a database DSN");
     if (isset($opts['user']) && isset($opts['pass']))
