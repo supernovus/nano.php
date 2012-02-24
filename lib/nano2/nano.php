@@ -85,10 +85,25 @@ class NanoLoader
     else
       throw new NanoException('Invalid opts passed to NanoLoader contructor.');
   }
-  // Override this as needed.
+  // Return the filename associated with the given class.
+  public function file ($class)
+  {
+    $filename = $this->dir . '/' . $class . $this->ext;
+  }
+  // Does the given class exist?
+  public function is ($class)
+  {
+    $file = $this->file($class);
+    return file_exists($file);
+  }
+  // Load the given class. Override this as needed.
   public function load ($class, $data=NULL)
   {
-    require_once $this->dir . '/' . $class . $this->ext;
+    $file = $this->file($class);
+    if (file_exists($file))
+      require_once $this->filename($class);
+    else
+      throw new NanoException("Attempt to load invalid class: $file");
   }
 }
 
@@ -100,9 +115,14 @@ class NanoViewLoader extends NanoLoader
 {
   public function load ($class, $data=NULL)
   {
-    $classfile = $this->dir . '/' . $class . $this->ext;
-    $output = get_php_content($classfile, $data);
-    return $output;
+    $file = $this->file($class);
+    if (file_exists($file))
+    {
+      $output = get_php_content($file, $data);
+      return $output;
+    }
+    else
+      throw new NanoException("Attempt to load invalid view: $file");
   }
 }
 
@@ -121,7 +141,10 @@ class NanoClassLoader extends NanoLoader
     parent::load($class);    // First, run the require_once.
     // Now let's build an object and return it.
     $classname = $class.'_'.$this->type; // PHP is not case sensitive.
-    return new $classname ($data);
+    if (class_exists($classname))
+      return new $classname ($data);
+    else
+      throw new NanoException("No such class: $classname");
   }
 
   // Get the identifier of an object, strips off the _$type suffix.

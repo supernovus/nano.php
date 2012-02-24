@@ -136,10 +136,6 @@ class NanoDispatch
     $path  = get_path();
     $our_paths = get_routing($path);
 
-    // We need these to check validity.
-    $cdir = $nano->controllers->dir;
-    $cext = $nano->controllers->ext;
-
     if ($reverse)
       $controllers = array_reverse($this->controllers);
     else
@@ -188,7 +184,7 @@ class NanoDispatch
 
       // Okay, now let's ensure the controller is valid.
       if (!isset($controller)) continue;
-      if (!file_exists("$cdir/${controller}$cext")) continue;
+      if (!$nano->controllers->is($controller)) continue;
 
 #      error_log("going to dispatch: '$controller'");
 
