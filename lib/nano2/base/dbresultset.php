@@ -17,8 +17,8 @@ class DBResultSet implements Iterator
 
   public function __construct ($query, $bind, $parent, $primary_key=Null)
   {
-    error_log("Building ".get_class($this). " with query: $query");
-    error_log("And binding: ".json_encode($bind));
+#    error_log("Building ".get_class($this). " with query: $query");
+#    error_log("And binding: ".json_encode($bind));
     $this->query       = $query;
     $this->bind        = $bind;
     $this->parent      = $parent;
