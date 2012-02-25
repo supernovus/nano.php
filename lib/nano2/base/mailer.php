@@ -10,6 +10,7 @@ class NanoMailer
   protected $fields;     // Field rules. 'true' required, 'false' optional.
   protected $recipient;  // Default recipient.
   protected $template;   // Default template to use for e-mails.
+  protected $views;      // Nano loader to use to load template.
 
   // Public fields. Reset on each send().
   public $sent;         // Set to true if the last send() was successful.
@@ -24,6 +25,12 @@ class NanoMailer
       $this->recipient = $opts['recipient'];
     if (isset($opts['template']))
       $this->template = $opts['template'];
+
+    if (isset($opts['views']))
+      $this->views = $opts['views'];
+    elseif (!isset($this->views))
+      $this->views = 'views'; // Default if nothing else is set.
+
   }
 
   public function send ($subject, $data, $opts=array())
@@ -69,9 +76,10 @@ class NanoMailer
     if (isset($template))
     { // We're using templates (recommended.)
       $nano = get_nano_instance();
-      if (isset($nano->lib['views']))
-      { // We're using views.
-        $message = $nano->views->load($template, $fields);
+      $loader = $this->views;
+      if (isset($nano->lib[$loader]))
+      { // We're using a view loader.
+        $message = $nano->lib[$loader]->load($template, $fields);
       }
       else
       { // View library wasn't found. Assuming a full PHP include file path.
