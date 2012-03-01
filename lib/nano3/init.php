@@ -15,7 +15,8 @@ spl_autoload_register();
 
 // Get the output content from a PHP file.
 function get_php_content ($__view_file, $__view_data=NULL)
-{ // First, start saving the buffer.
+{ 
+  // First, start saving the buffer.
   ob_start();
   if (isset($__view_data) && is_array($__view_data))
   { // If we have data, add it to the local namespace.
@@ -29,14 +30,6 @@ function get_php_content ($__view_file, $__view_data=NULL)
   @ob_end_clean();
   // And return out processed view.
   return $buffer;
-}
-
-// Get a class identifier, stripping the 'type' portion.
-function get_class_identifier ($type, $object)
-{
-    $classname = strtolower(get_class($object));
-    $identifier = str_replace($type, '', $classname);
-    return $identifier;
 }
 
 /* The base class for Nano Exceptions */
@@ -114,7 +107,23 @@ class Nano3 implements \ArrayAccess
 
   // Add a library object to Nano. 
   public function addLib ($name, $class, $opts=NULL)
-  {
+  { // Override default opts if a conf is found.
+    if (
+      isset($this->lib['conf']) 
+      && 
+      (
+           is_null($opts) 
+        || ( isset($opts['is_default']) && $opts['is_default'] )
+      )
+    )
+    { // This is expected to the Nano3\Conf object,
+      // or at least offer an ArrayAccess interface.
+      $conf = $this->lib['conf'];
+      if (isset($conf[$offset]))
+      {
+        $opts = $conf[$offset];
+      }
+    }
     if (is_object($class))
       $this->lib[$name] = $class;
     else
@@ -183,7 +192,7 @@ class Nano3 implements \ArrayAccess
       {
         $confopts = array('file'=>$opts['conf']);
       }
-      $this->addLib('conf', '\Nano3\Conf', $opts);
+      $this->addLib('conf', '\Nano3\Conf', $confopts);
     }
 
     // Set the global variable so we can find this later.
@@ -240,17 +249,8 @@ class Nano3 implements \ArrayAccess
     elseif ($this->lib['nano']->is($offset))
     { // Load a core plugin.
       $class = "\\Nano3\\$offset";
-      $opts = array();
-      if (isset($this->lib['conf']))
-      { // This is expected to the Nano3\Conf object,
-        // or at least offer an ArrayAccess interface.
-        $conf = $this->lib['conf'];
-        if (isset($conf[$offset]))
-        {
-          $opts = $conf[$offset];
-        }
-      }
-      $this->addLib($offset, $class, $opts);
+      $this->addLib($offset, $class);
+      return $this->lib[$offset];
     }
     else
       throw new Exception("Invalid Nano attribute called.");

@@ -12,14 +12,16 @@ $nano = \Nano3\get_instance();
 $nano->addViews
 (
  'layouts',
- 'views/layouts'
+ 'views/layouts',
+ array('is_default'=>true)
 );
 
 // Now add screen.
 $nano->addViews
 (
  'screens',
- 'views/screens'
+ 'views/screens',
+ array('is_default'=>true)
 );
 
 // End of meta library.

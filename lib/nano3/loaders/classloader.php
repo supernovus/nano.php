@@ -16,7 +16,7 @@ class ClassLoader extends \Nano3\Loader
   {
     parent::load($class);    // First, run the require_once.
     // Now let's build an object and return it.
-    $classname = $class.'_'.$this->type; // PHP is not case sensitive.
+    $classname = sprintf($this->type, $class);
     if (class_exists($classname))
       return new $classname ($data);
     else
@@ -26,7 +26,14 @@ class ClassLoader extends \Nano3\Loader
   // Get the identifier of an object, strips off the _$type suffix.
   public function id ($object)
   {
-    return \Nano3\get_class_identifier('_'.$this->type, $object);
+    $classname = strtolower(get_class($object));
+#    error_log("classname: '$classname'");
+    $type = str_replace('%s', '', strtolower($this->type));
+    $type = ltrim($type, "\\");
+#    error_log("type: '$type'");
+    $identifier = str_replace($type, '', $classname);
+#    error_log("identifier: '$identifier'");
+    return $identifier;
   }
 
 }

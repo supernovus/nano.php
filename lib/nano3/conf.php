@@ -183,7 +183,7 @@ class Conf implements \ArrayAccess
     {
       if ($this->strict_mode)
       {
-        throw new InvalidArgumentException(
+        throw new \InvalidArgumentException(
           sprintf('Identifier "%s" is not defined.', $id));
       }
       else
@@ -191,8 +191,9 @@ class Conf implements \ArrayAccess
         return Null;
       }
     }
-    return $this->data[$id] instanceof Closure ? $this->data[$id]($this)
-      : $this->values[$id];
+    return $this->data[$id] instanceof Closure 
+      ? $this->data[$id]($this)
+      : $this->data[$id];
   }
 
   /**
@@ -291,7 +292,7 @@ class Conf implements \ArrayAccess
     {
       if ($this->strict_mode)
       {
-        throw new InvalidArgumentException(
+        throw new \InvalidArgumentException(
           sprintf('Indentifier "%s" is not defined.', $id));
       }
       else

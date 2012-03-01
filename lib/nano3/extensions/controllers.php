@@ -2,7 +2,8 @@
 
 /* Adds a 'controllers' loader to Nano.
    Controllers must be in 'lib/controllers'.
-   Controller class name must end in '_controller' (case insensitive.)
+   Controller class must be in the \Controllers\ namespace 
+   (case insensitive.)
  */
 
 // Register a 'controller' loader in Nano.
@@ -11,7 +12,8 @@ $nano->addClass
 (
  'controllers',
  'lib/controllers',
- 'controller'
+ "\\Controllers\\%s",
+ array('is_default'=>True)
 );
 
 // End of meta library.

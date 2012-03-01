@@ -2,7 +2,8 @@
 
 /* Adds a 'models' loader to Nano.
    Models must be in 'lib/models'.
-   Model class name must end in '_model' (case insensitive.)
+   Model class must be in the "\Models\" namespace.
+   (case insensitive.)
  */
 
 // Register a 'model' loader in Nano.
@@ -11,7 +12,8 @@ $nano->addClass
 (
  'models', 
  'lib/models',
- 'model'
+ "\\Models\\%s",
+ array('is_default'=>true)
 );
 
 // End of meta library.

@@ -8,7 +8,8 @@ $nano = \Nano3\get_instance();
 $nano->addViews
 (
  'views',
- 'views'
+ 'views',
+ array('is_default'=>true)
 );
 
 // End of meta library.
