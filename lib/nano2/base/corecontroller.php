@@ -159,7 +159,7 @@ abstract class CoreController
     exit;
   }
 
-  // Return our URL.
+  // Return our base URL.
   public function url ()
   {
     if (isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] === "on")
@@ -174,6 +174,36 @@ abstract class CoreController
     return $proto."://".$_SERVER['SERVER_NAME'].$port;
   }
 
+  // Return our current request URI.
+  public function request_uri ()
+  {
+    if (isset($_SERVER['REQUEST_URI']))
+    {
+      return $_SERVER['REQUEST_URI'];
+    }
+    else
+    {
+      $uri = $_SERVER['SCRIPT_NAME'];
+      if (isset($_SERVER['PATH_INFO']) && $_SERVER['PATH_INFO'] != '')
+      {
+        $uri .= '/' . $_SERVER['PATH_INFO'];
+      }
+      if (isset($_SERVER['QUERY_STRING']) && $_SERVER['QUERY_STRING'] != '')
+      {
+        $uri .= '?' . $_SERVER['QUERY_STRING'];
+      }
+      $uri = '/' . ltrim($uri, '/');
+
+      return $uri;
+    }
+  }
+
+  // Return the current URL (full URL path)
+  public function current_url ()
+  {
+    $full_url = $this->url() . $this->request_uri();
+    return $full_url;
+  }
 
 }
 

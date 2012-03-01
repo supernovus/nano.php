@@ -37,7 +37,7 @@ abstract class EasyController extends CoreController
 
   public function get_user ($redirect=false, $adddata=true)
   {
-    $lastpath = get_path();
+    $lastpath = $this->request_uri();
     puts('auth.lastpath', $lastpath);
 
     $auth = $this->get_auth();
@@ -81,7 +81,7 @@ abstract class EasyController extends CoreController
     if (!$auth->login($user, $pass, $uhash))
       return False;
 
-    $lastpath = gets('lastpath', 'AUTH');
+    $lastpath = gets('auth.lastpath');
 
     if (!isset($lastpath) || $lastpath == '' || $lastpath == '/login')
       $lastpath = '/';
