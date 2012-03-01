@@ -192,7 +192,7 @@ class Nano3 implements \ArrayAccess
   }
 
   // Pragmas change the behavior of the current script.
-  public function usePragma ($name)
+  public function does ($name)
   {
     $this->lib['nano']->load("pragmas/$name");
   }
@@ -204,11 +204,11 @@ class Nano3 implements \ArrayAccess
     $this->lib['nano']->load("extensions/$name");
   }
 
-  // Load a util library (in the 'utils' subfolder of NANODIR)
-  // Utils add functions to the global namespace. Simple stuff only.
-  public function loadUtil ($name)
+  // Helpers are for case-specific purposes.
+  // They may pollute your namespace, be wary.
+  public function loadHelper ()
   {
-    $this->lib['nano']->load("utils/$name");
+    $this->lib['nano']->load("helpers/$name");
   }
 
   /* We're using psuedo-accessors to make life easier */
