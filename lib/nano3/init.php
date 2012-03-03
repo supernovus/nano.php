@@ -114,8 +114,8 @@ class Loader
 
 class Nano3 implements \ArrayAccess
 {
-  public $lib  = array();        // An associative array of library objects.
-  public $meth = array();        // An associative array of method extensions.
+  public $lib   = array();      // Library objects.
+  public $hooks = array();      // Named hooks (callbacks.)
 
   // Add a library object to Nano. 
   public function addLib ($name, $class, $opts=NULL)
@@ -299,24 +299,40 @@ class Nano3 implements \ArrayAccess
     return $this->__get($name);
   }
 
-  /* Finally some code to make compatibility easier. */
+  /**
+   * Hooks.
+   *
+   * A hook can be placed anywhere in your code.
+   * Other pieces of code can add callbacks to be called
+   * when that hook is called. Hooks can return data,
+   * which will be saved in an array of results.
+   *
+   * The code calling the hooks specifies the interface to
+   * the hooks, so any hook handlers added to that hook need
+   * to implement that interface.
+   *
+   */
 
-  public function addMethod ($name, $method)
+  public function addHook ($name, $callback)
   {
-    $this->meth[$name] = $method;
+    if (!array_key_exists($name, $this->hooks))
+    {
+      $this->hooks[$name] = array();
+    }
+    array_push($this->hooks[$name], $callback);
   }
 
-  public function __call ($name, $args)
-  {
-    if (isset($this->meth[$name]))
-    { // Add ourself as the first parameter.
-      array_unshift($args, $this);
-      return call_user_func_array($this->meth[$name], $args);
+  public function callHook ($name, $opts=array())
+  { // We always return an array.
+    $hook_out = array();
+    if (isset($this->hooks[$name]))
+    { // A hook exists, let's call any registered hooks.
+      foreach ($this->hooks[$name] as $hook)
+      {
+        $hook_out = call_user_func_array($hook, $opts);
+      }
     }
-    else
-    {
-      throw new Exception("Invalid Nano method called.");
-    }
+    return $hook_out;
   }
 
 }
