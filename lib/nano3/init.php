@@ -36,6 +36,15 @@ function get_php_content ($__view_file, $__view_data=NULL)
   return $buffer;
 }
 
+// Add or remove a flag to a given binary mask.
+function set_flag (&$flags, $flag, $value=true)
+{
+  if ($value)
+    $flags = $flags | $flag;
+  else
+    $flags = $flags - ($flags & $flag);
+}
+
 /* The base class for Nano Exceptions */
 class Exception extends \Exception {}
 
@@ -236,13 +245,6 @@ class Nano3 implements \ArrayAccess
   public function extend ($name)
   {
     $this->lib['nano']->load("meta/$name");
-  }
-
-  // Helpers are for case-specific purposes.
-  // They may pollute your namespace, be wary.
-  public function loadHelper ()
-  {
-    $this->lib['nano']->load("helpers/$name");
   }
 
   /* We're using psuedo-accessors to make life easier */

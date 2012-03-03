@@ -59,7 +59,10 @@ function is ($got, $want, $desc=Null)
 function done_testing ()
 { global $__test_fail;
   global $__test_plan;
-  echo "# Looks like you failed $__test_fail out of $__test_plan\n";
+  if ($__test_fail)
+  {
+    echo "# Looks like you failed $__test_fail out of $__test_plan\n";
+  }
 }
 
 // End of library. I said it was minimal.
