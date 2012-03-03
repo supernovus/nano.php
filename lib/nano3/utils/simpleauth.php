@@ -20,10 +20,11 @@ class SimpleAuth
   public $log = false;   // Enable logging?
 
   // Fields representing a logged in user.
-  protected $user;
+  protected $userid;
+  protected $usertoken;
 
   // Two fields for paranoid mode.
-  protected $token;
+  protected $authtoken;
   protected $authhash;
 
   public function __construct ($opts=array())
@@ -49,49 +50,54 @@ class SimpleAuth
   }
 
   // Generate a password hash from a username and password.
-  public function generate_hash ($user, $pass)
+  public function generate_hash ($token, $pass)
   {
-    return sha1(trim($user.$pass));
+    return sha1(trim($token.$pass));
   }
 
   // Returns if a user is logged in or not.
   // If a user is logged in, it returns their user id.
   // Otherwise, it returns false.
-  public function is_user ($userhash=Null, $token=Null)
+  public function is_user ($userhash=Null, $authtoken=Null)
   { 
-    if (isset($this->user))
+    if (isset($this->userid))
     {
-      $user = $this->user;
       if (isset($userhash) && isset($this->authhash))
       { 
         if (!isset($token))
         { // Use our own token.
-          $token = $this->token;
+          $authtoken = $this->authtoken;
         }
-        $checkhash = sha1($user.$token.$userhash);
+        $checkhash = sha1($this->userid.$authtoken.$userhash);
         if (strcmp($checkhash, $this->authhash) != 0)
         {
           return False;
         }
       }
-      return $user;
+      return $this->userid;
     }
     return False;
   }
 
   // Process a login request.
-  public function login ($user, $pass, $userhash, $paranoid=False)
+  public function login 
+    ($userid, $pass, $userhash, $usertoken=Null, $paranoid=False)
   {
-    $checkhash = $this->generate_hash($user, $pass);
+    // If we don't specify a user token, assume the same as userid.
+    if (is_null($usertoken))
+      $usertoken = $userid;
+
+    $checkhash = $this->generate_hash($usertoken, $pass);
     if (strcmp($userhash, $checkhash) == 0)
     {
-      $this->user = $user;
-      if ($this->log) error_log("User '$user' logged in.");
+      $this->userid = $userod;
+      $this->usertoken = $usertoken;
+      if ($this->log) error_log("User '$userid' logged in.");
       if ($paranoid)
       {
-        $this->token = time();
-        $this->authhash = sha1($user.$this->token.$userhash);
-        return $this->token;
+        $this->authtoken = time();
+        $this->authhash = sha1($userid.$this->authtoken.$userhash);
+        return $this->authtoken;
       }
       return true;
     }
@@ -103,12 +109,13 @@ class SimpleAuth
   {
     if ($this->log)
     {
-      $user = $this->user;
-      error_log("User '$user' logged out.");
+      $userid = $this->userid;
+      error_log("User '$userid' logged out.");
     }
-    $this->user     = Null;
-    $this->token    = Null;
-    $this->authhash = Null;
+    $this->userid    = Null;
+    $this->usertoken = Null;
+    $this->authtoken = Null;
+    $this->authhash  = Null;
     if ($destroy_session)
     { // Destroy the entire session. A good way to log out.
       $nano = \Nano3\get_instance();
