@@ -5,11 +5,6 @@
    It does not specify the model of the users, and must be used in
    conjunction with a user model.
 
-   It supports two forms of security:
-     Default:  PHP sessions are trusted, and 'auth.user' is stored.
-     Paranoid: In addition to the username, a token and security hash
-               is stored, and compared to a calculated user hash.
-               This is slower, but provides an additional layer of security.
  */
 
 $nano = get_nano_instance();
@@ -18,13 +13,9 @@ $nano->loadUtil('session');
 class HashAuth
 {
   public    $log      = false;   // Enable logging?
-  protected $paranoid = false;   // Are we using paranoid mode?
-  protected $userhash = array(); // Save the user hash for paranoid mode.
 
   public function __construct ($opts=array())
   {
-    if (isset($opts['paranoid']))
-      $this->paranoid = $opts['paranoid'];
     if (isset($opts['log']))
       $this->log = $opts['log'];
   }
@@ -45,20 +36,6 @@ class HashAuth
     if (!isset($user)) 
       return false;
 
-    // Paranoid mode.
-    if ($this->paranoid)
-    {
-      $token = gets('auth.token');
-      $ahash = gets('auth.hash');
-      if (!isset($token) || !isset($ahash))
-        return false;
-
-      $uhash = $this->userhash[$user];
-      $chash = sha1($user.$token.$uhash);
-      if (strcmp($ahash, $chash) != 0)
-        return false;
-    }
-
     return $user;
   }
 
@@ -69,14 +46,6 @@ class HashAuth
     if (strcmp($uhash, $chash) == 0)
     {
       puts('auth.user', $user);
-      if ($this->paranoid)
-      {
-        $this->userhash[$user] = $uhash; 
-        $token = time();
-        $ahash = sha1($user.$token.$uhash);
-        puts('auth.token', $token);
-        puts('auth.hash',  $ahash);
-      }
       if ($this->log) error_log("User '$user' logged in.");
       return true;
     }
@@ -108,11 +77,6 @@ class HashAuth
     else
     { // Remove the 'auth.user' element from the session.
       dels('auth.user');
-      if ($this->paranoid)
-      { // And the token and hash if we're using paranoid mode.
-        dels('auth.token');
-        dels('auth.hash');
-      }
     }
   }
 
