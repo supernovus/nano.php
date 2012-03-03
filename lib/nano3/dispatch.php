@@ -250,7 +250,7 @@ class Dispatch
     // If we made it here, it means we found no valid controller.
     // This is a Bad Thing (C).
     // We throw an exception, and let your app catch it.
-    throw new NanoException("No valid controller found.");
+    throw new Exception("No valid controller found.");
 
   }
 

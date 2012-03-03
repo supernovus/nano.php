@@ -14,13 +14,30 @@ class ClassLoader extends \Nano3\Loader
   protected $type;
   public function load ($class, $data=NULL)
   {
-    parent::load($class);    // First, run the require_once.
+    // If dir is unset or false, assume autoloading.
+    if ($this->dir)
+    {
+      parent::load($class);    // First, run the require_once.
+    }
     // Now let's build an object and return it.
     $classname = sprintf($this->type, $class);
     if (class_exists($classname))
       return new $classname ($data);
     else
       throw new \Nano3\Exception("No such class: $classname");
+  }
+
+  public function is ($class)
+  {
+    if (isset($this->dir))
+    {
+      return parent::is($class);
+    }
+    else
+    {
+      $classname = sprintf($this->type, $class);
+      return class_exists($classname);
+    }
   }
 
   // Get the identifier of an object, strips off the _$type suffix.

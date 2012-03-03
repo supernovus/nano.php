@@ -11,7 +11,6 @@ $nano = \Nano3\get_instance();
 $nano->addClass
 (
  'controllers',
- 'lib/controllers',
  "\\Controllers\\%s",
  array('is_default'=>True)
 );

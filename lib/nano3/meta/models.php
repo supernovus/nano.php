@@ -11,7 +11,6 @@ $nano = \Nano3\get_instance();
 $nano->addClass
 (
  'models', 
- 'lib/models',
  "\\Models\\%s",
  array('is_default'=>true)
 );

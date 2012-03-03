@@ -13,17 +13,21 @@ $nano = \Nano3\get_instance();
 $nano->addClass
 (
   'controllers',
-  'lib/controllers',
   '%s_controller',
-  array('is_default'=>True)
+  array(
+    'dir'        => 'lib/controllers',
+    'is_default' => True,
+  )
 );
 
 $nano->addClass
 (
   'models',
-  'lib/models',
   '%s_model',
-  array('is_default'=>True)
+  array(
+    'dir'        => 'lib/models',
+    'is_default' => True,
+  )
 );
 
 // End of meta library.

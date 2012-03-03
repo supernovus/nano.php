@@ -16,14 +16,17 @@ In addition, several simple base classes for controllers and models are
 included, as well as a few simple helper libraries providing some useful
 functions for your applications.
 
-A few pre-fab classes are also available in the 'base' category which make
-building common web application components easier.
+There are two versions of Nano included in this distribution.
 
-This is the second generation of the Nano framework, and it lives in the
-'lib/nano2' directory. The older v1 of the framework is no longer maintained
-and is not included in the source repository anymore.
+Nano2 is the second generation of Nano, is object-oriented and handles
+things using a global Nano object which can be retreived with a single
+global function.
+
+Nano3 is the third generation of Nano. It uses PHP Namespaces and a new
+model for loading extensions. It also uses the SPL autoloader to make
+loading classes easier.
 
 ~~
-2012-02-21
+2012-03-10
 ~~
 

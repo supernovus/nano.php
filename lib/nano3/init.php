@@ -63,10 +63,7 @@ class Loader
   public function __construct($opts)
   {
     if (isset($opts) && is_array($opts))
-    { // A sanity check
-      if (!isset($opts['dir']))
-        throw new Exception('Loaders require a dir setting.');
-      // Okay, now let's set any found options.
+    { 
       foreach ($opts as $opt=>$val)
       {
         if (property_exists($this, $opt))
@@ -79,19 +76,33 @@ class Loader
   // Return the filename associated with the given class.
   public function file ($class)
   {
-    return $this->dir . '/' . $class . $this->ext;
+    if (isset($this->dir))
+      return $this->dir . '/' . $class . $this->ext;
+    else
+      return Null;
   }
   // Does the given class exist?
   public function is ($class)
   {
-    $file = $this->file($class);
-    return file_exists($file);
+    if (isset($this->dir))
+    {
+      $file = $this->file($class);
+      return file_exists($file);
+    }
+    return Null;
   }
   // Load the given class. Override this as needed.
   public function load ($class, $data=NULL)
   {
-    $file = $this->file($class);
-    require_once $file;
+    if (isset($this->dir))
+    {
+      $file = $this->file($class);
+      require_once $file;
+    }
+    else
+    {
+      throw new Exception('Attempt to use load() on a Loader with no dir set.');
+    }
   }
 }
 
@@ -135,9 +146,17 @@ class Nano3 implements \ArrayAccess
   }
 
   // Add a loader.
-  public function addLoader ($name, $dir, $opts=array(), $type=Null)
+  public function addLoader ($name, $opts, $type=Null)
   {
-    $opts['dir'] = $dir;
+    // If $opts is not an array, assume it is the 'dir' opt.
+    if (!is_array($opts))
+    {
+      $dir = $opts;
+      $opts = array();
+      if (isset($dir))
+        $opts['dir'] = $dir;
+    }
+
     if (isset($type))
     { // We're using a custom loader class.
       $class = "\\Nano3\\Loaders\\{$type}Loader";
@@ -150,16 +169,17 @@ class Nano3 implements \ArrayAccess
   }
 
   // Add a NanoClassLoader library.
-  public function addClass ($name, $dir, $type, $opts=array())
+  public function addClass ($name, $type, $opts=array())
   {
     $opts['type'] = $type;
-    $this->addLoader($name, $dir, $opts, 'Class');
+    $this->addLoader($name, $opts, 'Class');
   }
 
   // Add a NanoViewLoader library.
   public function addViews ($name, $dir, $opts=array())
   {
-    $this->addLoader($name, $dir, $opts, 'View');
+    $opts['dir'] = $dir;
+    $this->addLoader($name, $opts, 'View');
   }
 
   // Construct a new Nano object. By default we build a 'nano' loader which
@@ -207,11 +227,11 @@ class Nano3 implements \ArrayAccess
     $this->lib['nano']->load("pragmas/$name");
   }
 
-  // Extensions add features to Nano3 itself.
+  // Meta extensions add features to Nano3 itself.
   // This is used by the extension autoloader (see __get() for details.)
   public function extend ($name)
   {
-    $this->lib['nano']->load("extensions/$name");
+    $this->lib['nano']->load("meta/$name");
   }
 
   // Helpers are for case-specific purposes.
@@ -242,8 +262,8 @@ class Nano3 implements \ArrayAccess
   {
     if (isset($this->lib[$offset]))
       return $this->lib[$offset];
-    elseif ($this->lib['nano']->is("extensions/$offset"))
-    { // Load an extension.
+    elseif ($this->lib['nano']->is("meta/$offset"))
+    { // Load a meta extension.
       $this->extend($offset);
       return $this->lib[$offset];
     }
