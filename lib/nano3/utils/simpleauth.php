@@ -90,7 +90,7 @@ class SimpleAuth
     $checkhash = $this->generate_hash($usertoken, $pass);
     if (strcmp($userhash, $checkhash) == 0)
     {
-      $this->userid = $userod;
+      $this->userid = $userid;
       $this->usertoken = $usertoken;
       if ($this->log) error_log("User '$userid' logged in.");
       if ($paranoid)

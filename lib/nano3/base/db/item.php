@@ -9,9 +9,7 @@
 
 namespace Nano3\Base\DB;
 
-class Exception extends \Exception {}
-
-class DBItem implements \ArrayAccess
+class Item implements \ArrayAccess
 {
   protected $data;             // The hash data returned from a query.
   protected $parent;           // The DBModel object that created us.

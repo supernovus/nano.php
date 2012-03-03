@@ -10,8 +10,6 @@
 
 namespace Nano3\Base\DB;
 
-class Exception extends \Exception {}
-
 abstract class Model implements \Iterator
 {
   protected $db;             // Our database object.
@@ -46,9 +44,9 @@ abstract class Model implements \Iterator
     if (!isset($opts['dsn']))
       throw new Exception("Must have a database DSN");
     if (isset($opts['user']) && isset($opts['pass']))
-      $this->db = new PDO($opts['dsn'], $opts['user'], $opts['pass']);
+      $this->db = new \PDO($opts['dsn'], $opts['user'], $opts['pass']);
     else
-      $this->db = new PDO($opts['dsn']);
+      $this->db = new \PDO($opts['dsn']);
 
     if (isset($opts['table']))
       $this->table = $opts['table'];
@@ -70,9 +68,9 @@ abstract class Model implements \Iterator
   {
     $query = $this->db->prepare($statement);
     if ($assoc)
-      $query->setFetchMode(PDO::FETCH_ASSOC);
+      $query->setFetchMode(\PDO::FETCH_ASSOC);
     else
-      $query->setFetchMode(PDO::FETCH_NUM);
+      $query->setFetchMode(\PDO::FETCH_NUM);
     return $query;
   }
 
@@ -92,7 +90,7 @@ abstract class Model implements \Iterator
       return null;
   }
 
-  // Return a DBResultSet representing an executed query.
+  // Return a DB\ResultSet representing an executed query.
   // If it cannot find the resultclass, it instead executes the statement
   // and returns the PDOResult object.
   public function execute ($statement, $data=array(), $class=Null)
@@ -182,8 +180,11 @@ abstract class Model implements \Iterator
     $fieldnames .= ')';
     $fieldvals  .= ')';
     $sql .= "$fieldnames VALUES $fieldvals";
+#    error_log("newRow. sql = \"$sql\" and fields = ".json_encode($fielddata));
     $query = $this->query($sql);
     $query->execute($fielddata);
+#    error_log("sterr: ".json_encode($query->errorInfo()));
+#    error_log("dberr: ".json_encode($this->db->errorInfo()));
     return $query;
   }
 

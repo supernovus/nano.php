@@ -114,9 +114,17 @@ class Dispatch
   }
 
   // Add a default controller with a given name.
-  public function addDefaultController ($name='default')
+  // Unlike previous versions, this does not have a default name.
+  public function addDefaultController ($name)
   {
     $ctrl = array('name'=>$name);
+    $this->addRoute($ctrl);
+  }
+
+  // Add a root controller with a given name.
+  public function addRootController($name)
+  {
+    $ctrl = array('name'=>$name, 'root'=>True);
     $this->addRoute($ctrl);
   }
 
