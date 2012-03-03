@@ -1,12 +1,14 @@
 <?php
 
-/* This class represents a controller foundation.
-   The controller can have multiple models, and can load
-   templates consisting of a layout, and a screen.
-   The contents of the screen will be made available as the
-   $view_content variable in the layout.
-   You should create a base class to extend this that provides
-   any application-specific common controller methods.
+/** 
+ * This class represents a controller foundation.
+ * The controller can have multiple models, and can load
+ * templates consisting of a layout, and a screen.
+ * The contents of the screen will be made available as the
+ * $view_content variable in the layout.
+ * You should create a base class to extend this that provides
+ * any application-specific common controller methods.
+ *
  */
 
 namespace Nano3\Base;
@@ -23,6 +25,15 @@ abstract class Controller
   protected $default_url;   // Where redirect() goes if no URL is specified.
   protected $json_method;   // Method to convert object to JSON.
 
+  /**
+   * Hooks
+   *
+   * Controller.return_content:
+   *   Receives a pointer to the content as a string.
+   *   Allows you to apply a filter to the content before it
+   *   gets returned.
+   */
+
   // Process a screen template with the given data.
   public function process_template ($screen, $data, $layout=NULL)
   { $nano = \Nano3\get_instance();
@@ -35,10 +46,12 @@ abstract class Controller
       // Please ensure your layout has a view_content variable.
       $data['view_content'] = $page;
       $template = $nano->layouts->load($layout, $data);
+      $nano->callHook('Controller.return_content', array(&$template));
       return $template;
     }
     else
     { // We're going to directly return the content of the view.
+      $nano->callHook('Controller.return_content', array(&$page));
       return $page;
     }
   }
