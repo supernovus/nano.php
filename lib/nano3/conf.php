@@ -70,7 +70,7 @@ class Conf implements \ArrayAccess
    *
    * @param array $opts The options to initialize the data.
    */
-  public function __construct (array $opts=array())
+  public function __construct ($opts=array())
   {
     if (isset($opts['data']) && is_array($opts['data']))
     {

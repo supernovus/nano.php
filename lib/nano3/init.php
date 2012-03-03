@@ -8,7 +8,11 @@
 
 namespace Nano3;
 
-define('CLASS_ROOT_DIR', dirname(dirname(__FILE__)));
+if (!defined('CLASS_ROOT_DIR'))
+{
+  define('CLASS_ROOT_DIR', 'lib'); // We expect libraries to be in ./lib
+}
+
 set_include_path(get_include_path().PATH_SEPARATOR.CLASS_ROOT_DIR);
 spl_autoload_extensions('.php');
 spl_autoload_register();
@@ -131,9 +135,9 @@ class Nano3 implements \ArrayAccess
     { // This is expected to the Nano3\Conf object,
       // or at least offer an ArrayAccess interface.
       $conf = $this->lib['conf'];
-      if (isset($conf[$offset]))
+      if (isset($conf[$name]))
       {
-        $opts = $conf[$offset];
+        $opts = $conf[$name];
       }
     }
     if (is_object($class))
