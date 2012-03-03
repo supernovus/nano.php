@@ -10,7 +10,7 @@
 
 namespace Nano3\Base\DB;
 
-abstract class Model implements \Iterator
+abstract class Model implements \Iterator, \ArrayAccess
 {
   protected $db;             // Our database object.
 
@@ -215,6 +215,34 @@ abstract class Model implements \Iterator
   public function valid ()
   {
     return $this->resultset->valid();
+  }
+
+  // ArrayAccess interface for easier querying.
+  
+  public function offsetGet ($offset)
+  {
+    return $this->getRowById($offset);
+  }
+
+  public function offsetExists ($offset)
+  {
+    $row = $this->getRowById($offset);
+    if ($row)
+      return True;
+    else
+      return False;
+  }
+
+  public function offsetUnset ($offset)
+  {
+    $sql = "DELETE FROM {$this->table} WHERE id = :id";
+    $query = $this->query($sql);
+    $query->execute(array(':id'=>$offset));
+  }
+
+  public function offsetSet ($offset, $value)
+  {
+    throw new Exception('You cannot set DB Model values that way.');
   }
 
 }
