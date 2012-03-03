@@ -103,7 +103,8 @@ class Loader
 
 class Nano3 implements \ArrayAccess
 {
-  public $lib = array();          // An associative array of library objects.
+  public $lib  = array();        // An associative array of library objects.
+  public $meth = array();        // An associative array of method extensions.
 
   // Add a library object to Nano. 
   public function addLib ($name, $class, $opts=NULL)
@@ -201,7 +202,7 @@ class Nano3 implements \ArrayAccess
   }
 
   // Pragmas change the behavior of the current script.
-  public function does ($name)
+  public function pragma ($name)
   {
     $this->lib['nano']->load("pragmas/$name");
   }
@@ -276,6 +277,26 @@ class Nano3 implements \ArrayAccess
   public function offsetGet ($name)
   {
     return $this->__get($name);
+  }
+
+  /* Finally some code to make compatibility easier. */
+
+  public function addMethod ($name, $method)
+  {
+    $this->meth[$name] = $method;
+  }
+
+  public function __call ($name, $args)
+  {
+    if (isset($this->meth[$name]))
+    { // Add ourself as the first parameter.
+      array_unshift($args, $this);
+      return call_user_func_array($this->meth[$name], $args);
+    }
+    else
+    {
+      throw new Exception("Invalid Nano method called.");
+    }
   }
 
 }

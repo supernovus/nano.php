@@ -14,7 +14,25 @@ function get_nano_instance ()
   return \Nano3\get_instance();
 }
 
-$nano = \Nano3\get_instance();
+$nano = get_nano_instance();
+
+// Compatibility with the old loadMeta method.
+$nano->addMethod('loadMeta', function ($n, $meta)
+{
+  $loader = $n->lib['nano'];
+  if ($loader->is("extensions/$meta"))
+  {
+    $loader->load("extensions/$meta");
+  }
+  elseif ($loader->is("pragmas/$meta"))
+  {
+    $loader->load("pragmas/$meta");
+  }
+  else
+  {
+    throw new Exception("Invalid meta library: '$meta'.");
+  }
+});
 
 $nano->addClass
 (
