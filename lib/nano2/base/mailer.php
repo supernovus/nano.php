@@ -59,14 +59,14 @@ class NanoMailer
     $fields = array();
     foreach ($this->fields as $field=>$required)
     {
-      if (isset($data[$field]) && $data[$field])
+      if (isset($data[$field]) && $data[$field] != '')
         $fields[$field] = $data[$field];
-      else
+      elseif ($required)
         $this->missing[$field] = true;
     }
 
     // We can only continue if all required fields are present.
-    if (count($this->missing) != 0)
+    if (count($this->missing))
     { // We have missing values.
       return false;
     }
