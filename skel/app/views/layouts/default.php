@@ -32,16 +32,7 @@
 <body>
   <div id="layout">
   <div id="topmenu">
-<?php $html->menu($menu_items, $menu_opts); ?>
-<a 
-<?php if ($is_current): ?>
- class="current"
-<?php endif; ?>
- href="<?=$path?>"><?=$item['name']?></a>
-<?php endforeach; ?>
-    &nbsp;&nbsp;&mdash;&nbsp;&nbsp;
-    <?=$user->name?>
-    </div>
+    <?php $html->menu($menu_items, $menu_opts); ?>
     <h1><?=$title?></h1>
     <div id="screen">
       <?=$view_content?>
