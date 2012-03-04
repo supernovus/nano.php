@@ -147,30 +147,62 @@ abstract class CoreController
   }
 
   // Redirect to another page. This ends the current PHP process.
-  public function redirect ($url=null, $relative=true)
-  {
+  public function redirect ($url=null, $opts=array())
+  { // Check for some options. 'relative'=>False or 'full'=>True are the same.
+    if (isset($opts['relative']))
+      $relative = $opts['relative'];
+    elseif (isset($opts['full']) && $opts['full'])
+      $relative = False;
+    else
+      $relative = True; // Assume true by default.
+    if (isset($opts['secure']))
+      $ssl = $opts['secure'];
+    elseif (isset($opts['ssl']))
+      $ssl = $opts['ssl'];
+    else
+      $ssl = Null; // Auto determine the protocol.
     if (is_null($url))
       $url = $this->default_url;
+
     if ($relative)
     {
-      $url = $this->url() . $url;
+      $url = $this->url($ssl) . $url;
     }
+
     header("Location: $url");
     exit;
   }
 
   // Return our base URL.
-  public function url ()
-  {
-    if (isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] === "on")
-    { $defport = "443";
-      $proto = "https";
+  public function url ($ssl=Null)
+  { if (isset($ssl))
+    { // We're using explicit SSL settings.
+      if ($ssl)
+      {
+        $defport = 443;
+        $proto   = "https";
+      }
+      else
+      {
+        $defport = 80;
+        $proto   = "http";
+      }
     }
     else
-    { $defport = "80";
-      $proto = "http";
+    { // Auto-detect SSL settings.
+      if (isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] === "on")
+      { 
+        $defport = 443;
+        $proto   = "https";
+      }
+      else
+      { 
+        $defport = 80;
+        $proto   = "http";
+      }
     }
-    $port = ($_SERVER["SERVER_PORT"] == $defport) ? '' : (":".$_SERVER["SERVER_PORT"]);
+    $port = ($_SERVER["SERVER_PORT"] == $defport) ? '' : 
+      (":".$_SERVER["SERVER_PORT"]);
     return $proto."://".$_SERVER['SERVER_NAME'].$port;
   }
 
