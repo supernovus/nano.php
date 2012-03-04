@@ -43,7 +43,7 @@ class Mailer
       $transport = $opts['transport'];
     elseif (isset($opts['host']))
     {
-      $transport = Swift_SmtpTransport::newInstance($opts['host']);
+      $transport = \Swift_SmtpTransport::newInstance($opts['host']);
       if (isset($opts['port']))
         $transport->setPort($opts['port']);
       if (isset($opts['enc']))
@@ -54,11 +54,11 @@ class Mailer
         $transport->setPassword($opts['pass']);
     }
     else
-      $transport = Swift_SendmailTransport::newInstance();
+      $transport = \Swift_SendmailTransport::newInstance();
 
-    $this->mailer = Swift_Mailer::newInstance($transport);
+    $this->mailer = \Swift_Mailer::newInstance($transport);
 
-    $this->message = Swift_Message::newInstance();
+    $this->message = \Swift_Message::newInstance();
 
     if (isset($opts['subject']))
       $this->message->setSubject($opts['subject']);
