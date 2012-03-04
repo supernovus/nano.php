@@ -274,7 +274,7 @@ class Dispatch
       // own method of determining if they handle a path.
       if (isset($ctrl['lookup']))
       { $lookup = $ctrl['lookup'];
-	if (!is_callable(array($controller, $lookup))) continue;
+      	if (!is_callable(array($controller, $lookup))) continue;
         if (!$method->$lookup($path)) continue;
       }
 

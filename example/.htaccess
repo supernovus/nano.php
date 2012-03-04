@@ -1,0 +1,9 @@
+Options -Indexes
+DirectoryIndex index.php index.html
+ErrorDocument 404 /index.php/invalid
+ErrorDocument 403 /index.php/invalid
+
+RewriteEngine on
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*)$ /index.php/$1 [L,QSA]
+
