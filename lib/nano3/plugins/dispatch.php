@@ -97,6 +97,21 @@ class Dispatch
     {
       $rules = array('name'=>$rules);
     }
+    // If we have no path matching rules,
+    // we'll generate a default.
+    if (
+         !isset($rules['prefix']) 
+      && !isset($rules['matchpath'])
+      && !isset($rules['ispath'])
+    )
+    {
+      $generate_default = True;
+    }
+    else
+    {
+      $generate_default = False;
+    }
+
     foreach ($methods as $method)
     {
       if (isset($rules['make_prefix']))
@@ -113,11 +128,7 @@ class Dispatch
           $method                  // 1 = the method name.
         );
       }
-      elseif (
-           !isset($rules['prefix']) 
-        && !isset($rules['matchpath'])
-        && !isset($rules['ispath'])
-      )
+      elseif ($generate_default)
       {
         // If no other path matching rules are found,
         // let's generate one based on the method name.
