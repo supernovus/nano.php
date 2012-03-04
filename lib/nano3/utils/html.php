@@ -99,15 +99,21 @@ class HTML
    * elements for each item in an associative array, where the 
    * array key is the HTML value, and the array value is the option label.
    * 
-   * @param array $attrs  HTML attributes for the select tag.
+   * @param mixed $attrs  HTML attributes for the select tag.
    * @param array $array  Assoc. Array of Options, where $value => $label.
    * @param array $opts   Optional function-specific settings, see below.
+   *
+   * The $attrs can either be an associative array of HTML attributes for
+   * the select tag, or can be the value of the 'name' attribute.
    *
    * The $opts array may contain several options on top of the standard
    * 'echo' and 'xmlout' options:
    *
    *  'selected' => mixed     The current selected value.
    *  'mask'     => boolean   If true, selected value is a bitmask.
+   *  'id'       => boolean   If true, and no 'id' attrib exists,
+   *                          we set the 'id' for the select to be the same
+   *                          as the 'name' attribute.
    *
    * @returns mixed   Output depends on the 'echo' and 'xmlout' options.
    */
@@ -123,7 +129,18 @@ class HTML
     else
       $is_mask = False;
 
-    $select = new SimpleXMLElement('<select/>');
+    $select = new \SimpleXMLElement('<select/>');
+    if (is_string($attrs))
+    {
+      $attrs = array('name'=>$attrs);
+    }
+    if (
+      isset($opts['id']) && $opts['id'] 
+      && !isset($attrs['id']) && isset($attrs['name'])
+    )
+    {
+      $attrs['id'] = $attrs['name'];
+    }
     foreach ($attrs as $aname=>$aval)
     {
       $select->addAttribute($aname, $aval);
@@ -158,7 +175,7 @@ class HTML
     }
     else
     {
-      $ul = new SimpleXMLElement("<$type/>");
+      $ul = new \SimpleXMLElement("<$type/>");
     }
     $li = Null; // This will point at the last known <li/> item.
     foreach ($menu as $index=>$value)
@@ -268,7 +285,7 @@ class HTML
   public function json ($name, $struct, $opts=array())
   {
     $json = json_encode($struct);
-    $input = new SimpleXMLElement('<input/>');
+    $input = new \SimpleXMLElement('<input/>');
     $input->addAttribute('type',   'hidden');
     $input->addAttribute('id',     $name);
     $input->addAttribute('name',   $name);

@@ -11,6 +11,11 @@
  * It has an optional paranoid mode, which forces the use of the hash
  * in the is_user() check to ensure the user is valid.
  *
+ * The default storage model is to store the SimpleAuth object in the
+ * session. We use the Nano3 Session helper to achieve this.
+ * You can disable the autostoring, and store it yourself, or you can
+ * create a subclass and override the store(), load() and update() methods.
+ *
  */
 
 namespace Nano3\Utils;
@@ -18,101 +23,63 @@ namespace Nano3\Utils;
 class SimpleAuth
 {
   public $log = False;          // Enable logging?
-  protected $store_self = True; // Store the object in the session.
 
   // Internal fields.
   protected $userid;
   protected $authhash;
 
+  // A failsafe mechanism for where you can't control the
+  // location of the session_start() call in relations to
+  // the SimpleAuth object being created.
+  public static function preLoad () { return True; }
+
   // Build a new object.
   public function __construct ($opts=array())
   {
     if (isset($opts['log']))
-    {
+    { 
       $this->log = $opts['log'];
     }
 
-    if (isset($opts['store']))
+    // To disable auto-store, pass 'store' => False
+    // to the constructor/getInstance() options.
+    if (!isset($opts['store']) || $opts['store'])
     {
-      $this->store_self = $opts['store'];
+      $this->store();
     }
 
-    if (isset($opts['restore']) && $opts['restore'])
-    {
-      return $this->restore_session();
-    }
+  }
 
+  // Method to store the authentication details to the session.
+  // You can override this if the default implementation doesn't work
+  // for your needs.
+  public function store ()
+  {
     $nano = \Nano3\get_instance();
-
-    if ($this->store_self)
-    {
-      $nano->sess->SimpleAuth = $this;
-    }
-    else
-    {
-      $nano->sess->SimpleAuth = array();
-      $nano->sess->SimpleAuth['log']   = $this->log;
-      $nano->sess->SimpleAuth['store'] = $this->store_self;
-    }
+    $nano->sess->SimpleAuth = $this;
   }
 
   // Static function to get an existing instance or create a new one.
+  // Override this if you have changed the store() method.
   public static function getInstance ($opts=array())
   {
     $nano = \Nano3\get_instance();
-    if (isset($nano->sess->SimpleAuth))
-    {
-      if (is_object($nano->sess->SimpleAuth))
-      {
-        return $nano->sess->SimpleAuth;
-      }
-      elseif (is_array($nano->sess->SimpleAuth))
-      {
-        $opts['restore'] = True;
-        return new SimpleAuth($opts);
-      }
+    if (isset($nano->sess->SimpleAuth) && is_object($nano->sess->SimpleAuth))
+    { 
+      return $nano->sess->SimpleAuth;
     }
     return new SimpleAuth($opts);
   }
 
-  // If we're not using store_self, we store
-  // our variables in an array instead.
-  private function restore_session ()
-  { // Restore our settings from the array.
-    $nano = \Nano3\get_instance();
-    $this->log = $nano->sess->SimpleAuth['log'];
-    $this->store_self = $nano->sess->SimpleAuth['store'];
-    if (isset($nano->sess->SimpleAuth['userid']))
-    {
-      $this->userid = $nano->sess->SimpleAuth['userid'];
-    }
-    if (isset($nano->sess->SimpleAuth['hash']))
-    {
-      $this->authhash = $nano->sess->SimpleAuth['hash'];
-    }
-  }
-
-  private function set_userid ($userid)
-  {
-    $this->userid = $userid;
-    if (!$this->store_self)
-    {
-      $nano = \Nano3\get_instance();
-      $nano->sess->SimpleAuth['userid'] = $userid;
-    }
-  }
-
-  private function set_authhash ($hash)
-  {
-    $this->authhash = $hash;
-    if (!$this->store_self)
-    {
-      $nano = \Nano3\get_instance();
-      $nano->sess->SimpleAuth['hash'] = $hash;
-    }
-  }
+  // A method to update details. In this implementation we don't
+  // use it, but if you change how session details are stored you'll
+  // want to make your own version.
+  protected function update () {}
 
   // Generate a password hash from a username and password.
+  // If you override this, it will break compatibility with the
+  // default implementation. The default version is designed to
+  // be able to be called as a object or class method.
   public function generate_hash ($token, $pass)
   {
     return sha1(trim($token.$pass));
@@ -148,15 +115,15 @@ class SimpleAuth
 
     $checkhash = $this->generate_hash($usertoken, $pass);
     if (strcmp($userhash, $checkhash) == 0)
-    {
-      $this->set_userid($userid);
+    { $this->userid = $userid;
       if ($this->log) error_log("User '$userid' logged in.");
       if ($paranoid)
       {
         $authtoken = sha1(time());
-        $this->set_authhash(sha1($authtoken.$userhash));
+        $this->authhash = sha1($authtoken.$userhash);
         return $authtoken;
       }
+      $this->update();
       return true;
     }
     return false;
@@ -172,13 +139,11 @@ class SimpleAuth
     }
     $this->userid    = Null;
     $this->authhash  = Null;
-    $nano = \Nano3\get_instance();
-    if (!$this->store_self)
-    {
-      $nano->sess->SimpleAuth = array();
-    }
+    $this->update();
+
     if ($destroy_session)
     { // Destroy the entire session. A good way to log out.
+      $nano = \Nano3\get_instance();
       $nano->sess->kill($restart_session);
     }
   }
