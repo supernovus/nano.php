@@ -161,12 +161,17 @@ abstract class CoreController
       $ssl = $opts['ssl'];
     else
       $ssl = Null; // Auto determine the protocol.
+    if (isset($opts['port']))
+      $port = $opts['port'];
+    else
+      $port = ''; // Use the default ports.
+
     if (is_null($url))
       $url = $this->default_url;
 
     if ($relative)
     {
-      $url = $this->url($ssl) . $url;
+      $url = $this->url($ssl, $port) . $url;
     }
 
     header("Location: $url");
@@ -174,7 +179,7 @@ abstract class CoreController
   }
 
   // Return our base URL.
-  public function url ($ssl=Null)
+  public function url ($ssl=Null, $port='')
   { if (isset($ssl))
     { // We're using explicit SSL settings.
       if ($ssl)
@@ -189,7 +194,7 @@ abstract class CoreController
       }
     }
     else
-    { // Auto-detect SSL settings.
+    { // Auto-detect SSL and port settings.
       if (isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] === "on")
       { 
         $defport = 443;
@@ -200,9 +205,9 @@ abstract class CoreController
         $defport = 80;
         $proto   = "http";
       }
+      $port = ($_SERVER["SERVER_PORT"] == $defport) ? '' : 
+        (":".$_SERVER["SERVER_PORT"]);
     }
-    $port = ($_SERVER["SERVER_PORT"] == $defport) ? '' : 
-      (":".$_SERVER["SERVER_PORT"]);
     return $proto."://".$_SERVER['SERVER_NAME'].$port;
   }
 
