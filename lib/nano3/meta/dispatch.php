@@ -3,6 +3,7 @@
 // Let's make dispatch more useful.
 
 $nano = \Nano3\get_instance();       // Get our Nano3 instance.
+$nano->load_meths = True;            // Allow extension method loading.
 $nano->addPlugin('dispatch');        // Load the Dispatch plugin.
 
 $dispatch = $nano->lib['dispatch'];  // Get the dispatch object.

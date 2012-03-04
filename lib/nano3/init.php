@@ -131,9 +131,9 @@ class Nano3 implements \ArrayAccess
   public $hooks = array();    // Named hooks (callbacks.)
   public $meths = array();    // Extension methods (callbacks.)
 
-  public $call_meths = True;  // Enable extension methods?
-  public $call_hooks = False; // Unknown methods dispatch to hooks?
-  public $call_load  = True;  // Dispatch load* methods to loaders?
+  public $call_meths = False;  // Enable extension methods?
+  public $call_hooks = False;  // Unknown methods dispatch to hooks?
+  public $call_load  = False;  // Dispatch load* methods to loaders?
 
   // Add a library object to Nano. 
   public function addLib ($name, $class, $opts=NULL)
