@@ -8,11 +8,7 @@
 
 namespace Nano3\Utils;
 
-// We're not using the autoloader.
-// Feel free to outside of here.
-require_once 'swift_init.php';
-require_once 'Swift/Mailer.php';
-require_once 'Swift/Message.php';
+require_once 'swift_required.php';
 
 class Mailer
 {
@@ -48,7 +44,6 @@ class Mailer
       $transport = $opts['transport'];
     elseif (isset($opts['host']))
     { // Using SMTP transport.
-      require_once 'Swift/SmtpTransport.php';
       $transport = \Swift_SmtpTransport::newInstance($opts['host']);
       if (isset($opts['port']))
         $transport->setPort($opts['port']);
@@ -61,7 +56,6 @@ class Mailer
     }
     else
     { // Using sendmail transport.
-      require_once 'Swift/SendmailTransport.php';
       $transport = \Swift_SendmailTransport::newInstance();
     }
 
