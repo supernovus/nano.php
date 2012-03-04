@@ -19,7 +19,7 @@
   $menu = array(
     PAGE_DEFAULT          => array('name'=>"Home",     'root'=>True),
     PAGE_LOGIN            => array('name'=>"Login",    'user'=>False),
-    PAGE_LOGOUT           => array('name'=>"Logout"    'user'=>True),
+    PAGE_LOGOUT           => array('name'=>"Logout",   'user'=>True),
   );
 ?>
 <body>
