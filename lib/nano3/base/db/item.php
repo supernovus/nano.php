@@ -17,9 +17,17 @@ class Item implements \ArrayAccess
 
   protected $primary_key = 'id';  // The key for our identifier (default 'id'.)
 
+  // To make aliases to the database field names, override the $aliases
+  // member in your sub-classes. It should be an associative array, where
+  // the key is the alias, and the value is the target database field.
+  // NOTE: Aliases are not known about by the Model or ResultSet objects, 
+  // so functions like getRowByField and manual SELECT statements must use 
+  // the real database field names, not aliases! 
+  protected $aliases = array();
+
   // Can't get much easier than this.
   public function __construct ($data, $parent, $table, $primary_key=Null)
-  {
+  { 
     $this->data        = $data;
     $this->parent      = $parent;
     $this->table       = $table;
@@ -27,11 +35,17 @@ class Item implements \ArrayAccess
       $this->primary_key = $primary_key;
   }
 
-  // Ensure a requested field exists in our schema.
-  protected function __is_field ($name)
+  // This method looks for a field.
+  // If the field exists in the database row,
+  // it's returned unchanged. If it does not, but an
+  // alias exists, the alias target field will be returned.
+  // If neither exists, an exception will be thrown.
+  protected function db_field ($name)
   {
     if (array_key_exists($name, $this->data))
-      return true;
+      return $name;
+    elseif (array_key_exists($name, $this->aliases))
+      return $this->aliases[$name];
     else
       throw new Exception('Unknown field');
   }
@@ -39,36 +53,38 @@ class Item implements \ArrayAccess
   // Set a database field.
   public function __set ($name, $value)
   {
+    $name = $this->db_field($name);
+
     if ($name == $this->primary_key)
       throw new Exception('Cannot overwrite primary key.');
 
-    if ($this->__is_field($name))
-      $this->data[$name] = $value;
+    $this->data[$name] = $value;
   }
 
   // Get a database field.
   public function __get ($name)
   {
-    if ($this->__is_field($name))
-      return $this->data[$name];
+    $name = $this->db_field($name);
+    return $this->data[$name];
   }
 
   // See if a database field is set.
   // For our purposes, '' is considered unset.
   public function __isset ($name)
   {
-    if ($this->__is_field($name))
-      return (isset($this->data[$name]) && $this->data[$name] != '');
+    $name = $this->db_field($name);
+    return (isset($this->data[$name]) && $this->data[$name] != '');
   }
 
   // Sets a field to null.
   public function __unset ($name)
   {
+    $name = $this->db_field($name);
+
     if ($name == $this->primary_key)
       throw new Exception('Cannot unset primary key');
 
-    if ($this->__is_field($name))
-      $this->data[$name] = null;
+    $this->data[$name] = null;
   }
 
   public function offsetExists ($name)
