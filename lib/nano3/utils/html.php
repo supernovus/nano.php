@@ -468,17 +468,20 @@ class HTML
         if (isset($def[$key]))
         {
           if ($rule instanceof \Closure)
-          {
-            $value = $rule($path, $key, $def);
+          { // Our closure will return True or False.
+            if (!$rule($path, $key, $def))
+            { // If we get False, we skip this menu item.
+              $filtered = True;
+              break;
+            }
           }
           else
-          {
-            $value = $rule;
-          }
-          if ($def[$key] != $value)
-          { // Our show rule did not match, skip this menu item.
-            $filtered = True;
-            break;
+          { // We check to see if the values match up.
+            if ($def[$key] != $rule)
+            { // Our show rule did not match, skip this menu item.
+              $filtered = True;
+              break;
+            }
           }
         }
       }
