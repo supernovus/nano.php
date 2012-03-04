@@ -57,5 +57,21 @@ class ResultSet implements \Iterator
     return false;
   }
 
+  // Create an associative array of key => val.
+  // It requires a full iteration of our data.
+  public function map ($valattr, $keyattr=Null)
+  {
+    if (is_null($keyattr))
+    {
+      $keyattr = $this->primary_key;
+    }
+    $map = array();
+    foreach ($this as $item)
+    {
+      $map[$item[$keyattr]] = $item[$valattr];
+    }
+    return $map;
+  }
+
 }
 

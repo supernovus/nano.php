@@ -4,90 +4,129 @@
  */
 
 namespace Nano3\Utils;
+use Nano3\Exception;
+
+define('HTML_OUTPUT_STRING', 'str');  // Return an XML string.
+define('HTML_OUTPUT_ECHO',   'echo'); // Echo the output string.
+define('HTML_OUTPUT_DOM',    'dom');  // Return a DOM object.
+define('HTML_OUTPUT_XML',    'xml');  // Return a SimpleXML object.
+
+class InvalidXMLException extends Exception
+{
+  protected $message = "Invalid XML object type.";
+}
 
 class HTML
 {
   /**
-   * Should we echo directly?
-   * @var boolean
+   * Our default output format if the 'output' parameter is not specified.
+   * @var string
    */
-  public $echo   = False;
-
-  /**
-   * Return the SimpleXML element directly?
-   * This overrides the $echo attribute.
-   * @var boolean
-   */
-  public $xmlout = False;
+  public $output = HTML_OUTPUT_STRING;
 
   /**
    * Build a new HTML helper object.
    *
-   * @param array $opts  Reset the default values of 'echo' and 'xmlout'.
+   * @param array $opts  Reset the default values of 'echo' and 'simplexml'.
    */
   public function __construct ($opts=array())
   {
-    if (isset($opts['echo']))
-      $this->echo = $opts['echo'];
-    if (isset($opts['xmlout']))
-      $this->xmlout = $opts['xmlout'];
+    if (isset($opts['output']))
+      $this->output = $opts['output'];
   }
 
   /**
    * Protected function that handles return values.
    *
-   * Depending on either the global 'echo' and 'xmlout' variables,
+   * Depending on the global 'output' variable,
    * or the options of the same name passed to a method, we output
-   * either a SimpleXML object, an XML string, or we echo the string
-   * directly to the current output stream.
+   * either a SimpleXML or DOMDocument object, an XML string, 
+   * or we echo the string directly to the current output stream.
    *
-   * @param mixed $value  Either a SimpleXML object, or an array of them.
-   * @param array $opts   Override the 'echo' or 'xmlout' settings.
-   * @returns mixed       Output depends on the 'echo' and 'xmlout' settings.
+   * @param mixed $value  A SimpleXML or DOMDocument object.
+   * @param array $opts   Override the 'output' setting.
+   * @returns mixed       Output depends on the 'output' setting.
    */
   protected function return_value ($value, $opts)
   {
-    if (isset($opts['echo']))
-      $echo = $opts['echo'];
+    if (isset($opts['output']))
+      $output = $opts['output'];
     else
-      $echo = $this->echo;
-    if (isset($opts['xmlout']))
-      $xmlout = $opts['xmlout'];
-    else
-      $xmlout = $this->xmlout;
+      $output = $this->output;
 
-    if ($xmlout)
-    { // Return the raw SimpleXML or array of SimpleXML object(s).
-      return $value;
-    }
-    elseif ($echo)
+    if ($output === HTML_OUTPUT_ECHO)
     { // Echo the values directly.
-      if (is_array($value))
+      if ($value instanceof \SimpleXMLElement)
       {
-        foreach ($value as $xml)
-        {
-          echo $xml->asXML();
-        }
+        echo $value->asXML();
+      }
+      elseif ($value instanceof \DOMDocument)
+      {
+        echo $value->saveXML($value->documentElement);
       }
       else
       {
-        echo $value->asXML();
+        throw new InvalidXMLException();
+      }
+    }
+    elseif ($output === HTML_OUTPUT_XML)
+    { // Return a SimpleXML object.
+      if ($value instanceof \SimpleXMLElement)
+      {
+        return $value;
+      }
+      elseif ($value instanceof \DOMDocument)
+      {
+        return simplexml_import_dom($value->documentElement);
+      }
+      else
+      {
+        throw new InvalidXMLException();
+      }
+    }
+    elseif ($output === HTML_OUTPUT_DOM)
+    { // Return a DOMDocument object.
+      if ($value instanceof \DOMDocument)
+      {
+        return $value;
+      }
+      elseif ($value instanceof \SimpleXMLElement)
+      {
+        $domElement = dom_import_simplexml($value);
+        if (!$domElement)
+        {
+          throw new Exception("Unable to convert SimpleXML to DOM.");
+        }
+        if (isset($domElement->ownerDocument))
+        { // This should work on all newer PHP versions.
+          $domDocument = $domElement->ownerDocument;
+        }
+        else
+        { // But just in case, we have a backup plan.
+          $domDocument = new \DOMDocument('1.0');
+          $domDocument->importNode($domElement, true);
+          $domDocument->appendNode($domElement);
+        }
+        return $domDocument;
+      }
+      else
+      {
+        throw new InvalidXMLException();
       }
     }
     else
     { // Return a string representing the XML.
-      if (is_array($value))
+      if ($value instanceof \SimpleXMLElement)
       {
-        $output = '';
-        foreach ($value as $xml)
-        {
-          $output .= $xml->asXML();
-        }
-        return $output;
+        return $value->asXML();
+      }
+      elseif ($value instanceof \DOMDocument)
+      {
+        return $value->saveXML($value->documentElement);
       }
       else
       {
-        return $value->asXML();
+        throw new InvalidXMLException();
       }
     }
   }
@@ -107,7 +146,7 @@ class HTML
    * the select tag, or can be the value of the 'name' attribute.
    *
    * The $opts array may contain several options on top of the standard
-   * 'echo' and 'xmlout' options:
+   * output options:
    *
    *  'selected' => mixed     The current selected value.
    *  'mask'     => boolean   If true, selected value is a bitmask.
@@ -115,7 +154,7 @@ class HTML
    *                          we set the 'id' for the select to be the same
    *                          as the 'name' attribute.
    *
-   * @returns mixed   Output depends on the 'echo' and 'xmlout' options.
+   * @returns mixed   Output depends on the 'echo' and 'simplexml' options.
    */
   public function select ($attrs, $array, $opts=array())
   {
@@ -227,7 +266,7 @@ class HTML
    * @param array  $menu  The array representing the menu.
    * @param array  $opts  Optional function-specific settings.
    *
-   * In addition to the usual 'echo' and 'xmlout' options, this also
+   * In addition to the usual output options, this also
    * supports the following option:
    *
    *  'type'  => string       The list type, defaults to 'ul'.
@@ -293,5 +332,359 @@ class HTML
     return $this->return_value($input, $opts);
   }
 
+  /**
+   * Build a menu.
+   *
+   * Given some information and a menu definition, this will
+   * generate an HTML menu using a specific layout.
+   *
+   */
+  public function menu ($menu, $opts=array())
+  {
+    // There are a few accepted menu formats. We detect them
+    // automatically as we build the menu.
+    // If you use a flat (non-associative) array, then you will
+    // need to supply the 'url' and 'name' parameters within the
+    // item definition (which is an associative array).
+    // Otherwise, if the menu itself is an associate array, the key
+    // will be used as the 'url' or 'name' tags if one or both of
+    // them is missing, but only if it is a string.
+    if (isset($opts['root']))
+    {
+      $container = $opts['root'];
+      if (is_string($container))
+      {
+        $container = new \SimpleXMLElement($container);
+      }
+    }
+    else
+    {
+      $container = new \SimpleXMLElement('<div class="menu" />');
+    }
+    if (isset($opts['itemclass']))
+    {
+      $itemclass = strtolower($opts['itemclass']);
+    }
+    else
+    {
+      $itemclass = Null; // We use a raw <a> tag.
+    }
+
+    // Custom rules to show different things.
+    if (isset($opts['show']))
+    {
+      $show_rules = $opts['show'];
+    }
+    else
+    {
+      $show_rules = array();
+    }
+
+    // Custom rules to apply styles.
+    if (isset($opts['classes']))
+    {
+      $class_rules = $opts['classes'];
+    }
+    else
+    { // Default set of class rules.
+      // Basically, if an item is listed as 'root',
+      // it must match the path completely to be listed
+      // as selected. Otherwise the first part of the path
+      // must be found in the REQUEST_URI.
+      $class_rules = array(
+        'root' => array(
+          'class'   => 'current',
+          'path_is' => True,
+          'single'  => True,
+          'unique'  => True,
+        ),
+        'current' => array(
+          'implicit'   => True,
+          'uri_prefix' => 1,
+          'single'     => True,
+          'unique'     => True,
+        )
+      );
+    }
+    // If we want to keep the default rules and add to them.
+    if (isset($opts['addclasses']))
+    {
+      $class_rules += $opts['addclasses'];
+    }
+    if (isset($opts['insclasses']))
+    {
+      $class_rules = $opts['insclasses'] + $class_rules;
+    }
+
+    // Storage for unique classes.
+    $uniqueclasses = array();
+
+    // Okay, let's do this.
+    foreach ($menu as $key => $def)
+    {
+      // Get our target URL.
+      if (isset($def['url']))
+      {
+        $url = $def['url'];
+      }
+      elseif (is_string($key))
+      {
+        $url = $key;
+      }
+      else
+      {
+        throw new Exception("No URL found for menu item: $key");
+      }
+
+      // Our 'path' which may or may not be the same as the URL.
+      if (isset($def['path']))
+      {
+        $path = $def['path'];
+      }
+      else
+      {
+        $path = $url;
+      }
+
+      // Get our item name/label.
+      if (isset($def['name']))
+      {
+        $name = $def['name'];
+      }
+      elseif (is_string($key))
+      {
+        $name = $key;
+      }
+      else
+      {
+        throw new Exception("No Name found for menu item: $key");
+      }
+
+      // Now let's see if there are any filters that apply.
+      $filtered = False;
+      foreach ($show_rules as $key => $rule)
+      { 
+        // We only perform the checks on defs that have the rule.
+        if (isset($def[$key]))
+        {
+          if ($rule instanceof \Closure)
+          {
+            $value = $rule($path, $key, $def);
+          }
+          else
+          {
+            $value = $rule;
+          }
+          if ($def[$key] != $value)
+          { // Our show rule did not match, skip this menu item.
+            $filtered = True;
+            break;
+          }
+        }
+      }
+      if ($filtered) 
+      { // One of the show rules did not match, skip this item.
+        continue; 
+      }
+
+      // Okay, now let's see if we need to apply any classes.
+      $classes = array();
+      foreach ($class_rules as $key => $rule)
+      {
+        // First, we only apply rules that our definition has
+        // subscribed to, unless the rule is implicit.
+        if (!isset($rule['implicit']) || !$rule['implicit'])
+        {
+          if (!isset($def[$key])) { continue; } // Skip this rule.
+        }
+
+        // Now we continue to search for paths.
+        $matched = False;
+        if (isset($rule['class']))
+        {
+          $class = $rule['class'];
+        }
+        elseif (is_string($key))
+        {
+          $class = $key;
+        }
+        else
+        {
+          continue;
+        }
+
+        // If the class was registered as unique, skip it.
+        if (isset($uniqueclasses[$class])) { continue; }
+
+        // If we already have the class, skip it.
+        if (isset($classes[$class])) { continue; }
+
+        // Check for path_is rules, which are the simplest tests.
+        if (isset($rule['path_is']))
+        {
+          if (is_string($rule['path_is']))
+          {
+            $test_path = $rule['path_is'];
+          }
+          elseif (isset($_SERVER['PATH_INFO']))
+          {
+            $test_path = $_SERVER['PATH_INFO'];
+          }
+          elseif (isset($_SERVER['REQUEST_URI']))
+          {
+            $test_path = $_SERVER['REQUEST_URI'];
+          }
+          else
+          {
+            throw new Exception("Could not determine URI.");
+          }
+          // Okay, now let's see if we match.
+          if ($path == $test_path)
+          {
+            $classes[$class] = True;
+            $matched = True;
+          }
+        }
+        // Next up are uri_prefix rules, which are more complex.
+        elseif (isset($rule['uri_prefix']))
+        {
+          $uripref = $rule['uri_prefix'];
+          if (is_array($uripref))
+          { // Array format: array($section, $test_path);
+            $section   = $uripref[0];
+            $test_path = $uripref[1];
+          }
+          elseif (is_numeric($uripref))
+          { // Number is section, use REQUEST_URI for test_path.
+            $section = $uripref;
+            $test_path = $_SERVER['REQUEST_URI'];
+          }
+          else
+          { // Anything else is the test_path, use 1 as the section.
+            $section   = 1;
+            $test_path = $uripref;
+          }
+
+          // If test_path was a boolean instead of a string,
+          // then if it's True, we use PATH_INFO instead of REQUEST_URI.
+          if (is_bool($test_path))
+          {
+            if ($test_path)
+            {
+              $test_path = $_SERVER['PATH_INFO'];
+            }
+            else
+            {
+              $test_path = $_SERVER['REQUEST_URI'];
+            }
+          }
+          
+          $pathsplit = explode('/', $path);
+          $prefix    = $pathsplit[$section];
+          if (!$prefix) { continue; }
+#          error_log("testing '$test_path' against '$prefix'");
+          if (strpos($test_path, $prefix) !== False)
+          {
+            $classes[$class] = True;
+            $matched = True;
+          }
+        }
+        // Next, we look for custom tests, which are closures.
+        elseif (isset($rule['test']) && $rule['test'] instanceof \Closure)
+        {
+          $test = $rule['test'];
+          $value = $test($path, $key, $def);
+          if ($value)
+          {
+            $classes[$class] = True;
+            $matched = True;
+          }
+        }
+        else
+        { // If no matching rules were specified, we assume truth.
+          $classes[$class] = True;
+          $matched = True;
+        }
+
+        // Okay, now to handle matched rules.
+        if ($matched)
+        {
+          // For single rules, if they matched, we remove them.
+          if (isset($rule['single']) && $rule['single'])
+          {
+            unset($class_rules[$key]);
+          }
+          if (isset($rule['unique']) && $rule['unique'])
+          {
+            // For unique rules, mark down the class.
+            $uniqueclasses[$class] = True;
+          }
+        }
+      }
+
+      // Now build a class string.
+      if (count($classes) > 0)
+      { // We have classes.
+        $class = join(' ', array_keys($classes));
+      }
+      else
+      {
+        $class = Null;
+      }
+
+      if (isset($itemclass) && $itemclass != 'a')
+      { // We're using a custom container. We put an <a/> within it.
+        $item = $container->addChild($itemclass);
+        if (isset($class))
+        {
+          $item->addAttribute('class', $class);
+        }
+        $link = $item->addChild('a', $name);
+        $link->addAttribute('href',  $url);
+      }
+      else
+      { // We're using a raw <a/> tag (my preference.)
+        $item = $container->addChild('a', $name);
+        $item->addAttribute('href', $url);
+        if (isset($class))
+        {
+          $item->addAttribute('class', $class);
+        }
+      }
+    }
+    // Okay, now let's see if we have anything to append to the menu.
+    if (isset($opts['append']))
+    {
+      $append_items = $opts['append'];
+      foreach ($append_items as $append)
+      {
+        if (isset($append['element']))
+        {
+          $element = $append['element'];
+        }
+        else
+        {
+          $element = 'span';
+        }
+        if (isset($append['content']))
+        {
+          $content = $append['content'];
+        }
+        else
+        {
+          $content = Null;
+        }
+        $appended = $container->addChild($element, $content);
+        if (isset($append['attribs']) && is_array($append_attribs))
+        {
+          foreach ($append['attribs'] as $attrkey => $attrval)
+          {
+            $appended->addAttribute($attrkey, $attrval);
+          }
+        }
+      }
+    }
+    return $this->return_value($container, $opts);
+  }
 }
 
