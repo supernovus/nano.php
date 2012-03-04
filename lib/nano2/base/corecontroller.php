@@ -112,7 +112,7 @@ abstract class CoreController
   }
 
   // A wrapper for load_model with caching and more options.
-  protected function model ($model, $opts=array())
+  public function model ($model, $opts=array())
   {
     if (!isset($this->models[$model]))
     { // No model has been loaded yet.
