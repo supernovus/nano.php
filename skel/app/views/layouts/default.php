@@ -16,41 +16,23 @@
 </head>
 <?php // Setup some common PHP related stuff, and our menu.
   $nano = \Nano3\get_instance();
-  $menu = array(
+  $menu_items = array(
     PAGE_DEFAULT          => array('name'=>"Home",     'root'=>True),
     PAGE_LOGIN            => array('name'=>"Login",    'user'=>False),
     PAGE_LOGOUT           => array('name'=>"Logout",   'user'=>True),
+  );
+  $menu_opts = array(
+    'root' => '<div id="topmenu"/>',
+    'show' => array
+    (
+      'user' => isset($user),
+    ),
   );
 ?>
 <body>
   <div id="layout">
   <div id="topmenu">
-<?php 
-foreach ($menu as $path => $item):
-  if (isset($item['user']))
-  {
-    if ($item['user'] && !isset($user)) 
-      continue;
-    elseif (!$item['user'] && isset($user)) 
-      continue;
-  }
-  // Add extra flags here.
-
-  if (isset($item['root']) && $item['root'])
-  { // The default URL, i.e. no extra paths.
-    if (isset($_SERVER['PATH_INFO']))
-      $my_path = $_SERVER['PATH_INFO'];
-    else
-      $my_path = $_SERVER['REQUEST_URI'];
-    $is_current = ($my_path == $path);
-  }
-  else
-  { // A page, in a certain namespace.
-    $pathsplit = explode('/', $path);
-    $prefix = $pathsplit[1];
-    $is_current = strpos($_SERVER['REQUEST_URI'], $prefix) !== False;
-  }
-?>
+<?php $html->menu($menu_items, $menu_opts); ?>
 <a 
 <?php if ($is_current): ?>
  class="current"

@@ -10,7 +10,7 @@ APPDIR=`echo $APPNAME | tr '[A-Z]' '[a-z]'`
 NANOBIN=`dirname $0`
 NANODIR=`dirname $NANOBIN`
 NANOLIB="$NANODIR/lib"
-NANOSRC="$NANODIR/example"
+NANOSRC="$NANODIR/skel/app"
 
 rsync -av $NANOSRC/ $APPDIR/
 mkdir -p $APPDIR/bin

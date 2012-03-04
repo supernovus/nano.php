@@ -44,6 +44,8 @@ abstract class Controller extends \Nano3\Base\Controller
         $this->redirect(PAGE_LOGIN);
       }
     }
+    // Register a view helper object.
+    $this->data['html'] = new \Nano3\Utils\HTML(array('output'=>'echo'));
   }
 }
 
