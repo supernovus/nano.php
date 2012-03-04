@@ -281,14 +281,14 @@ class Nano3 implements \ArrayAccess
   {
     if (isset($this->lib[$offset]))
       return $this->lib[$offset];
-    elseif ($this->lib['nano']->is("meta/$offset"))
-    { // Load a meta extension.
-      $this->extend($offset);
-      return $this->lib[$offset];
-    }
     elseif ($this->lib['nano']->is("plugins/$offset"))
     { // Load a core plugin.
       $this->addPlugin($offset);
+      return $this->lib[$offset];
+    }
+    elseif ($this->lib['nano']->is("meta/$offset"))
+    { // Load a meta extension.
+      $this->extend($offset);
       return $this->lib[$offset];
     }
     else
