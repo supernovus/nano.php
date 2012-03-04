@@ -127,8 +127,13 @@ class Loader
 
 class Nano3 implements \ArrayAccess
 {
-  public $lib   = array();      // Library objects.
-  public $hooks = array();      // Named hooks (callbacks.)
+  public $lib   = array();    // Library objects.
+  public $hooks = array();    // Named hooks (callbacks.)
+  public $meths = array();    // Extension methods (callbacks.)
+
+  public $call_meths = True;  // Enable extension methods?
+  public $call_hooks = False; // Unknown methods dispatch to hooks?
+  public $call_load  = True;  // Dispatch load* methods to loaders?
 
   // Add a library object to Nano. 
   public function addLib ($name, $class, $opts=NULL)
@@ -241,10 +246,18 @@ class Nano3 implements \ArrayAccess
   }
 
   // Meta extensions add features to Nano3 itself.
-  // This is used by the extension autoloader (see __get() for details.)
+  // This is used by the Nano3 library loader (see __get() for details.)
   public function extend ($name)
   {
     $this->lib['nano']->load("meta/$name");
+  }
+
+  // Nano Plugins. Add pre-created library objects to Nano3.
+  // This is used by the Nano3 library loader (see __get() for details.)
+  public function addPlugin ($name)
+  {
+    $class = "\\Nano3\\Plugins\\$name";
+    $this->addLib($name, $class);
   }
 
   /* We're using psuedo-accessors to make life easier */
@@ -273,10 +286,9 @@ class Nano3 implements \ArrayAccess
       $this->extend($offset);
       return $this->lib[$offset];
     }
-    elseif ($this->lib['nano']->is($offset))
+    elseif ($this->lib['nano']->is("plugins/$offset"))
     { // Load a core plugin.
-      $class = "\\Nano3\\$offset";
-      $this->addLib($offset, $class);
+      $this->addPlugin($offset);
       return $this->lib[$offset];
     }
     else
@@ -318,7 +330,6 @@ class Nano3 implements \ArrayAccess
    * to implement that interface.
    *
    */
-
   public function addHook ($name, $callback)
   {
     if (!array_key_exists($name, $this->hooks))
@@ -339,6 +350,88 @@ class Nano3 implements \ArrayAccess
       }
     }
     return $hook_out;
+  }
+
+  /**
+   * Add an extension method. 
+   *
+   * This function allows extensions to add a method to the Nano3 object.
+   * The method will only be usable if the Nano3 instance has the
+   * 'call_meths' attribute set to True.
+   * 
+   * @param string $name      The name of the method we are adding.
+   * @param mixed  $callback  A callback, with exceptions, see below.
+   *
+   * If the callback parameter is a string, then the normal PHP callback
+   * rules are ignored, and the string is assumed to be the name of a
+   * library object that provides the given method (the method in the library
+   * must be the same name, and must be public.)
+   *
+   * Class method calls, object method calls and closures are handled
+   * as per the standard PHP callback rules.
+   *
+   */
+  public function addMethod ($name, $callback)
+  {
+    $this->meths[$name] = $callback;
+  }
+
+  /**
+   * The __call() method does a bit of magic.
+   *
+   * If $call_meths is True, then we look in our list of extension methods
+   * and dispatch to a matching one if found.
+   *
+   * If $call_hooks is True, then we look for a hook matching the method
+   * name called. If we find one, we dispatch to callHook().
+   *
+   * If $call_load is True, and the method name starts with the word 'load' it
+   * looks for a loader by the same name. 
+   * Unlike Nano2 there is no pluralizing, so if the loader is called 
+   * 'controllers' then loadControllers() must be used not loadController().
+   *
+   */
+  public function __call ($method, $arguments)
+  {
+    // First we check for extension methods.
+    if ($this->call_meths && isset($this->meths[$method]))
+    {
+      if (is_string($this->meths[$method]))
+      { // A string is assumed to be the name of a library.
+        // We don't support plain function callbacks.
+        $libname  = $this->meths[$method];
+        $libobj   = $this->lib[$libname];
+        $callback = array($libobj, $method);
+      }
+      else
+      { // Anything else is considered the callback itself.
+        // Which can be a class method call, object method call or closure.
+        $callback = $this->meths[$method];
+      }
+      // Now let's dispatch to the callback.
+      return call_user_func_array($callback, $arguments);
+    }
+    // Next we check for hooks.
+    if ($this->call_hooks && isset($this->hooks[$method]))
+    {
+      return $this->callHook($method, $arguments);
+    }
+    // Next we check for loaders.
+    if ($this->call_load && strpos($method, 'load') === 0)
+    {
+      $loader = strtolower(preg_replace('/load_?/', '', $method));
+      if (isset($this->lib[$loader]) 
+        && is_callable(array($this->lib[$loader], 'load')))
+      {
+        return call_user_func_array
+        (
+          array($this->lib[$loader], 'load'),
+          $arguments
+        );
+      }
+    }
+    // If we reached this far, we didn't find any methods.
+    throw new Exception("Unhandled method '$method' called.");
   }
 
 }

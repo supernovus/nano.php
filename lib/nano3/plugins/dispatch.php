@@ -6,7 +6,7 @@
    You can simulate it using rules though.
  */
 
-namespace Nano3;
+namespace Nano3\Plugins;
 
 /**
  * Remove Invisible Characters (Function from CodeIgniter)

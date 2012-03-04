@@ -1,6 +1,6 @@
 <?php
 
-namespace Nano3;
+namespace Nano3\Plugins;
 
 /**
  * Nano3 Session Object
