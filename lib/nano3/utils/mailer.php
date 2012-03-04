@@ -3,11 +3,16 @@
 /* \Nano3\Utils\Mailer: A quick class to send e-mail.
    Use it as a standalone component, or extend it for additional features.
    It now uses Swift Mailer as its backend for added flexibility.
+   Swiftmailer must be installed via Pear.
  */
 
 namespace Nano3\Utils;
 
-require_once 'swift_required.php';
+// We're not using the autoloader.
+// Feel free to outside of here.
+require_once 'swift_init.php';
+require_once 'Swift/Mailer.php';
+require_once 'Swift/Message.php';
 
 class Mailer
 {
@@ -42,7 +47,8 @@ class Mailer
     if (isset($opts['transport']))
       $transport = $opts['transport'];
     elseif (isset($opts['host']))
-    {
+    { // Using SMTP transport.
+      require_once 'Swift/SmtpTransport.php';
       $transport = \Swift_SmtpTransport::newInstance($opts['host']);
       if (isset($opts['port']))
         $transport->setPort($opts['port']);
@@ -54,7 +60,10 @@ class Mailer
         $transport->setPassword($opts['pass']);
     }
     else
+    { // Using sendmail transport.
+      require_once 'Swift/SendmailTransport.php';
       $transport = \Swift_SendmailTransport::newInstance();
+    }
 
     $this->mailer = \Swift_Mailer::newInstance($transport);
 
