@@ -93,16 +93,55 @@ class Dispatch
   // the method for the prefix to look for.
   public function addRoutes ($rules, $methods)
   {
-    if (isset($rules['prefix']))
-      $prefix = $rules['prefix'];
-    else
-      $prefix = '';
+    if (is_string($rules))
+    {
+      $rules = array('name'=>$rules);
+    }
     foreach ($methods as $method)
     {
-      $rules['prefix'] = $prefix . $method;
+      if (isset($rules['make_prefix']))
+      {
+        // Build a prefix based on a common
+        // prefix with the method appended to it.
+        $rules['prefix'] = $rules['make_prefix'] . $method;
+      }
+      elseif (isset($rules['make_path']))
+      {
+        // Build ispath rules.
+        $rules['ispath'] = array(
+          $rules['make_path'],     // 0 = whatever is passed here.
+          $method                  // 1 = the method name.
+        );
+      }
+      elseif (
+           !isset($rules['prefix']) 
+        && !isset($rules['matchpath'])
+        && !isset($rules['ispath'])
+      )
+      {
+        // If no other path matching rules are found,
+        // let's generate one based on the method name.
+        $rules['prefix'] = $method;
+      }
       $rules['method'] = "handle_$method";
       $this->addRoute($rules);
     }
+  }
+
+  // Add a single controller that handles multiple routes
+  // with a given prefix. A simple wrapper to addRoutes().
+  // This assumes a lot, so if you need something more advanced,
+  // write your own addRoutes() call.
+  public function addPrefixController ($name, $handles)
+  {
+    $rules = array
+    (
+      'name'      => $name,  // Controller is the same as the name.
+      'make_path' => $name,  // Build a is_path rule using $name.
+      'setpath'   => 2,      // 0 = name, 1 = method, 2 = variable!
+      'defpath'   => False,  // No default path.
+    );
+    return $this->addRoutes($rules, $handles);
   }
 
   // Add a CodeIgniter-style controller.
@@ -174,6 +213,20 @@ class Dispatch
       { // See if the first component of the path matches a string value.
         if (count($paths)==0 || $paths[0] != $ctrl['prefix'])
           continue;
+      }
+      if (isset($ctrl['ispath']))
+      {
+        if (count($paths)==0) continue; // We need at least one path.
+        $failed = False;
+        foreach ($ctrl['ispath'] as $part => $match)
+        {
+          if ($paths[$part] != $match)
+          {
+            $failed = True;
+            break;
+          }
+        }
+        if ($failed) continue;
       }
 
       // Now try to find the controller name.
