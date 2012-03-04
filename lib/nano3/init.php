@@ -15,7 +15,7 @@ if (!defined('CLASS_ROOT_DIR'))
 
 set_include_path(get_include_path().PATH_SEPARATOR.CLASS_ROOT_DIR);
 spl_autoload_extensions('.php');
-spl_autoload_register();
+spl_autoload_register('spl_autoload');
 
 // Get the output content from a PHP file.
 function get_php_content ($__view_file, $__view_data=NULL)
