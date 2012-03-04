@@ -3,7 +3,7 @@
 // Let's make dispatch more useful.
 
 $nano = \Nano3\get_instance();       // Get our Nano3 instance.
-$nano->load_meths = True;            // Allow extension method loading.
+$nano->call_meths = True;            // Allow extension method loading.
 $nano->addPlugin('dispatch');        // Load the Dispatch plugin.
 
 $dispatch = $nano->lib['dispatch'];  // Get the dispatch object.
@@ -14,7 +14,7 @@ $nano->addMethod('dispatch',   'dispatch');
 $nano->addMethod('addRoute',   'dispatch');
 $nano->addMethod('addRoutes',  'dispatch');
 // Now some more complex ones with new names.
-$nano->addMethod('setDefault', array($dispatch, 'addRootController'));
+$nano->addMethod('setDefault', array($dispatch, 'addDefaultController'));
 $nano->addMethod('setRoot',    array($dispatch, 'addRootController'));
 
 // That's all folks, for the rest, use dispatch directly.

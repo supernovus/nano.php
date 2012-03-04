@@ -17,35 +17,98 @@ namespace Nano3\Utils;
 
 class SimpleAuth
 {
-  public $log = false;   // Enable logging?
+  public $log = False;          // Enable logging?
+  protected $store_self = True; // Store the object in the session.
 
-  // Fields representing a logged in user.
+  // Internal fields.
   protected $userid;
-  protected $usertoken;
-
-  // Two fields for paranoid mode.
-  protected $authtoken;
   protected $authhash;
 
+  // Build a new object.
   public function __construct ($opts=array())
   {
     if (isset($opts['log']))
+    {
       $this->log = $opts['log'];
+    }
+
+    if (isset($opts['store']))
+    {
+      $this->store_self = $opts['store'];
+    }
+
+    if (isset($opts['restore']) && $opts['restore'])
+    {
+      return $this->restore_session();
+    }
+
     $nano = \Nano3\get_instance();
-    $nano->sess->SimpleAuth = $this;
+
+    if ($this->store_self)
+    {
+      $nano->sess->SimpleAuth = $this;
+    }
+    else
+    {
+      $nano->sess->SimpleAuth = array();
+      $nano->sess->SimpleAuth['log']   = $this->log;
+      $nano->sess->SimpleAuth['store'] = $this->store_self;
+    }
   }
 
   // Static function to get an existing instance or create a new one.
-  public static function getInstance ()
+  public static function getInstance ($opts=array())
   {
     $nano = \Nano3\get_instance();
     if (isset($nano->sess->SimpleAuth))
     {
-      return $nano->sess->SimpleAuth;
+      if (is_object($nano->sess->SimpleAuth))
+      {
+        return $nano->sess->SimpleAuth;
+      }
+      elseif (is_array($nano->sess->SimpleAuth))
+      {
+        $opts['restore'] = True;
+        return new SimpleAuth($opts);
+      }
     }
-    else
+    return new SimpleAuth($opts);
+  }
+
+  // If we're not using store_self, we store
+  // our variables in an array instead.
+  private function restore_session ()
+  { // Restore our settings from the array.
+    $nano = \Nano3\get_instance();
+    $this->log = $nano->sess->SimpleAuth['log'];
+    $this->store_self = $nano->sess->SimpleAuth['store'];
+    if (isset($nano->sess->SimpleAuth['userid']))
     {
-      return new SimpleAuth();
+      $this->userid = $nano->sess->SimpleAuth['userid'];
+    }
+    if (isset($nano->sess->SimpleAuth['hash']))
+    {
+      $this->authhash = $nano->sess->SimpleAuth['hash'];
+    }
+  }
+
+  private function set_userid ($userid)
+  {
+    $this->userid = $userid;
+    if (!$this->store_self)
+    {
+      $nano = \Nano3\get_instance();
+      $nano->sess->SimpleAuth['userid'] = $userid;
+    }
+  }
+
+  private function set_authhash ($hash)
+  {
+    $this->authhash = $hash;
+    if (!$this->store_self)
+    {
+      $nano = \Nano3\get_instance();
+      $nano->sess->SimpleAuth['hash'] = $hash;
     }
   }
 
@@ -62,13 +125,9 @@ class SimpleAuth
   { 
     if (isset($this->userid))
     {
-      if (isset($userhash) && isset($this->authhash))
+      if (isset($userhash) && isset($authtoken) && isset($this->authhash))
       { 
-        if (!isset($token))
-        { // Use our own token.
-          $authtoken = $this->authtoken;
-        }
-        $checkhash = sha1($this->userid.$authtoken.$userhash);
+        $checkhash = sha1($authtoken.$userhash);
         if (strcmp($checkhash, $this->authhash) != 0)
         {
           return False;
@@ -90,14 +149,13 @@ class SimpleAuth
     $checkhash = $this->generate_hash($usertoken, $pass);
     if (strcmp($userhash, $checkhash) == 0)
     {
-      $this->userid = $userid;
-      $this->usertoken = $usertoken;
+      $this->set_userid($userid);
       if ($this->log) error_log("User '$userid' logged in.");
       if ($paranoid)
       {
-        $this->authtoken = time();
-        $this->authhash = sha1($userid.$this->authtoken.$userhash);
-        return $this->authtoken;
+        $authtoken = sha1(time());
+        $this->set_authhash(sha1($authtoken.$userhash));
+        return $authtoken;
       }
       return true;
     }
@@ -113,12 +171,14 @@ class SimpleAuth
       error_log("User '$userid' logged out.");
     }
     $this->userid    = Null;
-    $this->usertoken = Null;
-    $this->authtoken = Null;
     $this->authhash  = Null;
+    $nano = \Nano3\get_instance();
+    if (!$this->store_self)
+    {
+      $nano->sess->SimpleAuth = array();
+    }
     if ($destroy_session)
     { // Destroy the entire session. A good way to log out.
-      $nano = \Nano3\get_instance();
       $nano->sess->kill($restart_session);
     }
   }

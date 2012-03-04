@@ -7,6 +7,7 @@
  */
 
 namespace Nano3\Plugins;
+use Nano3\Exception;
 
 /**
  * Remove Invisible Characters (Function from CodeIgniter)
