@@ -1,6 +1,6 @@
 <?php
 
-namespace Models;
+namespace ExampleApp\Models;
 use Nano3\Base\DB;
 
 /**
@@ -8,7 +8,7 @@ use Nano3\Base\DB;
  */
 class Users extends DB\Model
 {
-  protected $childclass  = '\Models\User';
+  protected $childclass  = '\ExampleApp\Models\User';
   protected $resultclass = '\Nano3\Base\DB\ResultSet';
 
   public function getUser ($identifier)

@@ -1,6 +1,6 @@
 <?php
 
-namespace Controllers;
+namespace ExampleAll\Controllers;
 
 class Welcome extends \ExampleApp\Controller
 {

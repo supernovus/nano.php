@@ -2,7 +2,7 @@
 
 /* Auth Controller: Handles login and logout pages. */
 
-namespace Controllers;
+namespace ExampleApp\Controllers;
 
 class Auth extends \ExampleApp\Controller
 { // Set up our basic settings.

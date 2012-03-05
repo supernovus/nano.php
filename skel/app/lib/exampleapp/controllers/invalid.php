@@ -1,6 +1,6 @@
 <?php
 
-namespace Controllers;
+namespace ExampleApp\Controllers;
 
 class Invalid extends \ExampleApp\Controller
 {

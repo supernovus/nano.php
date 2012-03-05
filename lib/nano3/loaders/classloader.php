@@ -7,11 +7,40 @@ namespace Nano3\Loaders;
  */
 class ClassLoader extends \Nano3\Loader
 {
-  // The default for objects is to append the type with an underscore.
-  // So if 'type' is 'controller' and you load a library called 'test',
-  // it will look for 'test.php' in the controllers directory, and expect
-  // that file to define a class called 'test_controller' (case insensitive.)
-  protected $type;
+  // The type is a formatted string where %s represents the user-friendly 
+  // name of the class that will be returned by the id() function, and
+  // is what you use to load the class. The rest is used to generate the
+  // full classname.
+  protected $type; 
+
+  // If used, the namespace will be prepended to the class name.
+  // You can use this to group all of your application classes into
+  // a single namespace. If a constant of NANO_CLASS_PREFIX is found,
+  // it will be used globally, otherwise you can override it on each of
+  // your loaders using the appropriate options.
+  protected $namespace;
+
+  public function __construct ($opts)
+  {
+    if (defined('NANO_CLASS_PREFIX'))
+    {
+      $this->namespace = NANO_CLASS_PREFIX;
+    }
+    parent::__construct($opts);
+  }
+
+  public function get_type ()
+  {
+    if (isset($this->namespace))
+    {
+      return $this->namespace . $this->type;
+    }
+    else
+    {
+      return $this->type;
+    }
+  }
+
   public function load ($class, $data=NULL)
   {
     // If dir is unset or false, assume autoloading.
@@ -20,7 +49,7 @@ class ClassLoader extends \Nano3\Loader
       parent::load($class);    // First, run the require_once.
     }
     // Now let's build an object and return it.
-    $classname = sprintf($this->type, $class);
+    $classname = sprintf($this->get_type(), $class);
     if (class_exists($classname))
       return new $classname ($data);
     else
@@ -35,21 +64,18 @@ class ClassLoader extends \Nano3\Loader
     }
     else
     {
-      $classname = sprintf($this->type, $class);
+      $classname = sprintf($this->get_type(), $class);
       return class_exists($classname);
     }
   }
 
-  // Get the identifier of an object, strips off the _$type suffix.
+  // Get the identifier of an object, by removing the type string.
   public function id ($object)
   {
     $classname = strtolower(get_class($object));
-#    error_log("classname: '$classname'");
-    $type = str_replace('%s', '', strtolower($this->type));
+    $type = str_replace('%s', '', strtolower($this->get_type()));
     $type = ltrim($type, "\\");
-#    error_log("type: '$type'");
     $identifier = str_replace($type, '', $classname);
-#    error_log("identifier: '$identifier'");
     return $identifier;
   }
 

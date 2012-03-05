@@ -8,6 +8,9 @@
 // We are using Nano3 as our framework.
 require_once 'lib/nano3/init.php';
 
+// Define our namespace here.
+define('NANO_CLASS_PREFIX', "\\ExampleApp");
+
 // Define our pages here.
 define('PAGE_DEFAULT', '/');
 define('PAGE_LOGIN',   '/login');
