@@ -54,7 +54,7 @@ class NanoMailer
     else
       $transport = Swift_SendmailTransport::newInstance();
 
-    $this->mailer = Swift_Mailer($transport);
+    $this->mailer = Swift_Mailer::newInstance($transport);
 
     $this->message = Swift_Message::newInstance();
 
