@@ -1,7 +1,8 @@
 <?php
 
-/* A special base class meant for use with DBModel/DBItem.
-   It represents the results of a query as an iterable item.
+/**
+ * A special base class meant for use with DBModel/DBItem.
+ * It represents the results of a query as an iterable item.
  */
 
 namespace Nano3\Base\DB;
