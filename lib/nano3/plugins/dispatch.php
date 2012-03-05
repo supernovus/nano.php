@@ -80,6 +80,16 @@ class Dispatch
 
   public $url_prefix;                              // Use if in subdir.
 
+  // A quick method to set the url_prefix.
+  public function url_prefix ($dir=Null)
+  {
+    if (is_null($dir))
+    {
+      $dir = dirname($_SERVER['SCRIPT_NAME']);
+    }
+    $this->url_prefix = $dir;
+  }
+
   // Add a controller to the explicit controllers list.
   // Catchall rules should be added last.
   public function addRoute ($rules, $top=false)
