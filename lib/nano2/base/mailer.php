@@ -5,7 +5,7 @@
    It now uses Swift Mailer as its backend for added flexibility.
  */
 
-require_once 'lib/swift_required.php';
+require_once 'swift_required.php';
 
 class NanoMailer
 {
