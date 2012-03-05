@@ -25,6 +25,8 @@ abstract class Model implements \Iterator, \ArrayAccess
 
   protected $resultset;      // Used if you use the iterator interface.
 
+  protected $parent;         // The object which spawned us.
+
   // A way to get a read-only copy of the table name.
   public function get_table ()
   {
@@ -60,6 +62,9 @@ abstract class Model implements \Iterator, \ArrayAccess
       $this->primary_key = $opts['primary_key'];
     elseif (!isset($this->primary_key))
       $this->primary_key = 'id';
+
+    if (isset($opts['parent']))
+      $this->parent = $opts['parent'];
 
   }
 

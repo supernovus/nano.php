@@ -119,6 +119,7 @@ abstract class Controller
   // Load a data model.
   protected function load_model ($model, $opts=array())
   { $nano = \Nano3\get_instance();
+    $opts['parent'] = $this;
     $this->models[$model] = $nano->models->load($model, $opts);
   }
 
