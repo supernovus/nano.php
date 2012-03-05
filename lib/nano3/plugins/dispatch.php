@@ -78,6 +78,8 @@ class Dispatch
   protected $controllers = array();                // Known controllers.
   protected $default_method = 'handle_dispatch';   // Default method to call.
 
+  public $url_prefix;                              // Use if in subdir.
+
   // Add a controller to the explicit controllers list.
   // Catchall rules should be added last.
   public function addRoute ($rules, $top=false)
@@ -214,6 +216,10 @@ class Dispatch
     $nano = \Nano3\get_instance();
 
     $path  = get_path();
+    if (isset($this->url_prefix))
+    {
+      $path = str_replace($this->url_prefix, '', $path);
+    }
     $our_paths = get_routing($path);
 
     if ($reverse)

@@ -113,7 +113,9 @@ abstract class Model implements \Iterator, \ArrayAccess
   {
     $sql = "SELECT * FROM {$this->table} WHERE $field = :value LIMIT 1";
     $query = $this->query($sql);
-    $query->execute(array(':value'=>$value));
+    $data = array(':value'=>$value);
+#    error_log("getRowByField: $sql ;".json_encode($data));
+    $query->execute($data);
     $row = $query->fetch();
     if ($ashash)
       return $row;
