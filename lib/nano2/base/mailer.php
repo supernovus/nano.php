@@ -2,19 +2,23 @@
 
 /* NanoMailer: A quick class to send e-mail.
    Use it as a standalone component, or extend it for additional features.
+   It now uses Swift Mailer as its backend for added flexibility.
  */
+
+require_once 'lib/swift_require.php';
 
 class NanoMailer
 {
   // Internal rules.
   protected $fields;     // Field rules. 'true' required, 'false' optional.
-  protected $recipient;  // Default recipient.
   protected $template;   // Default template to use for e-mails.
   protected $views;      // Nano loader to use to load template.
+  protected $mailer;     // The Swift Mailer object.
 
   // Public fields. Reset on each send().
-  public $sent;         // Set to true if the last send() was successful.
+  public $failures;     // A list of messages that failed.
   public $missing;      // Set to an array if a required field wasn't set.
+  public $message;      // The Swift Message object.
 
   // Set to true to enable logging errors.
   public $log_errors = False;
@@ -25,8 +29,6 @@ class NanoMailer
     if (!is_array($fields))
       throw new NanoException('NanoMailer requires a field list.');
     $this->fields = $fields;
-    if (isset($opts['recipient']))
-      $this->recipient = $opts['recipient'];
     if (isset($opts['template']))
       $this->template = $opts['template'];
 
@@ -35,21 +37,51 @@ class NanoMailer
     elseif (!isset($this->views))
       $this->views = 'views'; // Default if nothing else is set.
 
+    if (isset($opts['transport']))
+      $transport = $opts['transport'];
+    elseif (isset($opts['host']))
+    {
+      $transport = Swift_SmtpTransport::newInstance($opts['host']);
+      if (isset($opts['port']))
+        $transport->setPort($opts['port']);
+      if (isset($opts['enc']))
+        $transport->setEncryption($opts['enc']);
+      if (isset($opts['user']))
+        $transport->setUsername($opts['user']);
+      if (isset($opts['pass']))
+        $transport->setPassword($opts['pass']);
+    }
+    else
+      $transport = Swift_SendmailTransport::newInstance();
+
+    $this->mailer = Swift_Mailer($transport);
+
+    $this->message = Swift_Message::newInstance();
+
+    if (isset($opts['subject']))
+      $this->message->setSubject($opts['subject']);
+
+    if (isset($opts['from']))
+      $this->message->setFrom($opts['from']);
+
+    if (isset($opts['to']))
+      $this->message->setTo($opts['to']);
+
   }
 
-  public function send ($subject, $data, $opts=array())
+  public function send ($data, $opts=array())
   {
     // First, let's reset our special attributes.
-    $this->sent = false;
-    $this->missing = array();
+    $this->missing  = array();
+    $this->failures = array();
+
+    // Find the subject.
+    if (isset($opts['subject']))
+      $this->message->setSubject($opts['subject']);
 
     // Find the recipient.
-    if (isset($opts['recipient']))
-      $recipient = $opts['recipient'];
-    elseif (isset($this->recipient))
-      $recipient = $this->recipient;
-    else
-      throw new NanoException('NanoMailer requires a recipient.');
+    if (isset($opts['to']))
+      $this->message->setTo($opts['to']);
 
     // Find the template to use.
     if (isset($opts['template']))
@@ -104,14 +136,15 @@ class NanoMailer
       }
       $message .= "---\n";
     }
-    $this->sent = mail($recipient, $subject, $message);
-    if ($this->log_errors && !$this->sent)
+    $this->message->setBody($message);
+    $sent = $this->mailer->send($this->message, $this->failures);
+    if ($this->log_errors && !$sent)
     {
-      error_log("Error sending mail to '$recipient' with subject: $subject");
+      error_log("Error sending mail to '$to' with subject: $subject");
       if ($this->log_message)
         error_log("The message was:\n$message");
     }
-    return $this->sent;
+    return $sent;
   }
 
 }
