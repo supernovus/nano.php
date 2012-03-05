@@ -369,6 +369,14 @@ class HTML
     {
       $itemclass = Null; // We use a raw <a> tag.
     }
+    if (isset($opts['translate']))
+    { // A translation object to use for names.
+      $translate = $opts['translate'];
+    }
+    else
+    { // We're not using a translation object.
+      $translate = Null;
+    }
 
     // Custom rules to show different things.
     if (isset($opts['show']))
@@ -458,6 +466,13 @@ class HTML
       else
       {
         throw new Exception("No Name found for menu item: $key");
+      }
+
+      // Now, if we're using a translation object, translate.
+      // We're using the ArrayAccess interface to the translate object.
+      if (isset($translate))
+      {
+        $name = $translate[$name];
       }
 
       // Now let's see if there are any filters that apply.
