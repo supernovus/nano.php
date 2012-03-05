@@ -155,6 +155,20 @@ class Dispatch
     return $this->addRoutes($rules, $handles);
   }
 
+  // Add a single controller which uses the prefix as the controller name.
+  // Like addPrefixController this assumes a lot.
+  public function addSingleController ($name)
+  {
+    $rules = array
+    (
+      'name'      => $name,
+      'prefix'    => $name,
+      'setpath'   => 1,       // 0 = controller, 1 = variable.
+      'defpath'   => False,
+    );
+    return $this->addRoute($rules);
+  }
+
   // Add a CodeIgniter-style controller.
   public function addDynamicController ($splice=true)
   {

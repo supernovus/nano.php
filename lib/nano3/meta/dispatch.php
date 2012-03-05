@@ -17,5 +17,6 @@ $nano->addMethod('addRoutes',  'dispatch');
 $nano->addMethod('setDefault', array($dispatch, 'addDefaultController'));
 $nano->addMethod('setRoot',    array($dispatch, 'addRootController'));
 $nano->addMethod('addPrefix',  array($dispatch, 'addPrefixController'));
+$nano->addMethod('addSingle',  array($dispatch, 'addSingleController'));
 
 // That's all folks, for the rest, use dispatch directly.
