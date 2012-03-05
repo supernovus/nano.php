@@ -16,6 +16,9 @@ class NanoMailer
   public $sent;         // Set to true if the last send() was successful.
   public $missing;      // Set to an array if a required field wasn't set.
 
+  // Set to true to enable logging errors.
+  public $log_errors = False;
+
   public function __construct ($fields, $opts=array())
   {
     if (!is_array($fields))
@@ -68,6 +71,11 @@ class NanoMailer
     // We can only continue if all required fields are present.
     if (count($this->missing))
     { // We have missing values.
+      if ($this->log_errors)
+      {
+        error_log("Message data: ".json_encode($message));
+        error_log("Mailer missing: ".json_encode($this->missing));
+      }
       return false;
     }
 
@@ -96,6 +104,10 @@ class NanoMailer
       $message .= "---\n";
     }
     $this->sent = mail($recipient, $subject, $message);
+    if ($this->log_errors && !$this->sent)
+    {
+      error_log("Error sending mail to '$recipient' with subject: $subject");
+    }
     return $this->sent;
   }
 
