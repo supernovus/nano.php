@@ -24,7 +24,7 @@ class LangException extends \Nano3\Exception {}
  *
  * Creates the object which represents your translation database.
  */
-class Translation
+class Translation implements \ArrayAccess
 {
   /**
    * @var string  The default language to use.
@@ -281,6 +281,25 @@ class Translation
     }
     // If all else fails, the string was not found, return False.
     return False;
+  }
+
+  // ArrayAccess Interface. Does not support lookups or replacements.
+  
+  public function offsetExists ($offset) 
+  { 
+    return True;  // Sorry, this is not supported.
+  }
+  public function offsetUnset ($offset)
+  {
+    throw new LangException("Cannot unset translations.");
+  }
+  public function offsetSet ($offset, $value)
+  {
+    throw new LangException("Cannot set translations.");
+  }
+  public function offsetGet ($offset)
+  { // Return the results of getStr with default options.
+    return $this->getStr($offset);
   }
 
 }
