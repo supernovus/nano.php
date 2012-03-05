@@ -117,4 +117,65 @@ class URL
     return basename($_SERVER['SCRIPT_NAME']);
   }
 
+  // Download a file.
+  public function download ($file, $opts=array())
+  {
+    // First off, get the file type. We have a few common aliases
+    // available, which may be faster than using finfo?
+    if (isset($opts['type']))
+    {
+      $typealiases = array(
+        'xml'  => 'text/xml',
+        'html' => 'text/html',
+        'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        // TODO: add more.
+      );
+      if (isset($typealiases[$type]))
+      {
+        $type = $typealiases[$type];
+      }
+    }
+    elseif (isset($opts['content']))
+    { // We have explicit content.
+      $finfo = new finfo(FILEINFO_MIME_TYPE);
+      $type = $finfo->buffer($opts['content']);
+    }
+    else
+    { // We're reading from a file.
+      $finfo = new finfo(FILEINFO_MIME_TYPE);
+      $type  = $finfo->file($file);
+    }
+
+    // Next, get the filename and filesize.
+    if (isset($opts['content']))
+    {
+      $filename = $file; // Assume they are the same thing.
+      $filesize = strlen($opts['content']);
+    }
+    else
+    {
+      $filename = basename($file); // Chop the directory portion.
+      $filesize = filesize($file); // Get the filesize.
+    }
+    header('Content-Description: File Transfer');
+    header("Content-Type: $type;" . 'name="' . $filename . '"');
+    header('Content-Disposition: attachment; filename="'.$filename.'"');
+    header('Content-Transfer-Encoding: binary');
+    header('Expires: 0');
+    header('Cache-Control: must-revalidate');
+    header("Content-Length: $filesize");
+    ob_clean();
+    flush();
+    if (isset($opts['content']))
+    {
+      echo $opts['content'];
+    }
+    else
+    {
+      readfile($file);
+    }
+    // Now leaving PHP-land.
+    exit;
+  }
+
 }

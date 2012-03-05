@@ -183,6 +183,11 @@ abstract class Controller
     return \Nano3\Plugins\URL::current_url();
   }
 
+  public function download ($file, $opts=array())
+  {
+    return \Nano3\Plugins\URL::download($file, $opts);
+  }
+
 }
 
 // End of base class.
