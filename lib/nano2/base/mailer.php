@@ -107,6 +107,7 @@ class NanoMailer
     if ($this->log_errors && !$this->sent)
     {
       error_log("Error sending mail to '$recipient' with subject: $subject");
+      error_log("The message was:\n$message");
     }
     return $this->sent;
   }
