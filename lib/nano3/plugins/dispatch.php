@@ -157,15 +157,20 @@ class Dispatch
 
   // Add a single controller which uses the prefix as the controller name.
   // Like addPrefixController this assumes a lot.
-  public function addSingleController ($name)
+  public function addSingleController ($name, $offset=False)
   {
     $rules = array
     (
       'name'      => $name,
       'prefix'    => $name,
-      'setpath'   => 1,       // 0 = controller, 1 = variable.
       'defpath'   => False,
     );
+
+    if (is_numeric($offset))
+    {
+      $rules['setpath'] = $offset;
+    }
+
     return $this->addRoute($rules);
   }
 
