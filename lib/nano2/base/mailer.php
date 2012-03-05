@@ -18,6 +18,7 @@ class NanoMailer
 
   // Set to true to enable logging errors.
   public $log_errors = False;
+  public $log_message = False;
 
   public function __construct ($fields, $opts=array())
   {
@@ -107,7 +108,8 @@ class NanoMailer
     if ($this->log_errors && !$this->sent)
     {
       error_log("Error sending mail to '$recipient' with subject: $subject");
-      error_log("The message was:\n$message");
+      if ($this->log_message)
+        error_log("The message was:\n$message");
     }
     return $this->sent;
   }
