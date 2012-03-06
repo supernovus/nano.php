@@ -17,12 +17,14 @@
  * will be added, as well as operations to return the data in specific
  * formats (typically the same ones that you accept in the load() statement.)
  *
- * The default version can load a PHP array and a JSON string.
- * It also has to_array() and to_json() methods to return in those formats.
- * The default versions of these methods perform no "magic", they simply
- * set our data to the array, or return the array. Override as needed.
+ * The default version can load PHP arrays, plus JSON and YAML strings.
+ * It also has to_array(), to_json() and to_yaml() methods to return in 
+ * those formats. The JSON and YAML methods wrap around the array ones,
+ * so overriding the array methods is all you really need to do.
+ * The default versions perform no transformations, but simply set our
+ * data to the PHP array result.
  *
- * Thi will also detect SimpleXML and DOM objects, and XML strings.
+ * This will also detect SimpleXML and DOM objects, and XML strings.
  * In order to load any of the above objects, you need to implement
  * the load_simple_xml() method (XML strings and DOM objects will be
  * converted to SimpleXMLElement objects and passed through.)
@@ -195,6 +197,13 @@ abstract class Object
     return $this->load_array($array, $opts);
   }
 
+  // Just as cheap, different format.
+  public function load_yaml($yaml, $opts=Null)
+  {
+    $array = yaml_parse($yaml);
+    return $this->load_array($array, $opts);
+  }
+
   // Output as an array. Just as cheap as load_array().
   public function to_array ($opts=Null)
   {
@@ -205,6 +214,12 @@ abstract class Object
   public function to_json ($opts=Null)
   {
     return json_encode($this->to_array($opts));
+  }
+
+  // And again, the same as above, but with YAML.
+  public function to_yaml ($opts=Null)
+  {
+    return yaml_emit($this->to_array($opts));
   }
 
   /** 
