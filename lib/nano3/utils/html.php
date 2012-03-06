@@ -388,6 +388,15 @@ class HTML
       $show_rules = array();
     }
 
+    if (isset($opts['dirlevel']))
+    {
+      $dirlevel = $opts['dirlevel'];
+    }
+    else
+    {
+      $dirlevel = 1;
+    }
+
     // Custom rules to apply styles.
     if (isset($opts['classes']))
     {
@@ -408,7 +417,7 @@ class HTML
         ),
         'current' => array(
           'implicit'   => True,
-          'uri_prefix' => 1,
+          'uri_prefix' => $dirlevel,
           'single'     => True,
           'unique'     => True,
         )
