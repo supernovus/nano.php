@@ -207,8 +207,40 @@ abstract class Object
     return json_encode($this->to_array($opts));
   }
 
-  // All of the XML-related methods require that you implement the
-  // load_simple_xml() and to_simple_xml() methods.
+  /** 
+   * All of the XML-related methods require that you implement the
+   * load_simple_xml() and to_simple_xml() methods.
+   */
+
+  // A protected method that can be used by your to_simple_xml()
+  // methods to decide how to create the root element.
+  // If an option of 'element' exists, and is a SimpleXML object,
+  // then it will be used directly. If it is a string, the string will
+  // be assumed to be valid XML which will be constructed into a
+  // SimpleXML object. If no 'element' option was passed, we use the
+  // default value (an XML string) to construct a new SimpleXML object.
+  protected function get_simple_xml_element ($opts, $default)
+  {
+    if (isset($opts['element']))
+    {
+      if ($opts['element'] instanceof SimpleXMLElement)
+      {
+        $xml = $opts['element'];
+      }
+      elseif (is_string($opts['element']))
+      {
+        $xml = new SimpleXMLElement($opts['element']);
+      }
+      else
+      {
+        throw new Exception("Invalid XML passed.");
+      }
+    }
+    else
+    {
+      $xml = new SimpleXMLElement($default);
+    }
+  }
 
   // Load a SimpleXML object.
   public function load_simple_xml ($simplexml, $opts=Null)
