@@ -18,9 +18,19 @@ use Nano3\Exception;
  */
 class Conf implements \ArrayAccess
 {
-  protected $data;
+  protected $data;          // Our internal data structure.
+  protected $autoload_dir;  // If specified, we will find config files in here.
+  // A map of possible file extensions and associated types.
+  protected $autoload_known = array
+  (
+    '.json' => 'json', 
+    '.ini'  => 'ini', 
+    '.yaml' => 'yaml',
+    '.jsn'  => 'json',
+    '.yml'  => 'yaml',
+  );
 
-  public $strict_mode = True;
+  public $strict_mode = True;  // If true, we die on failure.
 
   /**
    * Load a JSON, YAML, or INI file and return an array
@@ -78,6 +88,11 @@ class Conf implements \ArrayAccess
       $this->strict_mode = $opts['strict'];
     }
 
+    if (isset($opts['dir']))
+    {
+      $this->autoload_dir = $opts['dir'];
+    }
+
     if (isset($opts['data']) && is_array($opts['data']))
     {
       $this->setData($opts['data']);
@@ -98,6 +113,15 @@ class Conf implements \ArrayAccess
     {
       $this->data = array();
     }
+  }
+
+  /**
+   * Set the configuration directory where we will
+   * attempt autoloading config sections from.
+   */
+  public function setDir ($dir)
+  {
+    $this->autoload_dir = $dir;
   }
 
   /**
@@ -145,6 +169,23 @@ class Conf implements \ArrayAccess
   }
 
   /**
+   * Attempt an autoload procedure.
+   */
+  public function autoload ($id)
+  {
+    foreach ($this->autoload_known as $ext => $type)
+    {
+      $conffile = $this->autoload_dir . '/' . $id . $ext;
+      if (file_exists($conffile))
+      {
+        $this->loadInto($id, $conffile, $type);
+        return True;
+      }
+    }
+    return False;
+  }
+
+  /**
    * Load an XML file into a parameter, as a SimpleXML object.
    *
    * @param string $id         The unique identifier for the parameter.
@@ -187,7 +228,11 @@ class Conf implements \ArrayAccess
   {
     if (!array_key_exists($id, $this->data))
     {
-      if ($this->strict_mode)
+      if (isset($this->autoload_dir) && $this->autoload($id))
+      { // We were able to autoload a config file, call ourselves again.
+        return $this->offsetGet($id);
+      }
+      elseif ($this->strict_mode)
       {
         throw new \InvalidArgumentException(
           sprintf('Identifier "%s" is not defined.', $id));
