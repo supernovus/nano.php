@@ -1,5 +1,3 @@
 *.swp
 sync*
-scripts/nano/jquery.min.js
-scripts/nano/jsmin
-scripts/nano/compiler.jar
+
