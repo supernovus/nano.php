@@ -9,9 +9,13 @@
  * You should create a base class to extend this that provides
  * any application-specific common controller methods.
  *
+ * It now has integration with the nano.js project, and can populate
+ * the $scripts template variable with appropriate javascript files.
+ *
  */
 
 namespace Nano3\Base;
+use Nano3\Exception;
 
 abstract class Controller 
 {
@@ -24,6 +28,22 @@ abstract class Controller
   protected $layout;        // The default layout to use.
   protected $default_url;   // Where redirect() goes if no URL is specified.
   protected $json_method;   // Method to convert object to JSON.
+
+  // Override this if you have a different script path.
+  // The default assumes you have a a "scripts" folder, and
+  // within it, a copy or link to the Nano.js scripts folder called 'nano'.
+  protected $script_path = array('scripts', 'scripts/nano');
+  // Override this on a global or per-controller basis to set the
+  // preferred script extensions. By default we prefer Closure Compiler,
+  // followed by minified, followed by raw .js.
+  protected $script_exts = array('.cc.js', '.min.js', '.js');
+  // A few scripts included with nano.js use the raw .js extension but are
+  // in fact minified. To help sort those ones out, we list them here.
+  protected $script_opts = array
+  (
+    'jquery'     => array('file'=>'scripts/nano/jquery.js'),
+    'underscore' => array('file'=>'scripts/nano/underscore.js'),
+  );
 
   /**
    * Hooks
@@ -92,7 +112,7 @@ abstract class Controller
   }
 
   // Sometimes we want to send JSON data instead of a template.
-  public function sendJSON ($data)
+  public function send_json ($data)
   { $nano = \Nano3\get_instance();
     $nano->pragma('no-cache');    // Don't cache this.
     header('Content-Type: application/json');
@@ -205,6 +225,80 @@ abstract class Controller
   public function download ($file, $opts=array())
   {
     return \Nano3\Plugins\URL::download($file, $opts);
+  }
+
+  /*
+   * Integration with nano.js
+   */
+
+  /**
+   * Find a javascript file.
+   */
+  protected function find_script ($name, $opts=array())
+  {
+    if (isset($opts['exts']))
+    {
+      $exts = $opts['exts'];
+    }
+    else
+    {
+      $exts = $this->script_exts;
+    }
+    if (isset($opts['path']))
+    {
+      $path = $opts['path'];
+    }
+    else
+    {
+      $path = $this->script_path;
+    }
+
+    foreach ($path as $dir)
+    {
+      foreach ($exts as $ext)
+      {
+        $filename = $path . '/' . $name . $ext;
+        if (file_exists($filename))
+        {
+          return $filename;
+        }
+      }
+    }
+  }
+
+  /**
+   * Add a javascript file.
+   */
+  public function add_js ($name, $opts=array())
+  {
+    if (isset($this->script_opts[$name]))
+    {
+      $opts += $this->script_opts[$name];
+    }
+
+    if (isset($opts['file']))
+    {
+      $file = $opts['file'];
+      if (!file_exists($file))
+      {
+        throw new Exception("Could not find script '$name'.");
+      }
+    }
+    else
+    {
+      $file = $this->find_script($name, $opts);
+      if (!isset($file))
+      {
+        throw new Exception("Could not find script '$name'.");
+      } 
+    }
+
+    if (!isset($this->data['scripts']))
+    {
+      $this->data['scripts'] = array();
+    }
+
+    $this->data['scripts'][] = $file;
   }
 
 }
