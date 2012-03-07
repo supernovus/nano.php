@@ -25,14 +25,22 @@ class HTML
   public $output = HTML_OUTPUT_STRING;
 
   /**
+   * The Nano namespace where we'll load component views from.
+   * @var string
+   */
+  public $include_ns;
+
+  /**
    * Build a new HTML helper object.
    *
-   * @param array $opts  Reset the default values of 'echo' and 'simplexml'.
+   * @param array $opts  Reset the default 'output' and 'include' values.
    */
   public function __construct ($opts=array())
   {
     if (isset($opts['output']))
       $this->output = $opts['output'];
+    if (isset($opts['include']))
+      $this->include_ns = $opts['include'];
   }
 
   /**
@@ -713,5 +721,50 @@ class HTML
     }
     return $this->return_value($container, $opts);
   }
+
+  // A method to include another Nano view.
+  public function get ($view, $data=array(), $output=Null)
+  {
+    if (!isset($output))
+    {
+      $output = $this->output;
+    }
+    if (!isset($this->include_ns))
+    {
+      throw new Exception("Attempt to use include() with no namespace.");
+    }
+    $ns = $this->include_ns;
+    $nano = \Nano3\get_instance();
+    if (!isset($nano->lib[$ns]))
+    {
+      throw new Exception("No such Nano namespace: $ns");
+    }
+    $content = $nano->lib[$ns]->load($view, $data);
+    if ($output === HTML_OUTPUT_ECHO)
+    {
+      echo $content;
+    }
+    elseif ($output === HTML_OUTPUT_XML)
+    {
+      return new SimpleXMLElement($content);
+    }
+    elseif ($output === HTML_OUTPUT_DOM)
+    {
+      $dom = new DOMDocument();
+      $dom->loadXML($content);
+      return $dom;
+    }
+    else
+    {
+      return $content;
+    }
+  }
+
+  // Another way to call get().
+  public function __call ($method, $params)
+  {
+    return $this->get($method, $params);
+  }
+
 }
 
