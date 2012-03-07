@@ -32,6 +32,11 @@ abstract class Controller
    *   Receives a pointer to the content as a string.
    *   Allows you to apply a filter to the content before it
    *   gets returned.
+   *
+   * Controller.send_json
+   *   Gets a copy of the data to be sent/converted to JSON and
+   *   allows you to make adjustments to it before any conversion
+   *   takes place.
    */
 
   // Process a screen template with the given data.
@@ -91,6 +96,7 @@ abstract class Controller
   { $nano = \Nano3\get_instance();
     $nano->pragma('no-cache');    // Don't cache this.
     header('Content-Type: application/json');
+    $nano->callHook('Controller.send_json', array(&$data));
     if (is_array($data)) 
     { // Basic usage is to send simple arrays.
       $json = json_encode($data);

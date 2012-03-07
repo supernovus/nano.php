@@ -10,8 +10,8 @@ class ViewLoader extends \Nano3\Loader
 {
   public function load ($class, $data=NULL)
   {
-    $file = $this->file($class);
-    if (file_exists($file))
+    $file = $this->find($class);
+    if (isset($file))
     {
       $output = \Nano3\get_php_content($file, $data);
       return $output;

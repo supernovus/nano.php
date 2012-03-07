@@ -23,7 +23,12 @@ function get_php_content ($__view_file, $__view_data=NULL)
   // First, start saving the buffer.
   ob_start();
   if (isset($__view_data) && is_array($__view_data))
-  { // If we have data, add it to the local namespace.
+  { // First let's see if we have set a local name for the full data.
+    if (isset($__view_data['__data_alias']))
+    {
+      $__data_alias = $__view_data['__data_alias'];
+      $$__data_alias = $__view_data;
+    }
     extract($__view_data);
   }
   // Now, let's load that template file.
@@ -73,6 +78,7 @@ class Loader
 { 
   public $dir;               // The directory which contains our classes.
   public $ext = '.php';      // The file extension for classes (.php)
+
   public function __construct($opts)
   {
     if (isset($opts) && is_array($opts))
@@ -86,36 +92,109 @@ class Loader
     else
       throw new Exception('Invalid opts passed to NanoLoader contructor.');
   }
+
   // Return the filename associated with the given class.
   public function file ($class)
   {
     if (isset($this->dir))
+    {
+      if (is_array($this->dir))
+      { // Handle array dirs.
+        $dirs = array();
+        foreach ($this->dir as $dir)
+        {
+          $dirs[] = $dir . '/' . $class . $this->ext;
+        }
+        return $dirs;
+      }
       return $this->dir . '/' . $class . $this->ext;
+    }
     else
       return Null;
   }
+
   // Does the given class exist?
   public function is ($class)
   {
     if (isset($this->dir))
     {
       $file = $this->file($class);
+      if (is_array($file))
+      {
+        $found = False;
+        foreach ($file as $seek)
+        {
+          if (file_exists($seek))
+          {
+            $found = True;
+            break;
+          }
+        }
+        return $found;
+      }
       return file_exists($file);
     }
     return Null;
   }
+
+  // Find the file associated with a class.
+  // Similar to is() but returns the first file that
+  // exists, or Null if no possible matches were found.
+  public function find ($class)
+  {
+    if (isset($this->dir))
+    {
+      $file = $this->file($class);
+      if (is_array($file))
+      {
+        foreach ($file as $seek)
+        {
+          if (file_exists($seek))
+          {
+            return $seek;
+          }
+        }
+      }
+      elseif (file_exists($file))
+      {
+        return $file;
+      }
+    }
+  }
+
   // Load the given class. Override this as needed.
   public function load ($class, $data=NULL)
   {
     if (isset($this->dir))
     {
-      $file = $this->file($class);
-      require_once $file;
+      $file = $this->find($class);
+      if (isset($file))
+      {
+        require_once $file;
+      }
+      else
+      {
+        throw new Exception("Could not find file to load: $file");
+      }
     }
     else
     {
       throw new Exception('Attempt to use load() on a Loader with no dir set.');
     }
+  }
+
+  // Add a directory to search through.
+  public function addDir ($dir)
+  {
+    if (is_null($this->dir))
+    {
+      $this->dir = array();
+    }
+    elseif (!is_array($this->dir))
+    {
+      $this->dir = array($this->dir);
+    }
+    $this->dir[] = $dir;
   }
 }
 
