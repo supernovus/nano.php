@@ -164,6 +164,18 @@ abstract class Controller
     return $nano->controllers->id($this);
   }
 
+  // Do we have an uploaded file?
+  public function has_upload ($fieldname)
+  {
+    return \Nano3\Utils\File::hasUpload($fieldname);
+  }
+
+  // Get an uploaded file. It will return Null if the upload does not exist.
+  public function get_upload ($fieldname)
+  {
+    return \Nano3\Utils\File::getUpload($fieldname);
+  }
+
   /* Wrappers for the URL plugin methods. */
 
   public function redirect ($url=Null, $opts=array())

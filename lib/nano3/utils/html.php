@@ -31,6 +31,12 @@ class HTML
   public $include_ns;
 
   /**
+   * If set, this should be a Translation object.
+   * @var object
+   */
+  public $translate;
+
+  /**
    * Build a new HTML helper object.
    *
    * @param array $opts  Reset the default 'output' and 'include' values.
@@ -41,6 +47,8 @@ class HTML
       $this->output = $opts['output'];
     if (isset($opts['include']))
       $this->include_ns = $opts['include'];
+    if (isset($opts['translate']))
+      $this->translate = $opts['translate'];
   }
 
   /**
@@ -147,7 +155,7 @@ class HTML
    * array key is the HTML value, and the array value is the option label.
    * 
    * @param mixed $attrs  HTML attributes for the select tag.
-   * @param array $array  Assoc. Array of Options, where $value => $label.
+   * @param array $array  Array of Options, where $value => $label.
    * @param array $opts   Optional function-specific settings, see below.
    *
    * The $attrs can either be an associative array of HTML attributes for
@@ -161,6 +169,8 @@ class HTML
    *  'id'       => boolean   If true, and no 'id' attrib exists,
    *                          we set the 'id' for the select to be the same
    *                          as the 'name' attribute.
+   *  'ns'       => string    Translation prefix. This is only valid if the
+   *                          HTML object has a 'translate' object set.
    *
    * @returns mixed   Output depends on the 'echo' and 'simplexml' options.
    */
@@ -191,6 +201,18 @@ class HTML
     foreach ($attrs as $aname=>$aval)
     {
       $select->addAttribute($aname, $aval);
+    }
+    if (isset($this->translate))
+    {
+      if (isset($opts['ns']))
+      {
+        $prefix = $opts['ns'];
+      }
+      else
+      {
+        $prefix = '';
+      }
+      $array = $this->translate->strArray($array, $prefix);
     }
     foreach ($array as $value=>$label)
     {
@@ -377,14 +399,6 @@ class HTML
     {
       $itemclass = Null; // We use a raw <a> tag.
     }
-    if (isset($opts['translate']))
-    { // A translation object to use for names.
-      $translate = $opts['translate'];
-    }
-    else
-    { // We're not using a translation object.
-      $translate = Null;
-    }
 
     // Custom rules to show different things.
     if (isset($opts['show']))
@@ -487,9 +501,9 @@ class HTML
 
       // Now, if we're using a translation object, translate.
       // We're using the ArrayAccess interface to the translate object.
-      if (isset($translate))
+      if (isset($this->translate))
       {
-        $name = $translate[$name];
+        $name = $this->translate[$name];
       }
 
       // Now let's see if there are any filters that apply.
