@@ -14,10 +14,10 @@
  *
  */
 
-namespace Nano3\Base;
+namespace Nano3\Base\Controllers;
 use Nano3\Exception;
 
-abstract class Controller 
+abstract class Basic 
 {
   public $models = array(); // Any Models we have loaded.
 
@@ -304,3 +304,4 @@ abstract class Controller
 }
 
 // End of base class.
+
