@@ -238,7 +238,7 @@ abstract class Object
   {
     if (isset($opts['element']))
     {
-      if ($opts['element'] instanceof SimpleXMLElement)
+      if ($opts['element'] instanceof \SimpleXMLElement)
       {
         $xml = $opts['element'];
       }

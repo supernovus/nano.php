@@ -100,5 +100,26 @@ abstract class Arrayish extends Object
     return isset($this->data[$key]);
   }
 
+  // Property interface, maps to the ArrayAccess interface.
+  public function __get ($name)
+  {
+    return $this->offsetGet($name);
+  }
+
+  public function __isset ($name)
+  {
+    return $this->offsetExists($name);
+  }
+
+  public function __unset ($name)
+  {
+    $this->offsetUnset($name);
+  }
+
+  public function __set ($name, $value)
+  {
+    $this->offsetSet($name, $value);
+  }
+
 }
 
