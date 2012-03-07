@@ -43,6 +43,8 @@ function get_class_identifier ($type, $object)
 class Exception extends \Exception {}
 
 // The following can be used to find the Nano object.
+// If none exists, it will create a new one.
+// However this does not allow you to set any constructor options.
 global $__nano__instance;
 function get_instance ()
 {
@@ -108,7 +110,7 @@ class Loader
 
 class Nano3 implements \ArrayAccess
 {
-  public $lib = array();   // An associative array of library objects.
+  public $lib = array();          // An associative array of library objects.
 
   // Add a library object to Nano. 
   public function addLib ($name, $class, $opts=NULL)
@@ -171,6 +173,19 @@ class Nano3 implements \ArrayAccess
     // Now register this as the 'nano' loader.
     $this->addLoader('nano', $nano_dir);
 
+    if (isset($opts['conf']))
+    {
+      if (is_array($opts['conf']))
+      {
+        $confopts = $opts['conf'];
+      }
+      else
+      {
+        $confopts = array('file'=>$opts['conf']);
+      }
+      $this->addLib('conf', '\Nano3\Conf', $opts);
+    }
+
     // Set the global variable so we can find this later.
     $__nano__instance = $this;
 
@@ -218,9 +233,24 @@ class Nano3 implements \ArrayAccess
     if (isset($this->lib[$offset]))
       return $this->lib[$offset];
     elseif ($this->lib['nano']->is("extensions/$offset"))
-    {
+    { // Load an extension.
       $this->extend($offset);
       return $this->lib[$offset];
+    }
+    elseif ($this->lib['nano']->is($offset))
+    { // Load a core plugin.
+      $class = "\\Nano3\\$offset";
+      $opts = array();
+      if (isset($this->lib['conf']))
+      { // This is expected to the Nano3\Conf object,
+        // or at least offer an ArrayAccess interface.
+        $conf = $this->lib['conf'];
+        if (isset($conf[$offset]))
+        {
+          $opts = $conf[$offset];
+        }
+      }
+      $this->addLib($offset, $class, $opts);
     }
     else
       throw new Exception("Invalid Nano attribute called.");
