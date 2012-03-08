@@ -25,7 +25,7 @@ abstract class Model implements \Iterator, \ArrayAccess
 
   protected $resultset;      // Used if you use the iterator interface.
 
-  protected $parent;         // The object which spawned us.
+  public $parent;            // The object which spawned us.
 
   // A way to get a read-only copy of the table name.
   public function get_table ()

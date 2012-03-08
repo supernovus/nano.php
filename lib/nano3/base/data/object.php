@@ -155,11 +155,11 @@ abstract class Object
     }
     elseif (is_object($data))
     {
-      if ($data instanceof SimpleXMLElement)
+      if ($data instanceof \SimpleXMLElement)
       {
         return 'simple_xml';
       }
-      elseif ($data instanceof DOMNode)
+      elseif ($data instanceof \DOMNode)
       {
         return 'dom_node';
       }

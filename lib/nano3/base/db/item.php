@@ -12,8 +12,8 @@ namespace Nano3\Base\DB;
 
 class Item implements \ArrayAccess
 {
+  public $parent;              // The DBModel object that created us.
   protected $data;             // The hash data returned from a query.
-  protected $parent;           // The DBModel object that created us.
   protected $table;            // The database table to update with save().
   protected $modified_data;    // Fields we have modified.
   protected $save_value;       // Used in batch operations.
