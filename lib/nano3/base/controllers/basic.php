@@ -44,6 +44,11 @@ abstract class Basic
     'jquery'     => array('file'=>'scripts/nano/jquery.js'),
     'underscore' => array('file'=>'scripts/nano/underscore.js'),
   );
+  // Groups can be included easily.
+  protected $script_groups = array
+  ( // A set of common scripts included in the nano.js toolkit.
+    '#common' => array('jquery','json2','json.jq','disabled.jq','exists.jq'),
+  );
 
   /**
    * Hooks
@@ -271,6 +276,16 @@ abstract class Basic
    */
   public function add_js ($name, $opts=array())
   {
+    // First of all, if this is a group, we process the group members.
+    if (isset($this->script_groups[$name]))
+    {
+      foreach ($this->script_groups[$name] as $script)
+      {
+        $this->add_js($script, $opts);
+      }
+      return; // We've imported the group, let's leave now.
+    }
+
     if (isset($this->script_opts[$name]))
     {
       $opts += $this->script_opts[$name];
