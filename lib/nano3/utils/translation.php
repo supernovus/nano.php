@@ -118,7 +118,7 @@ class Translation implements \ArrayAccess
   }
 
   // Lookup a translation string.
-  public function getStr ($key, $reps=Null, $opts=array())
+  public function getStr ($key, $opts=array())
   {
     $settings = $this->get_opts($opts);
     $nses = $settings['namespaces'];
@@ -176,15 +176,33 @@ class Translation implements \ArrayAccess
           $return = array('text'=>$return);
         }
         $return['ns'] = $ns;
-        if (isset($reps))
+        if (isset($opts['reps']))
         {
-          $return['text'] = vsprintf($return['text'], $reps);
+          $return['raw_text'] = $return['text'];
+          $return['reps'] = $opts['reps'];
+          $return['text'] = vsprintf($return['text'], $opts['reps']);
+        }
+        elseif (isset($opts['vars']))
+        {
+          $return['raw_text'] = $return['text'];
+          $return['vars'] = $opts['vars'];
+          foreach ($opts['vars'] as $varkey => $varval)
+          {
+            $return['text'] = str_replace($varkey, $varval, $return['text']);
+          }
         }
         return $return;
       }
-      elseif (isset($reps))
+      elseif (isset($opts['reps']))
       {
-        return vsprintf($return, $reps);
+        return vsprintf($return, $opts['reps']);
+      }
+      elseif (isset($opts['vars']))
+      {
+        foreach ($opts['vars'] as $varkey => $varval)
+        {
+          $return = str_replace($varkey, $varval, $return);
+        }
       }
       return $return;
     }
@@ -193,7 +211,7 @@ class Translation implements \ArrayAccess
     if (isset($language['.inherits']))
     {
       $opts['lang'] = $language['.inherits'];
-      return $this->getStr($key, $reps, $opts);
+      return $this->getStr($key, $opts);
     }
 
     // If all else fails, return the original string.

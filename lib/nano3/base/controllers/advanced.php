@@ -30,8 +30,16 @@ abstract class Advanced extends Basic
   protected $text;              // Our translation table.
   protected $lang;              // Our language.
 
-  // Override as required.
+  // Paths to find e-mail message templates in.
   protected $message_path = array('views/messages', 'views/nano/messages');
+
+  // A list of default status message types.
+  protected $status_types = array
+  (
+    'default' => array('class'=>'message', 'prefix'=>'msg.'),
+    'error'   => array('class'=>'error',   'prefix'=>'err.'),
+    'warning' => array('class'=>'warning', 'prefix'=>'warn.'),
+  );
 
   protected $html_includes;     // Override in your controller base.
   protected $load_scripts;      // Override in your individual controllers.
@@ -141,29 +149,31 @@ abstract class Advanced extends Basic
     $nano->callHook('Controller.construct', array($this));
   }
 
-  public function message ($name, $opts=array(), $reps=Null)
+  // Add a message to the stack.
+  public function message ($name, $opts=array())
   {
-    if (isset($opts['class']))
+    // Get some default types.
+    if (isset($opts['type']))
     {
-      $class = $opts['class'];
+      $opts += $this->status_types[$opts['type']];
     }
     else
     {
-      $class = 'message';
-    }
-    if (!is_numeric(strpos(':', $name)))
-    {
-      if (isset($opts['prefix']))
-      {
-        $prefix = $opts['prefix'];
-      }
-      else
-      {
-        $prefix = 'msg.';
-      }
+      $opts += $this->status_types['default'];
     }
 
-    $text = $this->text->getStr($prefix.$name, $reps, $opts);
+    $class = $opts['class'];
+
+    if (!is_numeric(strpos(':', $name)))
+    {
+      $prefix = $opts['prefix'];
+    }
+    else
+    {
+      $prefix = '';
+    }
+
+    $text = $this->text->getStr($prefix.$name, $opts);
 
     $message = array('name'=>$name, 'class'=>$class, 'text'=>$text);
 
@@ -186,33 +196,40 @@ abstract class Advanced extends Basic
     }
   }
 
-  public function error ($name, $opts=array(), $reps=Null)
+  // Redirect to another page, and show a message.
+  public function redirect_msg ($name, $url=Null, $opts=array())
   {
-    $opts['class']  = 'error';
-    $opts['prefix'] = 'err.';
-    $this->message($name, $opts, $reps);
+    $opts['session'] = True;
+    $this->message($name, $opts);
+    $this->redirect($url, $opts);
+  }
+
+  // Add an error to the stack.
+  public function error ($name, $opts=array())
+  {
+    $opts['type'] = 'error';
+    $this->message($name, $opts);
   }
 
   // Use this when you want to return the display immediately.
-  public function show_error ($name, $opts=array(), $reps=Null)
+  public function show_error ($name, $opts=array())
   {
-    $this->error($name, $opts=array(), $reps=Null);
+    $this->error($name, $opts);
     return $this->display();
   }
 
   // Use this when you want to redirect to another page, and show the error.
-  public function redirect_error ($url, $name, $opts=array(), $reps=Null)
+  public function redirect_error ($name, $url=Null, $opts=array())
   {
-    $opts['session'] = True;
-    $this->error($name, $opts, $reps);
-    $this->redirect($url, $opts);
+    $opts['type']  = 'error';
+    $this->redirect_msg($name, $url, $opts);
   }
 
-  public function warning ($name, $opts=array(), $reps=Null)
+  // Add a warning to the stack.
+  public function warning ($name, $opts=array())
   {
-    $opts['class']  = 'warning';
-    $opts['prefix'] = 'warn.';
-    $this->message($name, $opts, $reps);
+    $opts['type']  = 'warning';
+    $this->message($name, $opts);
   }
 
 }
