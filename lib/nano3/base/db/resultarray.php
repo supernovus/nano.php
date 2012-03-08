@@ -31,7 +31,7 @@ class ResultArray implements \ArrayAccess, \Countable, \Iterator
   // Iterator interface.
   public function rewind ()
   {
-    return rewind($this->results);
+    return reset($this->results);
   }
   public function current ()
   {
