@@ -180,11 +180,16 @@ abstract class Advanced extends Basic
     if (isset($opts['session']) && $opts['session'])
     {
       $nano = \Nano3\get_instance();
-      if (!isset($nano->sess->messages))
+      if (isset($nano->sess->messages))
       {
-        $nano->sess->messages = array();
+        $messages = $nano->sess->messages;
       }
-      $nano->sess->messages[] = $message;
+      else
+      {
+        $messages = array();
+      }
+      $messages[] = $message;
+      $nano->sess->messages = $messages;
     }
     else
     {

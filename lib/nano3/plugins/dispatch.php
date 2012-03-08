@@ -330,6 +330,7 @@ class Dispatch
         $paths = $ctrl['paths'];
       elseif (isset($ctrl['setpath']))
       { // We only want one of the paths.
+#        error_log("looking for section ".$ctrl['setpath']." in ".json_encode($paths));
         if (count($paths)>=$ctrl['setpath']+1)  // Use a specific path bit.
           $paths = $paths[$ctrl['setpath']];
         elseif (isset($ctrl['defpath']))        // Use a specified default.
