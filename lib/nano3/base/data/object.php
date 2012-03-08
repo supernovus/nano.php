@@ -234,7 +234,7 @@ abstract class Object
   // be assumed to be valid XML which will be constructed into a
   // SimpleXML object. If no 'element' option was passed, we use the
   // default value (an XML string) to construct a new SimpleXML object.
-  protected function get_simple_xml_element ($opts, $default)
+  protected function get_simple_xml_element ($opts, $defxml, $defchild)
   {
     if (isset($opts['element']))
     {
@@ -251,9 +251,35 @@ abstract class Object
         throw new Exception("Invalid XML passed.");
       }
     }
+    elseif (isset($opts['parent_element']))
+    {
+      if ($opts['parent_element'] instanceof \SimpleXMLElement)
+      {
+        $parent = $opts['parent_element'];
+      }
+      elseif (is_string($opts['parent_element']))
+      {
+        $parent = new \SimpleXMLElement($opts['parent_element']);
+      }
+      else
+      {
+        throw new Exception("Invalid parent XML passed.");
+      }
+
+      if (isset($opts['child_element']))
+      {
+        $tag = $opts['child_element'];
+      }
+      else
+      {
+        $tag = $defchild;
+      }
+
+      $xml = $parent->addChild($tag);
+    }
     else
     {
-      $xml = new \SimpleXMLElement($default);
+      $xml = new \SimpleXMLElement($defxml);
     }
     return $xml;
   }
