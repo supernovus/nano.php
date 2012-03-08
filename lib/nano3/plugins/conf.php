@@ -28,7 +28,13 @@ class Conf implements \ArrayAccess
     '.yaml' => 'yaml',
     '.jsn'  => 'json',
     '.yml'  => 'yaml',
+    '.url'  => 'confs',
+    '.d'    => 'dir',
   );
+  // If autoload_all is true, we actively scan the dir for known file-types
+  // and load all of them up front. This is far more intensive than the
+  // on-demand loading.
+  protected $autoload_all = False;
 
   public $strict_mode = True;  // If true, we die on failure.
 
@@ -56,6 +62,14 @@ class Conf implements \ArrayAccess
       {
         $type = 'yaml';
       }
+      elseif (preg_match("/\.url$/i", $filename))
+      {
+        $type = 'confserv';
+      }
+      elseif (preg_match("/\.d$/i", $filename))
+      {
+        $type = 'dir';
+      }
       else
       {
         throw new Exception('Could not auto-detect conf file type.');
@@ -72,6 +86,18 @@ class Conf implements \ArrayAccess
     elseif ($type == 'yaml')
     {
       return yaml_parse_file($filename);
+    }
+    elseif ($type == 'confserv')
+    {
+      $url  = file_get_contents($filename);
+      $curl = new \Nano3\Utils\Curl();
+      $json = $curl->get($url);
+      return json_decode($json, true);
+    }
+    elseif ($type == 'dir')
+    { // We create another config object, representing the nested
+      // data structure.
+      return new $this(array('dir'=>$filename));
     }
     throw new Exception('Invalid conf file type');
   }
@@ -216,6 +242,80 @@ class Conf implements \ArrayAccess
   }
 
   /**
+   * to_array()
+   *
+   * Just in case the data you're querying isn't
+   * really an array, but an object, we convert it.
+   *
+   */
+  public function to_array ($id=Null)
+  {
+    if (!isset($id))
+    { // Return an array representing all of our config sections.
+      $array = array();
+      foreach ($this as $key => $val)
+      {
+        $array[$key] = $this->to_array($key);
+      }
+      return $array;
+    }
+
+    // Okay, get the item.
+    $data = $this[$id];
+
+    if (is_array($data))
+    { // Parse each array element.
+      $array = array();
+      foreach ($data as $key => $val)
+      {
+        if (is_object($val) && is_callable(array($val, 'to_array')))
+        { // Deparse this.
+          $array[$key] = $val->to_array();
+        }
+        else
+        { // Return as is.
+          $array[$key] = $val;
+        }
+      }
+    }
+    elseif (is_object($data) && is_callable(array($data, 'to_array')))
+    { // Use toArray on the data itself.
+      $array = $data->to_array();
+    }
+  }
+
+  /**
+   * getArray() -- an alias to to_array()
+   */
+  public function getArray ($id=Null)
+  {
+    return $this->to_array($id);
+  }
+
+  /**
+   * to_json()
+   *
+   * Converts a section, or our entire data structure, into
+   * a JSON string. This won't work properly if there are objects
+   * without to_array() methods stored in the data section.
+   *
+   */
+  public function to_json ($id=Null)
+  {
+    $array = $this->to_array($id);
+    $json  = json_encode($array, true);
+    return $json;
+  }
+
+  /**
+   * getJSON() -- an alias to to_json()
+   */
+  public function getJSON ($id=Null)
+  {
+    return $this->to_json($id);
+  }
+
+  /**
    * Gets a parameter if it exists.
    *
    * @param string $id The unique identifier for the parameter.
@@ -256,6 +356,11 @@ class Conf implements \ArrayAccess
    */
   public function offsetExists ($id) 
   {
+    if (!array_key_exists($id, $this->data) && isset($this->autoload_dir)
+      && $this->autoload($id))
+    { // Call ourself again.
+      return $this->offsetExists($id);
+    }
     return isset($this->data[$id]);
   }
 
@@ -289,6 +394,30 @@ class Conf implements \ArrayAccess
   public function __unset ($id)
   {
     return $this->offsetUnset($id);
+  }
+
+  public function array_keys ()
+  {
+    return array_keys($this->data);
+  }
+
+  // A query. Return a section of data based on a query.
+  public function getPath ($path)
+  {
+    $paths = explode('/', trim($path, '/'));
+    $section = $this;
+    foreach ($paths as $path)
+    {
+      if (isset($section[$path]))
+      {
+        $section = $section[$path];
+      }
+      else
+      {
+        return Null;
+      }
+    }
+    return $section;
   }
 
   /**
