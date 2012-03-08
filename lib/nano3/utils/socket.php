@@ -7,6 +7,7 @@
  */
 
 namespace Nano3\Utils;
+use Nano3\Exception;
 
 class Socket {
   public $socket;
