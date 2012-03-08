@@ -124,6 +124,7 @@ class URL
     // available, which may be faster than using finfo?
     if (isset($opts['type']))
     {
+      $type = $opts['type'];
       $typealiases = array(
         'xml'  => 'text/xml',
         'html' => 'text/html',
