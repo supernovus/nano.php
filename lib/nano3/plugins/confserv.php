@@ -4,7 +4,9 @@
  * ConfServ
  *
  * Helps you build services which return information from a
- * Nano3 Conf registry in JSON format.
+ * Nano3 Conf registry in specific formats.
+ *
+ * We currently have JSON output as our natively supported format.
  *
  */
 
@@ -13,7 +15,7 @@ use Nano3\Exception;
 
 class ConfServ
 {
-  // Get a JSON string representing a section.
+  // Get a section, as a PHP array/value. Decode any objects.
   public function getPath ($path, $full=False)
   {
     $nano = \Nano3\get_instance();
@@ -22,26 +24,23 @@ class ConfServ
     {
       if (is_object($section))
       {
-        if (is_callable(array($section, 'to_json')))
+        if (is_callable(array($section, 'to_array')))
         {
-          return $section->to_json();
-        }
-        elseif (is_callable(array($section, 'to_array')))
-        {
-          return json_encode($section->to_array(), true);
+          return $section->to_array();
         }
         else
         {
-          return 'null';
+          return Null;
         }
       }
       else
       {
-        return json_encode($section, true);
+        return $section;
       }
     }
     else
-    {
+    { // Get a summary, consisting of the keys.
+      $keys = Null;
       if (is_object($section))
       {
         if (is_callable(array($section, 'array_keys')))
@@ -50,7 +49,7 @@ class ConfServ
         }
         else
         {
-          return 'null';
+          return Null;
         }
       }
       elseif (is_array($section))
@@ -59,21 +58,37 @@ class ConfServ
       }
       elseif (is_string($section) || is_numeric($section))
       {
-        return json_encode($section, true);
+        return $section;
       }
-      return json_encode($keys, true);
+      return $keys;
     }
   }
 
-  // Process a request. Gets the JSON, and returns it to the client.
-  public function request ($path, $full=False)
+  // Process a request. Send it a JSON string, or an array.
+  // This does not support objects directly, sorry.
+  public function sendJSON ($data)
   {
     $nano = \Nano3\get_instance();
     $nano->pragma('no-cache');
     header('Content-Type: application/json');
-    $data = $this->getPath($path, $full);
-    echo $data;
+    if (is_string($data))
+    {
+      echo $data;
+    }
+    else
+    {
+      echo json_encode($data, true);
+    }
     exit;
   }
 
+  // A simple JSON-based request. If you need anything more complex
+  // than this, you'll need to do it yourself.
+  public function jsonRequest ($path, $full=False)
+  {
+    $data = $this->getPath($path, $full);
+    $this->sendJSON($data);
+  }
+
 }
+
