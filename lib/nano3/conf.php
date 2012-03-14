@@ -72,6 +72,11 @@ class Conf implements \ArrayAccess
    */
   public function __construct ($opts=array())
   {
+    if (isset($opts['strict']))
+    {
+      $this->strict_mode = $opts['strict'];
+    }
+
     if (isset($opts['data']) && is_array($opts['data']))
     {
       $this->setData($opts['data']);
