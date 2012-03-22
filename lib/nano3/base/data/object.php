@@ -2,17 +2,38 @@
 
 /* Data\Object -- Base class for all Nano3\Base\Data classes.
  *
- * Based on my old DataObjects class from PHP-Common, but far more
- * generalized. This version knows nothing about the data formats.
+ * These are "magic" objects which are meant for converting data between
+ * different formats easily, with PHP arrays, JSON and XML as the default
+ * targets.
  *
  * The load() method, which can be used in the constructor, will determine
  * the data type either by a 'type' parameter passed to it, or by calling
- * a detect_data_type() method if it exists. If will then look for a
- * method called load_$type() which will be used to load the data.
+ * the detect_data_type() method (a default version is supplied, feel free
+ * to override it, or create chains using parent:: calls.)
+ * when the type has been determined, the data will be passed to a method
+ * called load_$type() which will be used to load the data.
  *
  * It is expected that custom methods to perform operations on the data
  * will be added, as well as operations to return the data in specific
  * formats (typically the same ones that you accept in the load() statement.)
+ *
+ * The default version can load a PHP array and a JSON string.
+ * It also has to_array() and to_json() methods to return in those formats.
+ * The default versions of these methods perform no "magic", they simply
+ * set our data to the array, or return the array. Override as needed.
+ *
+ * Thi will also detect SimpleXML and DOM objects, and XML strings.
+ * In order to load any of the above objects, you need to implement
+ * the load_simple_xml() method (XML strings and DOM objects will be
+ * converted to SimpleXMLElement objects and passed through.)
+ *
+ * In order to use the to_dom_document(), to_dom_element() or to_xml() methods
+ * you must implement a to_simple_xml() method first (again for simplicity
+ * we call to_simple_xml() then convert the object it return to the desired
+ * format.)
+ *
+ * Add extra formats as desired, chaining the detect_data_type() and 
+ * detect_string_type() methods is easy, so go crazy!
  *
  */
 
@@ -20,7 +41,7 @@ namespace Nano3\Base\Data;
 
 abstract class Object
 {
-  protected $data;             // The actual data we represent.
+  protected $data = array();   // The actual data we represent.
   protected $parent;           // Will be set if we have a parent object.
 
   public function __construct ($mixed=Null, $opts=array())
@@ -66,13 +87,9 @@ abstract class Object
     {
       $type = $opts['type'];
     }
-    elseif (method_exists($this, 'detect_data_type'))
+    else 
     {
       $type = $this->detect_data_type($data);
-    }
-    else
-    {
-      throw new Exception("Could not determine data type.");
     }
     // Handle the data type.
     if (isset($type))
@@ -110,16 +127,136 @@ abstract class Object
     }
   }
 
-  // Default version of clear(). Override as needed.
+  // Clear our data.
   public function clear ($opts=array())
   {
-    $this->data = Null;
+    $this->data = array();
   }
 
   // Spawn a new empty data object.
   public function spawn ($opts=array())
   {
     return new $this (Null, $opts);
+  }
+
+  // Default version of detect_data_type().
+  // Feel free to override it, and even call it using parent.
+  protected function detect_data_type ($data)
+  {
+    if (is_array($data))
+    {
+      return 'array';
+    }
+    elseif (is_string($data))
+    {
+      return $this->detect_string_type($data);
+    }
+    elseif (is_object($data))
+    {
+      if ($data instanceof SimpleXMLElement)
+      {
+        return 'simple_xml';
+      }
+      elseif ($data instanceof DOMNode)
+      {
+        return 'dom_node';
+      }
+    }
+  }
+
+  // Detect the type of string being loaded.
+  // This is very simplistic, you may want to override it.
+  // It currently supports JSON strings starting with { and [
+  // and XML strings starting with <. You'll need to implement
+  // a load_xml_string() method if you want XML strings to work.
+  protected function detect_string_type ($string)
+  {
+    $fc = substr(trim($string), 0, 1);
+    if ($fc == '<')
+    { // XML detected.
+      return 'xml_string';
+    }
+    elseif ($fc == '[' || $fc == '{')
+    { // JSON detected.
+      return 'json';
+    }
+  }
+
+  // This is very cheap. Override as needed.
+  public function load_array ($array, $opts=Null)
+  {
+    $this->data = $array;
+  }
+
+  // Again, pretty cheap, but works well.
+  public function load_json ($json, $opts=Null)
+  {
+    $array = json_decode($json, True);
+    return $this->load_array($array, $opts);
+  }
+
+  // Output as an array. Just as cheap as load_array().
+  public function to_array ($opts=Null)
+  {
+    return $this->data;
+  }
+
+  // Output as a JSON string. Again, pretty cheap.
+  public function to_json ($opts=Null)
+  {
+    return json_encode($this->to_array($opts));
+  }
+
+  // All of the XML-related methods require that you implement the
+  // load_simple_xml() and to_simple_xml() methods.
+
+  // Load a SimpleXML object.
+  public function load_simple_xml ($simplexml, $opts=Null)
+  {
+    throw new Exception("No load_simple_xml() method defined.");
+  }
+
+  // Output as a SimpleXML object.
+  public function to_simple_xml ($opts=Null)
+  {
+    throw new Exception("No to_simple_xml() method defined.");
+  }
+
+  // Load an XML string.
+  public function load_xml_string ($string, $opts=Null)
+  {
+    $simplexml = new SimpleXMLElement($string);
+    return $this->load_simple_xml($simplexml, $opts);
+  }
+
+  // Load a DOMNode object.
+  public function load_dom_node ($dom, $opts=Null)
+  {
+    $simplexml = simplexml_import_dom($dom);
+    return $this->load_simple_xml($simplexml);
+  }
+
+  // Return a DOMElement
+  public function to_dom_element ($opts=Null)
+  {
+    $simplexml = $this->to_simple_xml($opts);
+    $dom_element = dom_import_simplexml($simplexml);
+    return $dom_element;
+  }
+
+  // Return a DOMDocument
+  public function to_dom_document ($opts=Null)
+  {
+    $dom_element = $this->to_dom_element($opts);
+    $dom_document = $dom_element->ownerDocument;
+    return $dom_document;
+  }
+
+  // Return an XML string.
+  public function to_xml ($opts=Null)
+  {
+    $simplexml = $this->to_simple_xml($opts);
+    return $simplexml->asXML();
   }
 
 }
