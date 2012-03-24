@@ -178,4 +178,16 @@ class URL
     exit;
   }
 
+  // Transform a PHP array into a URL-safe string.
+  public function encodeArray ($object)
+  {
+    return strtr(base64_encode(json_encode($object)), '+/=', '-_,');
+  }
+
+  // Decode a string created by encodeArray()
+  public function decodeArray ($string)
+  {
+    return json_decode(base64_decode(strtr($string, '-_,', '+/=')), true);
+  }
+
 }
