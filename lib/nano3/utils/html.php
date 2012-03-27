@@ -363,6 +363,72 @@ class HTML
   }
 
   /**
+   * Build a button.
+   */
+  public function button ($attrs=array(), $opts=array(), $map=array())
+  {
+    if (isset($opts['def']))
+    {
+      $defAttr = $opts['def'];
+    }
+    else
+    {
+      $defAttr = 'id';
+    }
+    if (is_string($attrs))
+    {
+      $attrs = array($defAttr=>$attrs, 'type'=>'button');
+    }
+    elseif (!isset($attrs[$defAttr]))
+    {
+      throw new Exception("Cannot continue without primary field.");
+    }
+    elseif (!isset($attrs['type']))
+    {
+      $attrs['type'] = 'button';
+    }
+
+    foreach ($map as $target => $source)
+    { 
+      if (!isset($attrs[$target]) && isset($attrs[$source]))
+      {
+        $attrs[$target] = $attrs[$source];
+      }
+    }
+    // Create our object.
+    $input = new \SimpleXMLElement('<input/>');
+    // Let's get the value from the defAttr.
+    if (!isset($attrs['value']) && isset($this->translate))
+    {
+      if (isset($opts['ns']))
+      {
+        $prefix = $opts['ns'];
+      }
+      else
+      {
+        $prefix = '';
+      }
+      $name = $attrs[$defAttr];
+      $attrs['value'] = $this->translate[$prefix.$name];
+    }
+    foreach ($attrs as $name => $value)
+    {
+      $input->addAttribute($name, $value);
+    }
+    return $this->return_value($input, $opts);
+  }
+
+  /**
+   * Build a submit button.
+   */
+  public function submit ($attrs=array(), $opts=array(), $map=array())
+  {
+    $opts['def'] = 'name';
+    $attrs['type'] = 'submit';
+    return $this->button($attrs, $opts, $map);
+  }
+
+  /**
    * Build a menu.
    *
    * Given some information and a menu definition, this will
