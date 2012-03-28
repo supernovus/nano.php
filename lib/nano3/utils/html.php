@@ -397,19 +397,35 @@ class HTML
     }
     // Create our object.
     $input = new \SimpleXMLElement('<input/>');
-    // Let's get the value from the defAttr.
-    if (!isset($attrs['value']) && isset($this->translate))
-    {
-      if (isset($opts['ns']))
+
+    // Now some automated stuff based on our translation framework.
+    if (isset($this->translate))
+    { // First, if we have no value, let's get it from the translations.
+      if (!isset($attrs['value']))
       {
-        $prefix = $opts['ns'];
+        if (isset($opts['text_ns']))
+        {
+          $prefix = $opts['text_ns'];
+        }
+        else
+        {
+          $prefix = '';
+        }
+        $name = $attrs[$defAttr];
+        $attrs['value'] = $this->translate[$prefix.$name];
       }
-      else
+      // Next, if we have no title, and there is a tooltip prefix,
+      // let's see if there is a tooltip for us.
+      if (!isset($attrs['title']) && isset($opts['tooltip_ns']))
       {
-        $prefix = '';
+        $prefix = $opts['tooltip_ns'];
+        $name = $attrs[$defAttr];
+        $tooltip = $this->translate[$prefix.$name];
+        if ($tooltip != $prefix.$name)
+        {
+          $attrs['title'] = $tooltip;
+        }
       }
-      $name = $attrs[$defAttr];
-      $attrs['value'] = $this->translate[$prefix.$name];
     }
     foreach ($attrs as $name => $value)
     {
