@@ -244,7 +244,7 @@ abstract class Object
       }
       elseif (is_string($opts['element']))
       {
-        $xml = new SimpleXMLElement($opts['element']);
+        $xml = new \SimpleXMLElement($opts['element']);
       }
       else
       {
@@ -253,7 +253,7 @@ abstract class Object
     }
     else
     {
-      $xml = new SimpleXMLElement($default);
+      $xml = new \SimpleXMLElement($default);
     }
   }
 
@@ -272,7 +272,7 @@ abstract class Object
   // Load an XML string.
   public function load_xml_string ($string, $opts=Null)
   {
-    $simplexml = new SimpleXMLElement($string);
+    $simplexml = new \SimpleXMLElement($string);
     return $this->load_simple_xml($simplexml, $opts);
   }
 
