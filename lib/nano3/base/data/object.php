@@ -255,6 +255,7 @@ abstract class Object
     {
       $xml = new \SimpleXMLElement($default);
     }
+    return $xml;
   }
 
   // Load a SimpleXML object.
