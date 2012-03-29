@@ -257,7 +257,7 @@ abstract class Basic
     {
       foreach ($exts as $ext)
       {
-        $filename = $path . '/' . $name . $ext;
+        $filename = $dir . '/' . $name . $ext;
         if (file_exists($filename))
         {
           return $filename;
@@ -281,7 +281,7 @@ abstract class Basic
       $file = $opts['file'];
       if (!file_exists($file))
       {
-        throw new Exception("Could not find script '$name'.");
+        throw new Exception("Invalid script file specified for: '$name'.");
       }
     }
     else
@@ -289,7 +289,7 @@ abstract class Basic
       $file = $this->find_script($name, $opts);
       if (!isset($file))
       {
-        throw new Exception("Could not find script '$name'.");
+        throw new Exception("Could not find script file for: '$name'.");
       } 
     }
 
