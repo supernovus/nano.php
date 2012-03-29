@@ -375,9 +375,17 @@ class HTML
     {
       $defAttr = 'id';
     }
+    if (isset($opts['deftype']))
+    {
+      $defType = $opts['deftype'];
+    }
+    else
+    {
+      $defType = 'button';
+    }
     if (is_string($attrs))
     {
-      $attrs = array($defAttr=>$attrs, 'type'=>'button');
+      $attrs = array($defAttr=>$attrs, 'type'=>$defType);
     }
     elseif (!isset($attrs[$defAttr]))
     {
@@ -385,16 +393,34 @@ class HTML
     }
     elseif (!isset($attrs['type']))
     {
-      $attrs['type'] = 'button';
+      $attrs['type'] = $defType;
     }
 
-    foreach ($map as $target => $source)
-    { 
-      if (!isset($attrs[$target]) && isset($attrs[$source]))
+    // Add any fields specified in the options.
+    if (isset($opts['add']) && is_array($opts['add']))
+    {
+      $attrs += $opts['add'];
+    }
+
+    // Map missing fields to other existing fields.
+    if (isset($opts['map']))
+    { $map = $opts['map'];
+      if (is_bool($map) && $map)
+      { // A default map for name to id and back again.
+        $map = array('id'=>'name','name'=>'id');
+      }
+      if (is_array($map))
       {
-        $attrs[$target] = $attrs[$source];
+        foreach ($map as $target => $source)
+        { 
+          if (!isset($attrs[$target]) && isset($attrs[$source]))
+          {
+            $attrs[$target] = $attrs[$source];
+          }
+        }
       }
     }
+
     // Create our object.
     $input = new \SimpleXMLElement('<input/>');
 
@@ -437,11 +463,11 @@ class HTML
   /**
    * Build a submit button.
    */
-  public function submit ($attrs=array(), $opts=array(), $map=array())
+  public function submit ($attrs=array(), $opts=array())
   {
     $opts['def'] = 'name';
-    $attrs['type'] = 'submit';
-    return $this->button($attrs, $opts, $map);
+    $opts['deftype'] = 'submit';
+    return $this->button($attrs, $opts);
   }
 
   /**
