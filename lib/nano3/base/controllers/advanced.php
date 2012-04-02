@@ -40,7 +40,6 @@ abstract class Advanced extends Basic
     'error'   => array('class'=>'error',   'prefix'=>'err.'),
     'warning' => array('class'=>'warning', 'prefix'=>'warn.'),
   );
-
   protected $html_includes;     // Override in your controller base.
   protected $load_scripts;      // Override in your individual controllers.
 
@@ -129,6 +128,11 @@ abstract class Advanced extends Basic
     {
       $this->data['messages'] = $nano->sess->messages;
       unset($nano->sess->messages);
+      $this->data['has_status'] = array();
+      foreach ($this->data['messages'] as $msg)
+      {
+        $this->data['has_status'][$msg['class']] = True;
+      }
     }
 
     // Add any javascript files we want available to the $scripts var.
@@ -143,6 +147,9 @@ abstract class Advanced extends Basic
     // We want to be able to access the data, via the $data attribute
     // in the views. It makes it easier to pass to components, etc.
     $this->data['__data_alias'] = 'data';
+
+    // And a wrapper to our has_errors() method.
+    $this->addWrapper('has_errors');
 
     // Create a hook for apps that need to do more on controller construction.
     // The hook is passed a copy of the controller being constructed.
@@ -198,6 +205,11 @@ abstract class Advanced extends Basic
         $this->data['messages'] = array();
       }
       $this->data['messages'][] = $message;
+      if (!isset($this->data['has_status']))
+      {
+        $this->data['has_status'] = array();
+      }
+      $this->data['has_status'][$message['class']] = True;
     }
   }
 
@@ -235,6 +247,26 @@ abstract class Advanced extends Basic
   {
     $opts['type']  = 'warning';
     $this->message($name, $opts);
+  }
+
+  // Check to see if we have any of a certain class of status  messages.
+  public function has_status ($type)
+  {
+    if (isset($this->data['has_status']))
+    {
+      $has = $this->data['has_status'];
+      if (isset($has[$type]))
+      {
+        return $has[$type];
+      }
+    }
+    return False;
+  }
+
+  // Wrapper for the above checking for errors.
+  public function has_errors ()
+  {
+    return $this->has_status('error');
   }
 
 }

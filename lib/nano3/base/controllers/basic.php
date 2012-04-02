@@ -316,6 +316,24 @@ abstract class Basic
     $this->data['scripts'][] = $file;
   }
 
+  /**
+   * Add a wrapper to a controller method that you can call from
+   * the view (as a closure.) E.g. if you pass 'current_url' it will
+   * create an object called $current_url that is a closure to our own
+   * 'current_url()' method.
+   */
+  protected function addWrapper ($method)
+  {
+    $that = $this; // A wrapper to ourself.
+    $closure = function () use ($that, $method)
+    {
+      $args = func_get_args();
+      $meth = array($that, $method);
+      return call_user_func_array($meth, $args);
+    };
+    $this->data[$method] = $closure;
+  }
+
 }
 
 // End of base class.
