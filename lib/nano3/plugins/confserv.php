@@ -64,20 +64,28 @@ class ConfServ
     }
   }
 
-  // Process a request. Send it a JSON string, or an array.
-  // This does not support objects directly, sorry.
-  public function sendJSON ($data)
+  // Process a request. PHP value to encode.
+  // If you want to send it a pre-encoded JSON string, pass True as
+  // the second parameter.
+  public function sendJSON ($data, $encoded=False)
   {
     $nano = \Nano3\get_instance();
     $nano->pragma('no-cache');
     header('Content-Type: application/json');
-    if (is_string($data))
+    if ($encoded)
     {
       echo $data;
     }
     else
     {
-      echo json_encode($data, true);
+      if (is_object($data) && is_callable(array($data, 'to_json')))
+      {
+        echo $data->to_json();
+      }
+      else
+      {
+        echo json_encode($data, true);
+      }
     }
     exit;
   }

@@ -9,34 +9,62 @@ use Nano3\Exception;
  * Container portions based on Pimple
  * https://github.com/fabpot/Pimple/
  *
- * Supports loading full data from JSON, YAML or INI.
- *
- * Supports loading individual sections from JSON, YAML, INI or XML.
+ * Supports nested directory structures, on-demand loading,
+ * and loading data from a URL.
  *
  * @package Nano3\Conf
  * @author Timothy Totten
  */
-class Conf implements \ArrayAccess
+class Conf extends \Nano3\Base\Data\Arrayish
 {
   protected $data;          // Our internal data structure.
   protected $autoload_dir;  // If specified, we will find config files in here.
+  // If autoload_scan is true, we actively scan the dir for known file-types
+  // and load all of them up front. This is far more intensive than the
+  // on-demand loading, but necessary in some situations.
+  protected $autoload_scan = False;
+
   // A map of possible file extensions and associated types.
-  protected $autoload_known = array
+  // Used in the on-demand autoloading.
+  protected $_file_type_extensions = array
   (
     '.json' => 'json', 
     '.ini'  => 'ini', 
     '.yaml' => 'yaml',
     '.jsn'  => 'json',
     '.yml'  => 'yaml',
-    '.url'  => 'confs',
     '.d'    => 'dir',
+    '.url'  => 'confs',
   );
-  // If autoload_all is true, we actively scan the dir for known file-types
-  // and load all of them up front. This is far more intensive than the
-  // on-demand loading.
-  protected $autoload_all = False;
-
+  // A map of filename matches to determine type.
+  // Used in load_file() and in autoload scanning.
+  protected $_file_type_matches = array
+  (
+    'json'  => '/\.jso?n$/i',
+    'ini'   => '/\.ini$/i',
+    'yaml'  => '/\.ya?ml/i',
+    'dir'   => '/\.d$/i',
+    'confs' => '/\.url$/i',
+  );
+  
   public $strict_mode = True;  // If true, we die on failure.
+
+  /**
+   * Pass in a filename, and find out if it is a supported type.
+   */
+  protected function get_type ($filename)
+  {
+    $type = Null;
+    foreach ($this->_file_type_matches as $ftype => $match)
+    {
+      if (preg_match($match, $filename))
+      {
+        $type = $ftype;
+        break;
+      }
+    }
+    return $type;
+  }
 
   /**
    * Load a JSON, YAML, or INI file and return an array
@@ -44,62 +72,50 @@ class Conf implements \ArrayAccess
    * To load XML into a specific parameter, see loadXML() instead.
    *
    * @params string $filename  The file to load.
-   * @params string $type      Force type. Otherwise auto-detect.
+   * @params string $type      Optional. Specify the file type.
    */
   protected function load_file ($filename, $type=Null)
   {
     if (is_null($type))
-    {
-      if (preg_match("/\.jso?n$/i", $filename))
-      {
-        $type = 'json';
-      }
-      elseif (preg_match("/\.ini$/i", $filename))
-      {
-        $type = 'ini';
-      }
-      elseif (preg_match("/\.ya?ml$/i", $filename))
-      {
-        $type = 'yaml';
-      }
-      elseif (preg_match("/\.url$/i", $filename))
-      {
-        $type = 'confserv';
-      }
-      elseif (preg_match("/\.d$/i", $filename))
-      {
-        $type = 'dir';
-      }
-      else
+    { // Let's see if we can detect the file type.
+      $type = $this->get_type($filename);
+      // If we still didn't find the type, it's time to die.
+      if (is_null($type))
       {
         throw new Exception('Could not auto-detect conf file type.');
       }
     }
-    if ($type == 'json')
-    {
-      return json_decode(file_get_contents($filename), true);
-    }
-    elseif ($type == 'ini')
+
+    if ($type == 'ini')
     {
       return parse_ini_file($filename, true);
     }
-    elseif ($type == 'yaml')
-    {
-      return yaml_parse_file($filename);
-    }
-    elseif ($type == 'confserv')
+    elseif ($type == 'confs')
     {
       $url  = file_get_contents($filename);
       $curl = new \Nano3\Utils\Curl();
-      $json = $curl->get($url);
-      return json_decode($json, true);
+      $config = $curl->get($url);
+      return $this->load_data($config);
     }
     elseif ($type == 'dir')
     { // We create another config object, representing the nested
       // data structure.
-      return new $this(array('dir'=>$filename));
+      $diropts = array('dir'=>$filename);
+      if (file_exists("$filename/autoload"))
+      {
+        $diropts['scan'] = True;
+      }
+      return new $this($diropts);
     }
-    throw new Exception('Invalid conf file type');
+    else
+    { // Assume the type is handled by the Data Object library.q
+#      error_log("Going to load '$filename' as '$type'");
+      $text = file_get_contents($filename);
+#      error_log("Text: $text");
+      $data = $this->load_data($text, array('type'=>$type));
+#      error_log("Data: ".json_encode($data));
+      return $data;
+    }
   }
 
   /**
@@ -114,14 +130,14 @@ class Conf implements \ArrayAccess
       $this->strict_mode = $opts['strict'];
     }
 
-    if (isset($opts['dir']))
+    if (isset($opts['scan']))
     {
-      $this->autoload_dir = $opts['dir'];
+      $this->autoload_scan = $opts['scan'];
     }
 
-    if (isset($opts['data']) && is_array($opts['data']))
+    if (isset($opts['data']))
     {
-      $this->setData($opts['data']);
+      $this->load($opts['data']);
     }
     elseif (isset($opts['file']) && file_exists($opts['file']))
     {
@@ -135,6 +151,10 @@ class Conf implements \ArrayAccess
       }
       $this->loadFile($opts['file'], $type);
     }
+    elseif (isset($opts['dir']))
+    {
+      $this->setDir($opts['dir']);
+    }
     else
     {
       $this->data = array();
@@ -145,9 +165,31 @@ class Conf implements \ArrayAccess
    * Set the configuration directory where we will
    * attempt autoloading config sections from.
    */
-  public function setDir ($dir)
+  public function setDir ($dir, $scan=Null)
   {
     $this->autoload_dir = $dir;
+    if (!isset($this->data))
+    {
+      $this->data = array();
+    }
+    if (is_null($scan))
+    {
+      $scan = $this->autoload_scan;
+    }
+    if ($scan)
+    {
+      foreach (scandir($dir) as $file)
+      {
+        $type = $this->get_type($file);
+        if (isset($type))
+        {
+          $matches = $this->_file_type_matches;
+          $basename = preg_replace($matches[$type], '', $file);
+          $conffile = $dir . '/' . $file;
+          $this->loadInto($basename, $conffile, $type);
+        }
+      }
+    }
   }
 
   /**
@@ -162,27 +204,6 @@ class Conf implements \ArrayAccess
   }
 
   /**
-   * Set the data from an array.
-   *
-   * @params array $data   The data to load.
-   */
-  public function setData ($data)
-  {
-    $this->data = $data;
-  }
-
-  /**
-   * Set a parameter.
-   *
-   * @param string $id     The unique identifier for the parameter.
-   * @param mixed  $value  THe value of the parameter.
-   */
-  public function offsetSet ($id, $value)
-  {
-    $this->data[$id] = $value;
-  }
-
-  /**
    * Set a parameter to be the contents of a config file.
    *
    * @param string $id        The unique identifier for the parameter.
@@ -191,7 +212,10 @@ class Conf implements \ArrayAccess
    */
   public function loadInto ($id, $filename, $type=Null)
   {
-    $this->data[$id] = $this->load_file($filename, $type);
+#    error_log("Loading '$filename' into '$id', as '$type'");
+    $data = $this->load_file($filename, $type);
+#    error_log("Loaded: ".json_encode($data));
+    $this->data[$id] = $data;
   }
 
   /**
@@ -199,7 +223,7 @@ class Conf implements \ArrayAccess
    */
   public function autoload ($id)
   {
-    foreach ($this->autoload_known as $ext => $type)
+    foreach ($this->_file_type_extensions as $ext => $type)
     {
       $conffile = $this->autoload_dir . '/' . $id . $ext;
       if (file_exists($conffile))
@@ -209,36 +233,6 @@ class Conf implements \ArrayAccess
       }
     }
     return False;
-  }
-
-  /**
-   * Load an XML file into a parameter, as a SimpleXML object.
-   *
-   * @param string $id         The unique identifier for the parameter.
-   * @param string $filename   The XML file to load.
-   */
-  public function loadXML ($id, $filename)
-  {
-    $this->data[$id] = simplexml_load_file($filename);
-  }
-
-  /**
-   * Get a SimpleXML parameter back as a DOM object.
-   * Only works on SimpleXML objects.
-   *
-   * @param string $id   The identifier of the parameter.
-   */
-  public function getDOM ($id)
-  {
-    if (isset($this->data[$id]))
-    {
-      if ($this->data[$id] instanceof SimpleXMLElement)
-      {
-        return dom_import_simplexml($this->data[$id]);
-      }
-      throw new Exception('Attempt to getDOM on non XML attribute.');
-    }
-    throw new Exception("No such attribute, '$id', in Conf object.");
   }
 
   /**
@@ -282,37 +276,6 @@ class Conf implements \ArrayAccess
     { // Use toArray on the data itself.
       $array = $data->to_array();
     }
-  }
-
-  /**
-   * getArray() -- an alias to to_array()
-   */
-  public function getArray ($id=Null)
-  {
-    return $this->to_array($id);
-  }
-
-  /**
-   * to_json()
-   *
-   * Converts a section, or our entire data structure, into
-   * a JSON string. This won't work properly if there are objects
-   * without to_array() methods stored in the data section.
-   *
-   */
-  public function to_json ($id=Null)
-  {
-    $array = $this->to_array($id);
-    $json  = json_encode($array, true);
-    return $json;
-  }
-
-  /**
-   * getJSON() -- an alias to to_json()
-   */
-  public function getJSON ($id=Null)
-  {
-    return $this->to_json($id);
   }
 
   /**
@@ -362,38 +325,6 @@ class Conf implements \ArrayAccess
       return $this->offsetExists($id);
     }
     return isset($this->data[$id]);
-  }
-
-  /**
-   * Unsets a parameter.
-   *
-   * @param string $id  The unique identifier of the parameter.
-   */
-  public function offsetUnset ($id)
-  {
-    unset($this->data[$id]);
-  }
-
-  // Aliases for object accessor interface.
-
-  public function __set ($id, $value)
-  {
-    $this->offsetSet($id, $value);
-  }
-
-  public function __get ($id)
-  {
-    return $this->offsetGet($id);
-  }
-
-  public function __isset ($id)
-  {
-    return $this->offsetExists($id);
-  }
-
-  public function __unset ($id)
-  {
-    return $this->offsetUnset($id);
   }
 
   public function array_keys ()

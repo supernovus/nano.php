@@ -70,12 +70,10 @@ abstract class Object
     }
   }
 
-  public function load ($data, $opts=array())
-  { // If we set the 'clear' option, clear our any existing data.
-    if (isset($opts['clear']) && $opts['clear'])
-    {
-      $this->clear();
-    }
+  // Returns the converted data structure.
+  public function load_data ($data, $opts=array())
+  {
+    $return = Null;
     // If we set the 'prep' option, send the data to data_prep()
     // for initial preparations which will return the prepared data.
     if (isset($opts['prep']) && $opts['prep'] 
@@ -99,17 +97,15 @@ abstract class Object
       $method = "load_$type";
       if (method_exists($this, $method))
       {
+#        error_log("Sending '$data' to '$method'");
         // If this method returns False, something went wrong.
         // If it returns an array or object, that becomes our data.
         // If it returns Null or True, we assume the method set the data.
         $return = $this->$method($data, $opts);
+#        error_log("Retreived: ".json_encode($return));
         if ($return === False)
         {
           throw new Exception("Could not load data.");
-        }
-        elseif (is_array($return) || is_object($return))
-        {
-          $this->data = $return;
         }
       }
       else
@@ -120,6 +116,21 @@ abstract class Object
     else
     {
       throw new Exception("Unsupported data type.");
+    }
+    return $return;
+  }
+
+  // Set our data to the desired structure.
+  public function load ($data, $opts=array())
+  { // If we set the 'clear' option, clear our any existing data.
+    if (isset($opts['clear']) && $opts['clear'])
+    {
+      $this->clear();
+    }
+    $return = $this->load_data($data, $opts);
+    if (isset($return) && $return !== True)
+    {
+      $this->data = $return;
     }
     // If we have set the 'post' option, call data_post().
     if (isset($opts['post']) && $opts['post'] 
@@ -184,10 +195,10 @@ abstract class Object
     }
   }
 
-  // This is very cheap. Override as needed.
+  // This is very (VERY) cheap. Override as needed.
   public function load_array ($array, $opts=Null)
   {
-    $this->data = $array;
+    return $array;
   }
 
   // Again, pretty cheap, but works well.

@@ -121,5 +121,11 @@ abstract class Arrayish extends Object
     $this->offsetSet($name, $value);
   }
 
+  // A quick helper. Override as needed.
+  public function array_keys ()
+  {
+    return array_keys($this->data);
+  }
+
 }
 
