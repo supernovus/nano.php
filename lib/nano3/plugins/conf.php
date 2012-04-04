@@ -9,8 +9,12 @@ use Nano3\Exception;
  * Container portions based on Pimple
  * https://github.com/fabpot/Pimple/
  *
- * Supports nested directory structures, on-demand loading,
- * and loading data from a URL.
+ * It's now based on the Data Objects framework,
+ * and extends the Arrayish base class.
+ *
+ * It can load JSON, YAML, INI, nested subdirectories,
+ * and ConfServ URLs. It supports on-demand autoloading,
+ * and 'scan directory' autoloading.
  *
  * @package Nano3\Conf
  * @author Timothy Totten
