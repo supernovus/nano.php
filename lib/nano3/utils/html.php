@@ -175,43 +175,77 @@ class HTML
    * @returns mixed   Output depends on the 'echo' and 'simplexml' options.
    */
   public function select ($attrs, $array, $opts=array())
-  {
-    if (isset($opts['selected']))
-      $selected = $opts['selected'];
-    else
-      $selected = Null;
-
-    if (isset($opts['mask']))
-      $is_mask = $opts['mask'];
-    else
-      $is_mask = False;
-
+  { // Let's build our select structure.
     $select = new \SimpleXMLElement('<select/>');
     if (is_string($attrs))
     {
       $attrs = array('name'=>$attrs);
     }
-    if (
+    if 
+    (
       isset($opts['id']) && $opts['id'] 
       && !isset($attrs['id']) && isset($attrs['name'])
     )
     {
       $attrs['id'] = $attrs['name'];
     }
+
+    // See if we're using bitmasks for the selected values.
+    if (isset($opts['mask']))
+      $is_mask = $opts['mask'];
+    else
+      $is_mask = False;
+
+    // Check for a selected option.
+    if (isset($opts['selected']))
+    {
+      $selected = $opts['selected'];
+
+      if (is_array($selected))
+      {
+        // Get an identifier we can use.
+        if (isset($attrs['id']))
+        {
+          $identifier = $attrs['id'];
+        }
+        elseif (isset($attrs['name']))
+        {
+          $identifier = $attrs['name'];
+        }
+        else
+        {
+          $identifier = Null;
+        }
+        if (isset($identifier) && isset($selected[$identifier]))
+        {
+          $selected = $selected[$identifier];
+        }
+      }
+    }
+    else
+    {
+      $selected = Null;
+    }
+
+    // Check for a 'ns' option to override translation prefix.
+    if (isset($opts['ns']))
+    {
+      $prefix = $opts['ns'];
+    }
+    else
+    {
+      $prefix = '';
+    }
+
+    // Add attributes.
     foreach ($attrs as $aname=>$aval)
     {
       $select->addAttribute($aname, $aval);
     }
+
+    // Add options, with potential translation processing.
     if (isset($this->translate))
     {
-      if (isset($opts['ns']))
-      {
-        $prefix = $opts['ns'];
-      }
-      else
-      {
-        $prefix = '';
-      }
       $array = $this->translate->strArray($array, $prefix);
     }
     foreach ($array as $value=>$label)
