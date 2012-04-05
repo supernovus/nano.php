@@ -1,7 +1,4 @@
 <?php
-/**
- * Generate common HTML structures.
- */
 
 namespace Nano3\Utils;
 use Nano3\Exception;
@@ -16,6 +13,9 @@ class InvalidXMLException extends Exception
   protected $message = "Invalid XML object type.";
 }
 
+/**
+ * Generate common HTML structures.
+ */
 class HTML
 {
   /**

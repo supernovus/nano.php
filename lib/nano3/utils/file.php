@@ -100,4 +100,38 @@ class File
     return $contents;
   }
 
+  /**
+   * Convert a size in bytes to a friendly string.
+   *
+   * @param  number  $size     The size in bytes you want to convert.
+   * @return string            The friendly size (e.g. "4.4 MB")
+   */
+  public function filesize_str ($size)
+  {
+    if (is_numeric($size))
+    {
+      $decr = 1024;
+      $step = 0;
+      $type = array('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB');
+      while (($size / $decr) > 0.9)
+      {
+        $size = $size / $decr;
+        $step++;
+      }
+      return round($size, 2) . ' ' . $type[$step];
+    }
+  }
+
+  /**
+   * Returns the friendly string representing our own file size.
+   *
+   * Uses filesize_str() to generate the string.
+   *
+   * @return string         The friendly size.
+   */
+  public function fileSize ()
+  {
+    return $this->filesize_str($this->size);
+  }
+
 }

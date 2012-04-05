@@ -1,6 +1,8 @@
 <?php
 
-/* 
+namespace Nano3\Utils;
+
+/**
  * SimpleAuth: An object to handle authentication via simple user-hashes.
  *
  * An extremely basic user authentication system using a simple
@@ -17,8 +19,6 @@
  * create a subclass and override the store(), load() and update() methods.
  *
  */
-
-namespace Nano3\Utils;
 
 class SimpleAuth
 {
