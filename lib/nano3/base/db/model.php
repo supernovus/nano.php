@@ -109,6 +109,7 @@ abstract class Model implements \Iterator, \ArrayAccess
       $query->execute($data);
       return $query; // The raw query object.
     }
+
     $object = new $class($statement, $data, $this, $this->primary_key);
     return $object;
   }
@@ -120,6 +121,19 @@ abstract class Model implements \Iterator, \ArrayAccess
     $query = $this->query($sql);
     $data = array(':value'=>$value);
 #    error_log("getRowByField: $sql ;".json_encode($data));
+    $query->execute($data);
+    $row = $query->fetch();
+    if ($ashash)
+      return $row;
+    else
+      return $this->wrapRow($row);
+  }
+
+  // Get a single row, but we specify the WHERE clause and bound data.
+  public function getRowWhere ($where, $data=array(), $ashash=false)
+  {
+    $sql = "SELECT * FROM {$this->table} WHERE $where LIMIT 1";
+    $query = $this->query($sql);
     $query->execute($data);
     $row = $query->fetch();
     if ($ashash)
