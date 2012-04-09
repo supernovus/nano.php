@@ -103,18 +103,18 @@ class Dispatch
   // Add a single controller that handles multiple routes.
   // NOTE: pre-existing prefix rule will be appended to
   // the method for the prefix to look for.
-  public function addRoutes ($rules, $methods)
+  public function addRoutes ($baserules, $methods)
   {
-    if (is_string($rules))
+    if (is_string($baserules))
     {
-      $rules = array('name'=>$rules);
+      $baserules = array('name'=>$baserules);
     }
     // If we have no path matching rules,
     // we'll generate a default.
     if (
-         !isset($rules['prefix']) 
-      && !isset($rules['matchpath'])
-      && !isset($rules['ispath'])
+         !isset($baserules['prefix']) 
+      && !isset($baserules['matchpath'])
+      && !isset($baserules['ispath'])
     )
     {
       $generate_default = True;
@@ -126,25 +126,44 @@ class Dispatch
 
     foreach ($methods as $method)
     {
-      if (isset($rules['make_prefix']))
+      $rules = $baserules;
+      if ($method == 'default')
       {
-        // Build a prefix based on a common
-        // prefix with the method appended to it.
-        $rules['prefix'] = $rules['make_prefix'] . $method;
+        if (isset($rules['make_prefix']))
+        {
+          $rules['prefix'] = $rules['make_prefix'];
+        }
+        elseif (isset($rules['make_path']))
+        {
+          $rules['prefix'] = $rules['make_path'];
+        }
+        else
+        {
+          $rules['prefix'] = $rules['name'];
+        }
       }
-      elseif (isset($rules['make_path']))
+      else
       {
-        // Build ispath rules.
-        $rules['ispath'] = array(
-          $rules['make_path'],     // 0 = whatever is passed here.
-          $method                  // 1 = the method name.
-        );
-      }
-      elseif ($generate_default)
-      {
-        // If no other path matching rules are found,
-        // let's generate one based on the method name.
-        $rules['prefix'] = $method;
+        if (isset($rules['make_prefix']))
+        {
+          // Build a prefix based on a common
+          // prefix with the method appended to it.
+          $rules['prefix'] = $rules['make_prefix'] . $method;
+        }
+        elseif (isset($rules['make_path']))
+        {
+          // Build ispath rules.
+          $rules['ispath'] = array(
+            $rules['make_path'],     // 0 = whatever is passed here.
+            $method                  // 1 = the method name.
+          );
+        }
+        elseif ($generate_default)
+        {
+          // If no other path matching rules are found,
+          // let's generate one based on the method name.
+          $rules['prefix'] = $method;
+        }
       }
       $rules['method'] = "handle_$method";
       $this->addRoute($rules);
@@ -228,9 +247,13 @@ class Dispatch
     $path  = get_path();
     if (isset($this->url_prefix))
     {
+#      error_log("stripping {$this->url_prefix} from $path");
       $path = str_replace($this->url_prefix, '', $path);
     }
     $our_paths = get_routing($path);
+
+#    error_log("Paths: ".json_encode($our_paths));
+
 
     if ($reverse)
       $controllers = array_reverse($this->controllers);
@@ -243,6 +266,8 @@ class Dispatch
       $controller = null;    // This must be set, otherwise we will fail.
       $method     = $this->default_method;
       $paths      = $our_paths;
+
+#      error_log("Ctrl: ".json_encode($ctrl));
 
       if (isset($ctrl['root']) && $ctrl['root'])
       { // This only matches if $path is '/' or ''.
@@ -257,12 +282,17 @@ class Dispatch
       }
       elseif (isset($ctrl['prefix']))
       { // See if the first component of the path matches a string value.
+#        error_log("Seeing if {$paths[0]} is {$ctrl['prefix']}");
         if (count($paths)==0 || $paths[0] != $ctrl['prefix'])
           continue;
+#        error_log(" -- we made it past there.");
       }
       if (isset($ctrl['ispath']))
       {
-        if (count($paths)==0) continue; // We need at least one path.
+#        error_log("--- ispath test ---");
+        $pcount = count($paths);
+        if ($pcount==0) continue; // We need at least one path.
+        if ($pcount < count($ctrl['ispath'])) continue; // Too small.
         $failed = False;
         foreach ($ctrl['ispath'] as $part => $match)
         {
@@ -296,7 +326,7 @@ class Dispatch
       if (!isset($controller)) continue;
       if (!$nano->controllers->is($controller)) continue;
 
-#      error_log("going to dispatch: '$controller'");
+#      error_log(" --- going to dispatch: '$controller'");
 
       // Load the controller using the magic from the controllers extension.
       $controller = $nano->controllers->load($controller);
