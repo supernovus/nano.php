@@ -319,9 +319,17 @@ class Nano3 implements \ArrayAccess
   }
 
   // Pragmas change the behavior of the current script.
-  public function pragma ($name)
+  // You can specify multiple pragmas by separating them with a space.
+  public function pragma ($statement)
   {
-    $this->lib['nano']->load("pragmas/$name");
+    $pragmas = explode(' ', $statement);
+    foreach ($pragmas as $name)
+    {
+      if (trim($name) != '')
+      {
+        $this->lib['nano']->load("pragmas/$name");
+      }
+    }
   }
 
   // Meta extensions add features to Nano3 itself.
