@@ -138,7 +138,7 @@ abstract class Advanced extends Basic
     // Add any javascript files we want available to the $scripts var.
     if (is_array($this->load_scripts))
     {
-      $this->add_js($script);
+      $this->add_js($this->load_scripts);
     }
 
     // We want to be able to access the data, via the $data attribute
