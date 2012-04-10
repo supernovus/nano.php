@@ -26,6 +26,10 @@ abstract class Auth extends Advanced
   public function handle_login ($opts, $path=Null)
   { // Let's log into the system.
     $this->screen = $this->view_login;
+    if (method_exists($this, 'pre_login'))
+    {
+      $this->pre_login($opts);
+    }
     if (isset($opts['user']) && $opts['pass'])
     {
       $user  = $opts['user'];
@@ -58,6 +62,10 @@ abstract class Auth extends Advanced
         {
           // Change password will regenerate the token and hash.
           $uinfo->changePassword($pass);
+        }
+        if (method_exists($this, 'post_login'))
+        {
+          $this->post_login($opts);
         }
         $nano = \Nano3\get_instance();
         $lastpath = $nano->sess->lasturi;

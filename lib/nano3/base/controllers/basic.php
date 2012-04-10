@@ -276,7 +276,17 @@ abstract class Basic
    */
   public function add_js ($name, $opts=array())
   {
-    // First of all, if this is a group, we process the group members.
+    // Handle array input.
+    if (is_array($name))
+    {
+      foreach ($name as $script)
+      {
+        $this->add_js($script, $opts);
+      }
+      return; // All done.
+    }
+
+    // If this is a group, we process the group members.
     if (isset($this->script_groups[$name]))
     {
       foreach ($this->script_groups[$name] as $script)
