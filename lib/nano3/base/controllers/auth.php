@@ -44,7 +44,7 @@ abstract class Auth extends Advanced
       // Before we continue, let's see if we have a user check.
       if (method_exists($this, 'verify_login'))
       {
-        if (!$this->verify_login($user))
+        if (!$this->verify_login($uinfo))
         {
           return $this->invalid("Unauthorized user '$user' tried to log in.");
         }
