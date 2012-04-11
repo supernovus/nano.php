@@ -41,6 +41,15 @@ abstract class Auth extends Advanced
         return $this->invalid("Attempted login by unknown user '$user'.");
       }
 
+      // Before we continue, let's see if we have a user check.
+      if (method_exists($this, 'verify_login'))
+      {
+        if (!$this->verify_login($user))
+        {
+          return $this->invalid("Unauthorized user '$user' tried to log in.");
+        }
+      }
+
       $auth = \Nano3\Utils\SimpleAuth::getInstance();
 
       $userid    = $uinfo->id;
