@@ -74,6 +74,10 @@ abstract class Advanced extends Basic
         { 
           $this->redirect(PAGE_LOGIN); 
         }
+        if (method_exists($this, 'validate_user'))
+        {
+          $this->validate_user($user);
+        }
         $this->user = $user;
         $this->data['user'] = $user;
         if (isset($user->lang) && $user->lang)
