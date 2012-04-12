@@ -561,6 +561,15 @@ class HTML
       $dirlevel = 1;
     }
 
+    if (isset($opts['labels']))
+    {
+      $menu_labels = $opts['labels'];
+    }
+    else
+    {
+      $menu_labels = array();
+    }
+
     // Custom rules to apply styles.
     if (isset($opts['classes']))
     {
@@ -603,6 +612,107 @@ class HTML
     // Okay, let's do this.
     foreach ($menu as $key => $def)
     {
+
+      // Let's see if there are any filters that apply.
+      $filtered = False;
+      foreach ($show_rules as $rkey => $rule)
+      { 
+        // We only perform the checks on defs that have the rule.
+        if (isset($def[$rkey]))
+        {
+          if ($rule instanceof \Closure)
+          { // Our closure will return True or False.
+            if (!$rule($def, $key))
+            { // If we get False, we skip this menu item.
+              $filtered = True;
+              break;
+            }
+          }
+          else
+          { // We check to see if the values match up.
+            if ($def[$rkey] != $rule)
+            { // Our show rule did not match, skip this menu item.
+              $filtered = True;
+              break;
+            }
+          }
+        }
+      }
+      if ($filtered) 
+      { // One of the show rules did not match, skip this item.
+        continue; 
+      }
+
+      // Next, deal with types other than a normal menu item.
+      if (isset($def['type']))
+      {
+        if ($def['type'] == 'label')
+        { // Labels.
+          if (isset($def['name']))
+          {
+            $name = $def['name'];
+          }
+          elseif (is_string($key))
+          {
+            $name = $key;
+          }
+          else
+          {
+            throw new Exception("No name found for label.");
+          }
+  
+          if (isset($menu_labels[$name]))
+          {
+            if (isset($def['element']))
+            {
+              $element = $def['element'];
+            }
+            else
+            {
+              $element = 'span';
+            }
+  
+            $label = $menu_labels[$name];
+  
+            if ($label instanceof \Closure)
+            {
+              $text = $label($def);
+            }
+            else
+            {
+              $text = $label;
+              if (isset($this->translate))
+              {
+                $text = $this->translate[$text];
+              }
+            }
+            $container->addChild($element, $text);
+          }
+        }
+        elseif ($def['type'] == 'div')
+        {
+          if (isset($def['element']))
+          {
+            $elname = $def['element'];
+          }
+          else
+          {
+            $elname = 'span';
+          }
+          $space = $container->addChild($elname, '&nbsp;');
+          if (isset($def['class']))
+          {
+            $divclass = $def['class'];
+          }
+          else
+          {
+            $divclass = 'spacer';
+          }
+          $space->addAttribute('class', $divclass);
+        }
+        continue; // We can skip the rest of the code below.
+      }
+
       // Get our target URL.
       if (isset($def['url']))
       {
@@ -648,45 +758,15 @@ class HTML
         $name = $this->translate[$name];
       }
 
-      // Now let's see if there are any filters that apply.
-      $filtered = False;
-      foreach ($show_rules as $key => $rule)
-      { 
-        // We only perform the checks on defs that have the rule.
-        if (isset($def[$key]))
-        {
-          if ($rule instanceof \Closure)
-          { // Our closure will return True or False.
-            if (!$rule($path, $key, $def))
-            { // If we get False, we skip this menu item.
-              $filtered = True;
-              break;
-            }
-          }
-          else
-          { // We check to see if the values match up.
-            if ($def[$key] != $rule)
-            { // Our show rule did not match, skip this menu item.
-              $filtered = True;
-              break;
-            }
-          }
-        }
-      }
-      if ($filtered) 
-      { // One of the show rules did not match, skip this item.
-        continue; 
-      }
-
       // Okay, now let's see if we need to apply any classes.
       $classes = array();
-      foreach ($class_rules as $key => $rule)
+      foreach ($class_rules as $rkey => $rule)
       {
         // First, we only apply rules that our definition has
         // subscribed to, unless the rule is implicit.
         if (!isset($rule['implicit']) || !$rule['implicit'])
         {
-          if (!isset($def[$key])) { continue; } // Skip this rule.
+          if (!isset($def[$rkey])) { continue; } // Skip this rule.
         }
 
         // Now we continue to search for paths.
@@ -695,9 +775,9 @@ class HTML
         {
           $class = $rule['class'];
         }
-        elseif (is_string($key))
+        elseif (is_string($rkey))
         {
-          $class = $key;
+          $class = $rkey;
         }
         else
         {
@@ -784,7 +864,7 @@ class HTML
         elseif (isset($rule['test']) && $rule['test'] instanceof \Closure)
         {
           $test = $rule['test'];
-          $value = $test($path, $key, $def);
+          $value = $test($path, $def, $key);
           if ($value)
           {
             $classes[$class] = True;
@@ -803,7 +883,7 @@ class HTML
           // For single rules, if they matched, we remove them.
           if (isset($rule['single']) && $rule['single'])
           {
-            unset($class_rules[$key]);
+            unset($class_rules[$rkey]);
           }
           if (isset($rule['unique']) && $rule['unique'])
           {
@@ -843,6 +923,7 @@ class HTML
         }
       }
     }
+
     // Okay, now let's see if we have anything to append to the menu.
     if (isset($opts['append']))
     {
