@@ -2,45 +2,63 @@
 
 namespace Nano3\Loaders;
 
-/* The base class for loading object-based classes.
-   Useful for controllers, models, etc. Exten as needed.
+/** 
+ * The base class for loading object-based classes.
+ * Useful for controllers, models, etc. Extend as needed.
  */
 class ClassLoader extends \Nano3\Loader
 {
-  // The type is a formatted string where %s represents the user-friendly 
-  // name of the class that will be returned by the id() function, and
-  // is what you use to load the class. The rest is used to generate the
-  // full classname.
+  /** 
+   * The type is a formatted string where %s represents the user-friendly 
+   * name of the class that will be returned by the id() function, and
+   * is what you use to load the class. The rest is used to generate the
+   * full classname.
+   */
   protected $type; 
 
-  // If used, the namespace will be prepended to the class name.
-  // You can use this to group all of your application classes into
-  // a single namespace. If a constant of NANO_CLASS_PREFIX is found,
-  // it will be used globally, otherwise you can override it on each of
-  // your loaders using the appropriate options.
+  /**
+   * If used, the namespace will be prepended to the class name.
+   * You can use this to group all of your application classes into
+   * a single namespace. If a constant of NANO_CLASS_PREFIX is found,
+   * it will be used globally, otherwise you can override it on each of
+   * your loaders using the appropriate options.
+   *
+   * You can specify mutiple namespace prefixes by separating with a colon.
+   */
   protected $namespace;
 
   public function __construct ($opts)
   {
     if (defined('NANO_CLASS_PREFIX'))
     {
-      $this->namespace = NANO_CLASS_PREFIX;
+      $this->namespace = explode(':', NANO_CLASS_PREFIX);
     }
     parent::__construct($opts);
   }
 
-  public function get_type ()
+  /**
+   * Return an array of type strings to check for.
+   */
+  public function get_types ()
   {
+    $typestrings = array();
     if (isset($this->namespace))
     {
-      return $this->namespace . $this->type;
+      foreach ($this->namespace as $ns)
+      {
+        $typestrings[] = $ns . $this->type;
+      }
     }
     else
     {
-      return $this->type;
+      $typestrings[] = $this->type;
     }
+    return $typestrings;
   }
 
+  /**
+   * Load a requested class.
+   */
   public function load ($class, $data=NULL)
   {
     // If dir is unset or false, assume autoloading.
@@ -48,12 +66,19 @@ class ClassLoader extends \Nano3\Loader
     {
       parent::load($class);    // First, run the require_once.
     }
+
     // Now let's build an object and return it.
-    $classname = sprintf($this->get_type(), $class);
-    if (class_exists($classname))
-      return new $classname ($data);
-    else
-      throw new \Nano3\Exception("No such class: $classname");
+    $types = $this->get_types();
+    foreach ($types as $type)
+    {
+      $classname = sprintf($type, $class);
+      if (class_exists($classname))
+        return new $classname ($data);
+    
+    }
+
+    // If we reached here, we didn't find a class.
+    throw new \Nano3\Exception("No such class: $classname");
   }
 
   public function is ($class)
@@ -64,8 +89,16 @@ class ClassLoader extends \Nano3\Loader
     }
     else
     {
-      $classname = sprintf($this->get_type(), $class);
-      return class_exists($classname);
+      $types = $this->get_types();
+      foreach ($types as $type)
+      {
+        $classname = sprintf($type, $class);
+        if (class_exists($classname))
+        {
+          return True;
+        }
+      }
+      return False;
     }
   }
 
@@ -73,10 +106,18 @@ class ClassLoader extends \Nano3\Loader
   public function id ($object)
   {
     $classname = strtolower(get_class($object));
-    $type = str_replace('%s', '', strtolower($this->get_type()));
-    $type = ltrim($type, "\\");
-    $identifier = str_replace($type, '', $classname);
-    return $identifier;
+    $types = $this->get_types();
+    foreach ($types as $type)
+    {
+      $type = str_replace('%s', '', strtolower($type));
+      $type = ltrim($type, "\\");
+      if (is_numeric(strpos($classname, $type)))
+      {
+        $classname = str_replace($type, '', $classname);
+        break;
+      }
+    }
+    return $classname;
   }
 
 }
