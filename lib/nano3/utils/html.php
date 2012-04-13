@@ -161,8 +161,17 @@ class HTML
       $select->addAttribute($aname, $aval);
     }
 
+    if (isset($opts['translate']))
+    {
+      $translate = $opts['translate'] && isset($this->translate);
+    }
+    else
+    {
+      $translate = isset($this->translate);
+    }
+
     // Add options, with potential translation processing.
-    if (isset($this->translate))
+    if ($translate)
     {
       $array = $this->translate->strArray($array, $prefix);
     }
