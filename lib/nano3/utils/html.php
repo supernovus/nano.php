@@ -3,11 +3,6 @@
 namespace Nano3\Utils;
 use Nano3\Exception;
 
-define('HTML_OUTPUT_STRING', 'str');  // Return an XML string.
-define('HTML_OUTPUT_ECHO',   'echo'); // Echo the output string.
-define('HTML_OUTPUT_DOM',    'dom');  // Return a DOM object.
-define('HTML_OUTPUT_XML',    'xml');  // Return a SimpleXML object.
-
 class InvalidXMLException extends Exception
 {
   protected $message = "Invalid XML object type.";
@@ -18,12 +13,6 @@ class InvalidXMLException extends Exception
  */
 class HTML
 {
-  /**
-   * Our default output format if the 'output' parameter is not specified.
-   * @var string
-   */
-  public $output = HTML_OUTPUT_STRING;
-
   /**
    * The Nano namespace where we'll load component views from.
    * @var string
@@ -43,8 +32,6 @@ class HTML
    */
   public function __construct ($opts=array())
   {
-    if (isset($opts['output']))
-      $this->output = $opts['output'];
     if (isset($opts['include']))
       $this->include_ns = $opts['include'];
     if (isset($opts['translate']))
@@ -54,96 +41,27 @@ class HTML
   /**
    * Protected function that handles return values.
    *
-   * Depending on the global 'output' variable,
-   * or the options of the same name passed to a method, we output
-   * either a SimpleXML or DOMDocument object, an XML string, 
-   * or we echo the string directly to the current output stream.
+   * We previously supported a bunch of different output formats.
+   * Now we offer two. The default is to echo the HTML string.
+   * If you pass 'raw' => true to the opts, we will return the
+   * raw object. Also, if the value passed is not a SimpleXML
+   * element, we will return it as if 'raw' had been passed.
    *
-   * @param mixed $value  A SimpleXML or DOMDocument object.
-   * @param array $opts   Override the 'output' setting.
-   * @returns mixed       Output depends on the 'output' setting.
+   * @param mixed $value  A SimpleXML object, or a string.
+   * @param array $opts   Options controlling the output.
+   * @returns mixed       Output depends on the options sent.
    */
   protected function return_value ($value, $opts)
   {
-    if (isset($opts['output']))
-      $output = $opts['output'];
-    else
-      $output = $this->output;
-
-    if ($output === HTML_OUTPUT_ECHO)
-    { // Echo the values directly.
-      if ($value instanceof \SimpleXMLElement)
-      {
-        echo $value->asXML();
-      }
-      elseif ($value instanceof \DOMDocument)
-      {
-        echo $value->saveXML($value->documentElement);
-      }
-      else
-      {
-        throw new InvalidXMLException();
-      }
-    }
-    elseif ($output === HTML_OUTPUT_XML)
-    { // Return a SimpleXML object.
-      if ($value instanceof \SimpleXMLElement)
-      {
-        return $value;
-      }
-      elseif ($value instanceof \DOMDocument)
-      {
-        return simplexml_import_dom($value->documentElement);
-      }
-      else
-      {
-        throw new InvalidXMLException();
-      }
-    }
-    elseif ($output === HTML_OUTPUT_DOM)
-    { // Return a DOMDocument object.
-      if ($value instanceof \DOMDocument)
-      {
-        return $value;
-      }
-      elseif ($value instanceof \SimpleXMLElement)
-      {
-        $domElement = dom_import_simplexml($value);
-        if (!$domElement)
-        {
-          throw new Exception("Unable to convert SimpleXML to DOM.");
-        }
-        if (isset($domElement->ownerDocument))
-        { // This should work on all newer PHP versions.
-          $domDocument = $domElement->ownerDocument;
-        }
-        else
-        { // But just in case, we have a backup plan.
-          $domDocument = new \DOMDocument('1.0');
-          $domDocument->importNode($domElement, true);
-          $domDocument->appendNode($domElement);
-        }
-        return $domDocument;
-      }
-      else
-      {
-        throw new InvalidXMLException();
-      }
+    if ($value instanceof \SimpleXMLElement && !isset($opts['raw']))
+    {
+      $string = $value->asXML();
+      $string = preg_replace('/<\?xml .*?\?>\s*/', '', $string);
+      return $string;
     }
     else
-    { // Return a string representing the XML.
-      if ($value instanceof \SimpleXMLElement)
-      {
-        return $value->asXML();
-      }
-      elseif ($value instanceof \DOMDocument)
-      {
-        return $value->saveXML($value->documentElement);
-      }
-      else
-      {
-        throw new InvalidXMLException();
-      }
+    {
+      return $value;
     }
   }
 
@@ -956,16 +874,16 @@ class HTML
         }
       }
     }
+    if ($container->count() == 0)
+    {
+      $container->addChild('span', '&nbsp;');
+    }
     return $this->return_value($container, $opts);
   }
 
   // A method to include another Nano view.
-  public function get ($view, $data=array(), $output=Null)
+  public function get ($view, $data=array())
   {
-    if (!isset($output))
-    {
-      $output = $this->output;
-    }
     if (!isset($this->include_ns))
     {
       throw new Exception("Attempt to use include() with no namespace.");
@@ -977,24 +895,7 @@ class HTML
       throw new Exception("No such Nano namespace: $ns");
     }
     $content = $nano->lib[$ns]->load($view, $data);
-    if ($output === HTML_OUTPUT_ECHO)
-    {
-      echo $content;
-    }
-    elseif ($output === HTML_OUTPUT_XML)
-    {
-      return new SimpleXMLElement($content);
-    }
-    elseif ($output === HTML_OUTPUT_DOM)
-    {
-      $dom = new DOMDocument();
-      $dom->loadXML($content);
-      return $dom;
-    }
-    else
-    {
-      return $content;
-    }
+    return $content;
   }
 
   // Another way to call get().
