@@ -70,6 +70,12 @@ abstract class Object
     }
   }
 
+  // Return the parent object.
+  public function parent ()
+  {
+    return $this->parent;
+  }
+
   // Returns the converted data structure.
   public function load_data ($data, $opts=array())
   {

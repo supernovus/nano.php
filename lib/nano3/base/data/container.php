@@ -25,11 +25,11 @@ abstract class Container extends Arrayish
   // Add an item to our index.
   protected function add_data_index ($item)
   {
-    // If we are an object, see if we have the identifier() method.
+    // If we are an object, see if we have the data_identifier() method.
     // Yes, that's right, we are using Duck Typing.
-    if (is_object($item) && is_callable(array($item, 'identifier')))
+    if (is_object($item) && is_callable(array($item, 'data_identifier')))
     {
-      $id = $item->identifier();
+      $id = $item->data_identifier();
       $this->data_index[$id] = $item;
     }
     // Similarly, if we are an array, and have a key of 'id', use it.
@@ -48,9 +48,9 @@ abstract class Container extends Arrayish
     for ($i=0; $i < $dcount; $i++)
     {
       $item = $this->data[$i];
-      if (is_object($item) && is_callable(array($item, 'identifier')))
+      if (is_object($item) && is_callable(array($item, 'data_identifier')))
       {
-        $id = $item->identifier();
+        $id = $item->data_identifier();
         if ($id == $key) return $i; // We found the index.
       }
       elseif (is_array($item) && isset($item['id']))
@@ -92,7 +92,13 @@ abstract class Container extends Arrayish
         if (is_callable(array($item, 'validate')))
         {
           if (!$item->validate())
+          { // Oops, we didn't pass validation.
+            if (is_callable(array($this, 'invalid_data')))
+            {
+              $this->invalid_data($item);
+            }
             continue; // Skip invalid items.
+          }
         }
       }
       $this->append($item);
@@ -103,12 +109,10 @@ abstract class Container extends Arrayish
   public function to_array ($opts=array())
   {
     $array = array();
-    $class = $this->get_itemclass();
     foreach ($this->data as $val)
     {
-      if (isset($class) && $val instanceof $class 
-        && is_callable(array($val, 'to_array')))
-      { // Unwrap our child classes.
+      if (is_object($val) && is_callable(array($val, 'to_array')))
+      { // Unwrap Data objects.
         $val = $val->to_array($opts);
       }
       if (isset($opts['nonull']) && $opts['nonull'] && !isset($val))

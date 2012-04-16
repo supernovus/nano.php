@@ -29,6 +29,9 @@ abstract class Basic
   protected $default_url;   // Where redirect() goes if no URL is specified.
   protected $json_method;   // Method to convert object to JSON.
 
+  // Set to true to enable the model cache.
+  protected $use_model_cache = False;
+
   // Override this if you have a different script path.
   // The default assumes you have a a "scripts" folder, and
   // within it, a copy or link to the Nano.js scripts folder called 'nano'.
@@ -159,6 +162,15 @@ abstract class Basic
   {
     if (!isset($this->models[$model]))
     { // No model has been loaded yet.
+      if ($this->use_model_cache)
+      { // Check the session cache.
+        $nano = \Nano3\get_instance();
+        $modelcache = $nano->sess->ModelCache;
+        if (isset($modelcache) && isset($modelcache[$model]))
+        { // The model cache, a double-edged sword. Use with care.
+          return $this->models[$model] = $modelcache[$model];
+        }
+      }
       if (isset($this->model_opts) && is_array($this->model_opts))
       { // We have model options in the controller.
         $found_options = false;
@@ -178,6 +190,19 @@ abstract class Basic
         }
       }
       $this->load_model($model, $opts);
+      if ($this->use_model_cache)
+      {
+        $modelObj = $this->models[$model];
+        if (isset($modelObj) && is_callable(array($modelObj, 'allow_cache'))
+          && $modelObj->allow_cache())
+        {
+          if (!isset($modelcache))
+          {
+            $modelcache = array();
+          }
+          $modelcache[$model] = $this->models[$model];
+        }
+      }
     }
     return $this->models[$model];
   }
