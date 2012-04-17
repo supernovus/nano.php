@@ -27,7 +27,9 @@ abstract class Basic
 
   protected $layout;        // The default layout to use.
   protected $default_url;   // Where redirect() goes if no URL is specified.
-  protected $json_method;   // Method to convert object to JSON.
+
+  // The method to convert objects to JSON.
+  protected $json_method = 'to_json';   
 
   // Set to true to enable the model cache.
   protected $use_model_cache = False;
