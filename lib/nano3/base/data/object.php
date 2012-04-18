@@ -350,5 +350,13 @@ abstract class Object
     return $simplexml->asXML();
   }
 
+  // Return the lowerbase "basename" of our class.
+  public function get_classname ()
+  {
+    $classpath = explode('\\', __CLASS__);
+    $classname = strtolower(end($classpath));
+    return $classname;
+  }
+
 }
 

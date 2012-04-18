@@ -12,8 +12,9 @@ namespace Nano3\Base\Data;
 
 abstract class Container extends Arrayish
 {
-  protected $data_itemclass;         // Wrap our items in this class.
-  protected $data_index = array();   // Index for hash access.
+  protected $data_itemclass;          // Wrap our items in this class.
+  protected $data_index = array();    // Index for hash access.
+  protected $data_allow_null = False; // Default option for allowing nulls.
 
   // Clear our data, including index.
   public function clear ($opts=array())
@@ -108,6 +109,14 @@ abstract class Container extends Arrayish
   // Overridden to_array() method.
   public function to_array ($opts=array())
   {
+    if (isset($opts['null']))
+    {
+      $allownull = $opts['null'];
+    }
+    else
+    {
+      $allownull = $this->data_allow_null;
+    }
     $array = array();
     foreach ($this->data as $val)
     {
@@ -115,9 +124,10 @@ abstract class Container extends Arrayish
       { // Unwrap Data objects.
         $val = $val->to_array($opts);
       }
-      if (isset($opts['nonull']) && $opts['nonull'] && !isset($val))
-        continue; // Skip null items if nonull was set.
-      $array[] = $val;
+      if (isset($val) || $allownull)
+      { // Add the data.
+        $array[] = $val;
+      }
     }
     return $array;
   }
