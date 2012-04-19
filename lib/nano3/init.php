@@ -218,7 +218,7 @@ class Nano3 implements \ArrayAccess
   public function addLib ($name, $class, $opts=NULL)
   { // Override default opts if a conf is found.
     if (
-      isset($this->lib['conf']) 
+      isset($this->lib['conf']) && isset($this->lib['conf']['nano'])
       && 
       (
            is_null($opts) 
@@ -227,7 +227,7 @@ class Nano3 implements \ArrayAccess
     )
     { // This is expected to the Nano3\Conf object,
       // or at least offer an ArrayAccess interface.
-      $conf = $this->lib['conf'];
+      $conf = $this->lib['conf']['nano'];
       if (isset($conf[$name]))
       {
         $opts = $conf[$name];

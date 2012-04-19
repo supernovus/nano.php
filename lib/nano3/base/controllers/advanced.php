@@ -51,8 +51,10 @@ abstract class Advanced extends Basic
     {
       $this->default_url = PAGE_DEFAULT;
     }
-    // You must initialize $nano->conf->db in your application.
-    $this->model_opts = $nano->conf->db;
+    if (isset($nano->conf->models))
+    {
+      $this->model_opts = $nano->conf->models;
+    }
     if (!isset($this->layout))
     {
       $this->layout = LAYOUT_DEFAULT;
@@ -268,6 +270,17 @@ abstract class Advanced extends Basic
   public function has_errors ()
   {
     return $this->has_status('error');
+  }
+
+  // Get model options for models identified as 'db' models.
+  protected function get_db_model_opts ($model, $opts)
+  {
+#    error_log("get_db_model_opts($model)");
+    $nano = \Nano3\get_instance();
+    if (isset($nano->conf->db))
+    {
+      return $nano->conf->db;
+    }
   }
 
 }

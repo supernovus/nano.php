@@ -41,6 +41,7 @@ class ClassLoader extends \Nano3\Loader
    */
   public function get_types ()
   {
+#    error_log("gt//t:'{$this->type}'");
     $typestrings = array();
     if (isset($this->namespace))
     {
@@ -72,6 +73,7 @@ class ClassLoader extends \Nano3\Loader
     foreach ($types as $type)
     {
       $classname = sprintf($type, $class);
+#      error_log("n:'$classname', t:'$type', c:'$class'");
       if (class_exists($classname))
         return new $classname ($data);
     

@@ -152,7 +152,8 @@ abstract class Basic
     return $json;
   }
 
-  // Load a data model.
+  // Load a data model. Does not return the model, simply loads it
+  // into the $models associative array property.
   protected function load_model ($model, $opts=array())
   { $nano = \Nano3\get_instance();
     $opts['parent'] = $this;
@@ -162,11 +163,12 @@ abstract class Basic
   // A wrapper for load_model with caching and more options.
   public function model ($model, $opts=array())
   {
+    $nano = \Nano3\get_instance();
+
     if (!isset($this->models[$model]))
     { // No model has been loaded yet.
       if ($this->use_model_cache)
       { // Check the session cache.
-        $nano = \Nano3\get_instance();
         $modelcache = $nano->sess->ModelCache;
         if (isset($modelcache) && isset($modelcache[$model]))
         { // The model cache, a double-edged sword. Use with care.
@@ -175,7 +177,9 @@ abstract class Basic
       }
       if (isset($this->model_opts) && is_array($this->model_opts))
       { // We have model options in the controller.
+#        error_log("Checking model options for '$model'");
         $found_options = false;
+#        error_log("  Options: ".json_encode($this->model_opts));
         if (isset($this->model_opts['common']))
         { // Common options used by all models.
           $opts += $this->model_opts['common'];
@@ -183,8 +187,53 @@ abstract class Basic
         }
         if (isset($this->model_opts[$model]))
         { // There is model-specific options.
-          $opts += $this->model_opts[$model];
-          $found_options = true;
+#          error_log("  Options found, processing further.");
+          $modeltype = Null;
+          $modelopts = $this->model_opts[$model];
+          if (is_array($modelopts))
+          { 
+#            error_log("  Options were an array.");
+            if (isset($modelopts['.type']))
+            {
+              $modeltype = $this->model_opts[$model]['.type'];
+            }
+          }
+          elseif (is_string($modelopts))
+          {
+#            error_log("  Options were a string.");
+            $modeltype = $modelopts;
+          }
+          if (isset($modeltype))
+          {
+#            error_log("  Model type found.");
+            if (isset($this->model_opts[$modeltype]))
+            {
+#              error_log("  Type group found in options.");
+              $addopts = $this->model_opts[$modeltype];
+              if (is_array($addopts))
+              {
+                $opts += $addopts;
+                $found_options = true;
+              }
+            }
+            elseif (is_callable(array($this, 'get_'.$modeltype.'_model_opts')))
+            {
+#              error_log("  Type option method found in controller.");
+              $func = 'get_'.$modeltype.'_model_opts';
+              $addopts = $this->$func($model, $opts);
+#              error_log("    Returned: ".json_encode($addopts));
+              if (isset($addopts) && is_array($addopts))
+              {
+                $opts += $addopts;
+                $found_options = true;
+              }
+            }
+          }
+          if (is_array($modelopts))
+          {
+            $opts += $modelopts;
+            $found_options = true;
+          }
         }
         if (!$found_options)
         { // No model-specific or common options found.
@@ -202,7 +251,8 @@ abstract class Basic
           {
             $modelcache = array();
           }
-          $modelcache[$model] = $this->models[$model];
+          $modelcache[$model] = $modelObj;
+          $nano->sess->ModelCache = $modelcache;
         }
       }
     }
