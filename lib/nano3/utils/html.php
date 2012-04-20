@@ -42,7 +42,7 @@ class HTML
    * Protected function that handles return values.
    *
    * We previously supported a bunch of different output formats.
-   * Now we offer two. The default is to echo the HTML string.
+   * Now we offer two. The default is to return the HTML string.
    * If you pass 'raw' => true to the opts, we will return the
    * raw object. Also, if the value passed is not a SimpleXML
    * element, we will return it as if 'raw' had been passed.
@@ -90,7 +90,7 @@ class HTML
    *  'ns'       => string    Translation prefix. This is only valid if the
    *                          HTML object has a 'translate' object set.
    *
-   * @returns mixed   Output depends on the 'echo' and 'simplexml' options.
+   * @returns mixed   Output depends on the options.
    */
   public function select ($attrs, $array, $opts=array())
   { // Let's build our select structure.
