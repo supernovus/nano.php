@@ -161,9 +161,14 @@ abstract class Basic
   }
 
   // A wrapper for load_model with caching and more options.
-  public function model ($model, $opts=array())
+  public function model ($model=Null, $opts=array())
   {
     $nano = \Nano3\get_instance();
+
+    if (is_null($model))
+    { // Assume the default model has the same name as the controller.
+      $model = $this->name();
+    }
 
     if (!isset($this->models[$model]))
     { // No model has been loaded yet.
