@@ -99,7 +99,7 @@ abstract class Auth extends Advanced
   }
   public function handle_forgot ($opts, $path)
   { $this->screen = $this->view_forgot; // The forgot password screen.
-    $this->data['title'] = $this->text['forgotname'];
+    $this->data['title'] = $this->text['title.forgot'];
     if (isset($path) && is_array($path) && count($path)>1 && $path[1])
     { // We have a validation code.
       $nano = \Nano3\get_instance();
