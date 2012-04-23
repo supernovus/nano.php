@@ -160,6 +160,57 @@ abstract class Basic
     $this->models[$model] = $nano->models->load($model, $opts);
   }
 
+  /**
+   * Get model options.
+   *
+   * Supports nested .type classifications.
+   */
+  protected function get_model_opts ($model, $opts=array(), $use_defaults=False)
+  {
+    if (isset($this->model_opts) && is_array($this->model_opts))
+    { // We have model options in the controller.
+      if (isset($this->model_opts[$model]))
+      { // There is model-specific options.
+        $modeltype = Null;
+        $modelopts = $this->model_opts[$model];
+        if (is_array($modelopts))
+        { 
+          $opts += $modelopts;
+          if (isset($modelopts['.type']))
+          {
+            $modeltype = $modelopts['.type'];
+          }
+        }
+        elseif (is_string($modelopts))
+        {
+          $modeltype = $modelopts;
+          if (!isset($opts['.type']))
+          {
+            $opts['.type'] = $modeltype;
+          }
+        }
+        if (isset($modeltype))
+        { // Groups start with a dot.
+          $opts = $this->get_model_opts('.'.$modeltype, $opts);
+          if (is_callable(array($this, 'get_'.$modeltype.'_model_opts')))
+          {
+            $func = 'get_'.$modeltype.'_model_opts';
+            $addopts = $this->$func($model, $opts);
+            if (isset($addopts) && is_array($addopts))
+            {
+              $opts += $addopts;
+            }
+          }
+        }
+      }
+      elseif ($use_defaults)
+      {
+        $opts = $this->get_model_opts('.default', $opts);
+      }
+    }
+    return $opts;
+  }
+
   // A wrapper for load_model with caching and more options.
   public function model ($model=Null, $opts=array())
   {
@@ -180,71 +231,10 @@ abstract class Basic
           return $this->models[$model] = $modelcache[$model];
         }
       }
-      if (isset($this->model_opts) && is_array($this->model_opts))
-      { // We have model options in the controller.
-#        error_log("Checking model options for '$model'");
-        $found_options = false;
-#        error_log("  Options: ".json_encode($this->model_opts));
-        if (isset($this->model_opts['common']))
-        { // Common options used by all models.
-          $opts += $this->model_opts['common'];
-          $found_options = true;
-        }
-        if (isset($this->model_opts[$model]))
-        { // There is model-specific options.
-#          error_log("  Options found, processing further.");
-          $modeltype = Null;
-          $modelopts = $this->model_opts[$model];
-          if (is_array($modelopts))
-          { 
-#            error_log("  Options were an array.");
-            if (isset($modelopts['.type']))
-            {
-              $modeltype = $this->model_opts[$model]['.type'];
-            }
-          }
-          elseif (is_string($modelopts))
-          {
-#            error_log("  Options were a string.");
-            $modeltype = $modelopts;
-          }
-          if (isset($modeltype))
-          {
-#            error_log("  Model type found.");
-            if (isset($this->model_opts[$modeltype]))
-            {
-#              error_log("  Type group found in options.");
-              $addopts = $this->model_opts[$modeltype];
-              if (is_array($addopts))
-              {
-                $opts += $addopts;
-                $found_options = true;
-              }
-            }
-            elseif (is_callable(array($this, 'get_'.$modeltype.'_model_opts')))
-            {
-#              error_log("  Type option method found in controller.");
-              $func = 'get_'.$modeltype.'_model_opts';
-              $addopts = $this->$func($model, $opts);
-#              error_log("    Returned: ".json_encode($addopts));
-              if (isset($addopts) && is_array($addopts))
-              {
-                $opts += $addopts;
-                $found_options = true;
-              }
-            }
-          }
-          if (is_array($modelopts))
-          {
-            $opts += $modelopts;
-            $found_options = true;
-          }
-        }
-        if (!$found_options)
-        { // No model-specific or common options found.
-          $opts += $this->model_opts;
-        }
-      }
+      // Load any specific options.
+      $opts = $this->get_model_opts($model, $opts, True);
+      // Load any common options.
+      $opts = $this->get_model_opts('.common', $opts);
       $this->load_model($model, $opts);
       if ($this->use_model_cache)
       {

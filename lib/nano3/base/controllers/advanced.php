@@ -555,5 +555,33 @@ abstract class Advanced extends Basic
     return $results;
   }
 
+  /**
+   * Return a list of models given a specific ".type" definition.
+   *
+   * TODO: Deep type searches.
+   */
+  public function get_models_of_type ($type, $deep=False)
+  {
+    $models = array();
+    foreach ($this->model_opts as $name => $opts)
+    {
+      if (substr($name, 0, 1) == '.') continue; // Skip groups.
+      if 
+      (
+        is_string($opts)
+        ||
+        (is_array($opts) && isset($opts['.type']))
+      )
+      {
+        $modeltype = $opts['.type'];
+        if ($modeltype == $type)
+        {
+          $models[$name] = $opts;
+        }
+      }
+    }
+    return $models;
+  }
+
 }
 
