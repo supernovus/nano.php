@@ -55,7 +55,7 @@ abstract class Object
     if (method_exists($this, 'data_init'))
     { // The data_init can set up pre-requisites to loading our data.
       // It CANNOT reference our data, as that has not been loaded yet.
-      $this->data_init();
+      $this->data_init($opts);
     }
 
     // How we proceed depends on if we have initial data.
@@ -85,7 +85,7 @@ abstract class Object
     if (isset($opts['prep']) && $opts['prep'] 
       && method_exists($this, 'data_prep'))
     {
-      $data = $this->data_prep($data);
+      $data = $this->data_prep($data, $opts);
     }
     // Figure out the data type.
     $type = Null;
@@ -142,7 +142,7 @@ abstract class Object
     if (isset($opts['post']) && $opts['post'] 
       && method_exists($this, 'data_post'))
     {
-      $this->data_post();
+      $this->data_post($opts);
     }
   }
 
