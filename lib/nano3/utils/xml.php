@@ -32,8 +32,31 @@ class XML
 
     if ($parent instanceof \DOMElement && $child instanceof \DOMElement)
     {
-      $parent->ownerDocument->importNode($child, True);
+      $child = $parent->ownerDocument->importNode($child, True);
       $parent->appendChild($child);
+      return True;
+    }
+    return False;
+  }
+
+  /**
+   * Append a text node to an element.
+   *
+   * @param  object  $parent    A SimpleXMLElement or DOMElement object.
+   * @param  string  $text      The text to append as a DOMTextNode.
+   * @return bool               Returns false if invalid params were passed.
+   */
+  public function appendText ($parent, $text)
+  {
+    if ($parent instanceof \SimpleXMLElement)
+    {
+      $parent = dom_import_simplexml($parent);
+    }
+
+    if ($parent instanceof \DOMElement)
+    {
+      $textnode = $parent->ownerDocument->createTextNode($text);
+      $parent->appendChild($textnode);
       return True;
     }
     return False;
