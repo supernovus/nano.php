@@ -134,4 +134,34 @@ class File
     return $this->filesize_str($this->size);
   }
 
+  /**
+   * Returns the file stats.
+   */
+  public function stats ()
+  {
+    return stat($this->file);
+  }
+
+  /**
+   * Return the time when the file was last modified.
+   * 
+   * @param   string  $format   Optional, a valid DateTime Format.
+   * @return  mixed             A DateTime object, or a string, depending
+   *                            on if you passed the $format option.
+   */
+  public function modifiedTime ($format=Null)
+  {
+    $stats    = $this->stats();
+    $modtime  = $stat['mtime'];
+    $datetime = new DateTime("@$modtime");
+    if (isset($format))
+    {
+      return $datetime->format($format);
+    }
+    else
+    {
+      return $datetime;
+    }
+  }
+
 }
