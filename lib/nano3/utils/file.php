@@ -55,14 +55,20 @@ class File
     return Null;
   }
 
-  public function copyTo ($folder)
+  public function saveTo ($folder)
   { 
     $target = $folder . '/' . $this->name;
     return $this->saveAs($target);
   }
 
-  public function copyAs ($target)
+  public function saveAs ($target)
   {
+    $target_dir = dirname($target);
+    if (!is_dir($target_dir))
+    {
+      mkdir($target_dir, 0755, true);
+      chmod($target_dir, 0755);
+    }
     if (copy($this->file, $target))
     {
       unlink($this->file);    // Delete the old one.
