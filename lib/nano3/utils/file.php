@@ -170,4 +170,25 @@ class File
     }
   }
 
+  /**
+   * Recursively remove an entire directory tree.
+   */
+  public static function rmtree ($path)
+  { 
+    if (is_dir($path))
+    {
+      foreach (scandir($path) as $name)
+      {
+        if (in_array($name, array('.', '..'))) continue;
+        $subpath = $path.DIRECTORY_SEPARATOR.$name;
+        self::rmtree($subpath);
+      }
+      rmdir($path);
+    }
+    else
+    {
+      unlink($path);
+    }
+  }
+
 }
