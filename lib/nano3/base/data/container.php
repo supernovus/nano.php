@@ -242,6 +242,49 @@ abstract class Container extends Arrayish
     return $found;
   } // End of find().
 
+  /**
+   * Create a new child item, and return it.
+   *
+   * @param  mixed  $data   Data to build object from (optional.)
+   * @param  array  $opts   Options to build object with (optional.)
+   * @return mixed          Either a child Item, or Null on failure.
+   */
+  public function newItem ($data=Null, $opts=array())
+  {
+    $opts['parent'] = $this;
+    $class = $this->get_itemclass();
+    if (isset($class))
+    {
+      $child = new $class($data, $opts);
+      return $child;
+    }
+  }
+
+  /**
+   * Create a new child item, and add it to our data.
+   *
+   * @param  integer  $pos     Position to insert at. -1 = End, 0 = Beginning.
+   *                           Optional, defaults to -1 if not specified.
+   * @param  mixed    $data    Optional -- passed to newItem().
+   * @param  array    $opts    Optional -- passed to newItem().
+   */
+  public function addItem ($pos=Null, $data=Null, $opts=array())
+  {
+    $child = $this->newItem($data, $opts);
+    if (isset($child))
+    {
+      if (isset($pos) && $pos != -1)
+      {
+        $this->insert($child, $pos);
+      }
+      else
+      {
+        $this->append($child);
+      }
+    }
+    return $child;
+  }
+
 }
 
 
