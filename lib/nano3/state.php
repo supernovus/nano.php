@@ -2,11 +2,12 @@
 
 /**
  * AJAX+JSON Service for Session State Storage.
- * Call from a URL-facing PHP script, and it'll do the rest.
+ * Symbolic link into your project folder.
+ * This expects Nano3 to be in the 'lib/nano3/' folder.
  */
 
 // Boot up Nano.
-require_once 'init.php';
+require_once 'lib/nano3/init.php';
 
 // Get our Nano instance.
 $nano = \Nano3\get_instance();
