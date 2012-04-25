@@ -150,7 +150,7 @@ abstract class Container extends Arrayish
     return array_key_exists($offset, $this->data_index);
   }
 
-  public function offfsetGet ($offset)
+  public function offsetGet ($offset)
   {
     if (isset($this->data_index[$offset]))
       return $this->data_index[$offset];
