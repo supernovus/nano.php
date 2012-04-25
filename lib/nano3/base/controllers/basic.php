@@ -29,7 +29,10 @@ abstract class Basic
   protected $default_url;   // Where redirect() goes if no URL is specified.
 
   // The method to convert objects to JSON.
-  protected $json_method = 'to_json';   
+  protected $to_json_method = 'to_json';
+
+  // The methood to convert objects to XML.
+  protected $to_xml_method  = 'to_xml';
 
   // Set to true to enable the model cache.
   protected $use_model_cache = False;
@@ -65,8 +68,11 @@ abstract class Basic
    *
    * Controller.send_json
    *   Gets a copy of the data to be sent/converted to JSON and
-   *   allows you to make adjustments to it before any conversion
-   *   takes place.
+   *   allows you to make adjustments to it before any conversion.
+   *
+   * Controller.send_xml
+   *   Geta a copy of the data to be sent/converted to XML and
+   *   allows you to make adjustments to it before any conversion.
    */
 
   // Process a screen template with the given data.
@@ -123,9 +129,9 @@ abstract class Basic
 
   // Sometimes we want to send JSON data instead of a template.
   public function send_json ($data)
-  { $nano = \Nano3\get_instance();
-    $nano->pragma('no-cache');    // Don't cache this.
-    header('Content-Type: application/json');
+  { 
+    $nano = \Nano3\get_instance();
+    $nano->pragma('json no-cache');    // Don't cache this.
     $nano->callHook('Controller.send_json', array(&$data));
     if (is_array($data)) 
     { // Basic usage is to send simple arrays.
@@ -135,21 +141,54 @@ abstract class Basic
     { // A passthrough for JSON strings.
       $json = $data;
     }
-    elseif (is_object($data) && isset($this->json_method))
+    elseif (is_object($data))
     { // Magic for converting objects to JSON.
-      $method = $this->json_method;
+      $method = $this->to_json_method;
       if (is_callable(array($data, $method)))
         $json = $data->$method();
       elseif (is_callable(array($this, $method)))
         $json = $this->$method($data);
       else
-        throw new Exception('Unsupported object sent to sendJSON');
+        throw new Exception('Unsupported object sent to send_json()');
     }
     else
     {
-      throw new Exception('Unsupported data type sent to sendJSON');
+      throw new Exception('Unsupported data type sent to send_json()');
     }
     return $json;
+  }
+
+  // Sometimes we want to send XML data instead of a template.
+  public function send_xml ($data)
+  {
+    $nano = \Nano3\get_instance();
+    $nano->pragma('xml no-cache');
+    $nano->callHook('Controller.send_xml', array(&$data));
+    if (is_string($data))
+    { // Passthrough.
+      $xml = $data;
+    }
+    elseif (is_object($data))
+    {
+      $method = $this->to_xml_method;
+      if ($data instanceof \SimpleXMLElement)
+        $xml = $data->asXML();
+      elseif ($data instanceof \DOMDocument)
+        $xml = $data->saveXML();
+      elseif ($data instanceof \DOMElement)
+        $xml = $data->ownerDocument->saveXML();
+      elseif (is_callable(array($data, $method)))
+        $xml = $data->$method();
+      elseif (is_callable(array($this, $method)))
+        $xml = $this->$method($data);
+      else
+        throw new Exception('Unsupported object sent to send_xml()');
+    }
+    else
+    {
+      throw new Exception('Unsupported data type sent to send_xml()');
+    }
+    return $xml;
   }
 
   // Load a data model. Does not return the model, simply loads it
