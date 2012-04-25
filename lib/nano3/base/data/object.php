@@ -353,7 +353,7 @@ abstract class Object
   // Return the lowerbase "basename" of our class.
   public function get_classname ()
   {
-    $classpath = explode('\\', __CLASS__);
+    $classpath = explode('\\', get_class($this));
     $classname = strtolower(end($classpath));
     return $classname;
   }
