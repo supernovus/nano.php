@@ -568,9 +568,11 @@ abstract class Advanced extends Basic
    */
   public function get_models_of_type ($type, $deep=False)
   {
+#    error_log("In get_models_of_type('$type')");
     $models = array();
     foreach ($this->model_opts as $name => $opts)
     {
+#      error_log("  -- '$name' => ".json_encode($opts)); 
       if (substr($name, 0, 1) == '.') continue; // Skip groups.
       if 
       (
@@ -579,7 +581,11 @@ abstract class Advanced extends Basic
         (is_array($opts) && isset($opts['.type']))
       )
       {
-        $modeltype = $opts['.type'];
+        if (is_string($opts))
+          $modeltype = $opts;
+        else
+          $modeltype = $opts['.type'];
+
         if ($modeltype == $type)
         {
           $models[$name] = $opts;
