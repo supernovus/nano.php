@@ -160,6 +160,12 @@ abstract class Advanced extends Basic
     $nano->callHook('Controller.construct', array($this));
   }
 
+  // Return our translation object.
+  public function get_text ()
+  {
+    return $this->text;
+  }
+
   // Get a user.
   public function get_user ()
   {
