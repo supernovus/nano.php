@@ -362,5 +362,19 @@ abstract class Object
     return $classname;
   }
 
+  // Go up our hierarchy and find the class with the given classname.
+  // We use get_classname() so it will be a lowercase name with no namespace.
+  public function get_parent_of ($class)
+  {
+    if ($this->get_classname() == strtolower($class))
+    {
+      return $this;
+    }
+    elseif (isset($this->parent) && is_callable(array($this->parent, 'get_parent_of')))
+    {
+      return $this->parent->get_parent_of($class);
+    }
+  }
+
 }
 
