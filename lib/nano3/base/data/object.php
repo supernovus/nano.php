@@ -68,7 +68,8 @@ abstract class Object
       }
       $this->load($mixed, $loadopts);
     }
-    elseif (is_callable(array($this, 'data_defaults')))
+    elseif (!isset($opts['spawn'])) 
+      && is_callable(array($this, 'data_defaults')))
     { // Set our default values.
       $this->data_defaults($opts);
     }
@@ -159,6 +160,7 @@ abstract class Object
   // Spawn a new empty data object.
   public function spawn ($opts=array())
   {
+    $opts['spawn'] = True;
     return new $this (Null, $opts);
   }
 
