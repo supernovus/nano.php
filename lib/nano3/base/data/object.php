@@ -68,6 +68,10 @@ abstract class Object
       }
       $this->load($mixed, $loadopts);
     }
+    elseif (is_callable(array($this, 'set_defaults')))
+    { // Set our default values.
+      $this->set_defaults($opts);
+    }
   }
 
   // Return the parent object.
