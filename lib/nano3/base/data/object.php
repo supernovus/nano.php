@@ -355,24 +355,50 @@ abstract class Object
   }
 
   // Return the lowerbase "basename" of our class.
-  public function get_classname ()
+  public function get_classname ($object=Null)
   {
-    $classpath = explode('\\', get_class($this));
+    if (is_null($object))
+      $object = $this;
+    $classpath = explode('\\', get_class($object));
     $classname = strtolower(end($classpath));
     return $classname;
   }
 
-  // Go up our hierarchy and find the class with the given classname.
-  // We use get_classname() so it will be a lowercase name with no namespace.
-  public function get_parent_of ($class)
+  /**
+   * Get either our parent class, or a parent class in our heirarchy with
+   * a given classname (as returned by get_classname(), so no Namespaces.)
+   */
+  public function get_parent ($class=Null)
   {
-    if ($this->get_classname() == strtolower($class))
+    $parent = $this->parent;
+    if (is_null($class))
     {
-      return $this;
+      return $parent;
     }
-    elseif (isset($this->parent) && is_callable(array($this->parent, 'get_parent_of')))
+    else
+    { // The get_classname() function uses lowercase names.
+      $class = strtolower($class);
+    }
+
+    if (isset($parent))
     {
-      return $this->parent->get_parent_of($class);
+      if (is_callable(array($parent, 'get_classname')))
+      {
+        $parentclass = $parent->get_classname();
+      }
+      else
+      {
+        $parentclass = $this->get_classname($parent);
+      }
+
+      if ($parentclass == $class)
+      {
+        return $parent;
+      }
+      elseif (is_callable(array($parent, 'get_parent')))
+      {
+        return $parent->get_parent($class);
+      }
     }
   }
 
