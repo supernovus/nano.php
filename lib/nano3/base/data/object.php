@@ -68,14 +68,13 @@ abstract class Object
       }
       $this->load($mixed, $loadopts);
     }
-    elseif 
-    (
-      !isset($opts['spawn'])
-      && 
-      is_callable(array($this, 'data_defaults'))
-    )
-    { // Set our default values.
-      $this->data_defaults($opts);
+    elseif (is_callable(array($this, 'data_defaults')))
+    { 
+      if (!isset($opts['nodefaults']) || !$opts['nodefaults'])
+      {
+        // Set our default values.
+        $this->data_defaults($opts);
+      }
     }
   }
 
@@ -164,8 +163,9 @@ abstract class Object
   // Spawn a new empty data object.
   public function spawn ($opts=array())
   {
-    $opts['spawn'] = True;
-    return new $this (Null, $opts);
+    $copy = clone $this;
+    $copy->clear();
+    return $copy;
   }
 
   // Default version of detect_data_type().
