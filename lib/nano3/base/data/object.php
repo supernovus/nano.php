@@ -68,9 +68,9 @@ abstract class Object
       }
       $this->load($mixed, $loadopts);
     }
-    elseif (is_callable(array($this, 'set_defaults')))
+    elseif (is_callable(array($this, 'data_defaults')))
     { // Set our default values.
-      $this->set_defaults($opts);
+      $this->data_defaults($opts);
     }
   }
 
