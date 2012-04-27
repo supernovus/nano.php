@@ -147,6 +147,11 @@ abstract class Container extends Arrayish
   // We override ArrayAccess to use $this->data_index for its source.
   public function offsetExists ($offset)
   {
+    if (!is_string($offset) && !is_int($offset))
+    {
+      error_log("Invalid offset: ".json_encode($offset));
+      return False;
+    }
     return array_key_exists($offset, $this->data_index);
   }
 
