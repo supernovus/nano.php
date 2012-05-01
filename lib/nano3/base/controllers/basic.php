@@ -206,6 +206,8 @@ abstract class Basic
    */
   protected function get_model_opts ($model, $opts=array(), $use_defaults=False)
   {
+    $model = strtolower($model); // Force lowercase.
+#    error_log("Looking for model options for '$model'");
     if (isset($this->model_opts) && is_array($this->model_opts))
     { // We have model options in the controller.
       if (isset($this->model_opts[$model]))
@@ -231,12 +233,14 @@ abstract class Basic
         if (isset($modeltype))
         { // Groups start with a dot.
           $opts = $this->get_model_opts('.'.$modeltype, $opts);
-          if (is_callable(array($this, 'get_'.$modeltype.'_model_opts')))
+          $func = 'get_'.$modeltype.'_model_opts';
+          if (is_callable(array($this, $func)))
           {
-            $func = 'get_'.$modeltype.'_model_opts';
+#            error_log("  -- Calling $func() to get more options.");
             $addopts = $this->$func($model, $opts);
             if (isset($addopts) && is_array($addopts))
             {
+#              error_log("  -- Options were found, adding to our set.");
               $opts += $addopts;
             }
           }
@@ -247,6 +251,7 @@ abstract class Basic
         $opts = $this->get_model_opts('.default', $opts);
       }
     }
+#    error_log("Returning: ".json_encode($opts));
     return $opts;
   }
 
