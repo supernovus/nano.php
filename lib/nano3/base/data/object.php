@@ -360,7 +360,7 @@ abstract class Object
     return $simplexml->asXML();
   }
 
-  // Return the lowerbase "basename" of our class.
+  // Return the lowercase "basename" of our class.
   public function get_classname ($object=Null)
   {
     if (is_null($object))
@@ -368,6 +368,17 @@ abstract class Object
     $classpath = explode('\\', get_class($object));
     $classname = strtolower(end($classpath));
     return $classname;
+  }
+
+  // Return the lowercase "dirname" of our class.
+  public function get_namespace ($object=Null)
+  {
+    if (is_null($object))
+      $object = $this;
+    $classpath = explode('\\', get_class($object));
+    array_pop($classpath); // Eliminate the "basename".
+    $namespace = join('\\', $classpath);
+    return $namespace;
   }
 
   /**
