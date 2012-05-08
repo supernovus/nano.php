@@ -1,11 +1,13 @@
 <?php
 
-/* A base class for database-driven models.
-   It wraps around the PDO library, and provides some very simplistic
-   ORM capabilities. You don't have to use them, but if you want them
-   they are there. The built-in ORM represents a single table. 
-   For more advanced methods such a multi-table support, you can use the
-   query() method directly and write methods in your extended class.
+/**
+ * A base class for database-driven models.
+ *
+ * It wraps around the PDO library, and provides some very simplistic
+ * ORM capabilities. You don't have to use them, but if you want them
+ * they are there. The built-in ORM represents a single table. 
+ * For more advanced methods such a multi-table support, you can use the
+ * query() method directly and write methods in your extended class.
  */
 
 namespace Nano3\Base\DB;
@@ -24,6 +26,9 @@ abstract class Model implements \Iterator, \ArrayAccess
                              // Defaults to 'id' if not specified.
 
   protected $resultset;      // Used if you use the iterator interface.
+
+  protected $dsn;            // The DSN we were initialized with.
+  protected $dbname;         // The database name/identifier.
 
   public $parent;            // The object which spawned us.
 
@@ -45,6 +50,9 @@ abstract class Model implements \Iterator, \ArrayAccess
   {
     if (!isset($opts['dsn']))
       throw new Exception("Must have a database DSN");
+
+    $this->dsn = $opts['dsn'];
+
     if (isset($opts['user']) && isset($opts['pass']))
       $this->db = new \PDO($opts['dsn'], $opts['user'], $opts['pass']);
     else
@@ -65,7 +73,34 @@ abstract class Model implements \Iterator, \ArrayAccess
 
     if (isset($opts['parent']))
       $this->parent = $opts['parent'];
+  }
 
+  /**
+   * Look up the database name. We will cache the result.
+   */
+  public function database_name ()
+  {
+    if (isset($this->dbname))
+      return $this->dbname;
+
+    $matches = array();
+
+#    error_log("Looking for dbname in ".$this->dsn);
+
+    if (preg_match('/dbname=(\w+)/', $this->dsn, $matches))
+    {
+      $this->dbname = $matches[1];
+    }
+    elseif (preg_match('/sqlite:(\w+)/', $this->dsn, $matches))
+    {
+      $this->dbname = $matches[1];
+    }
+    else
+    { // We could not determine the value, returning False.
+      $this->dbname = False;
+    }
+
+    return $this->dbname;
   }
 
   // Create a prepared statement, and set its default fetch style.

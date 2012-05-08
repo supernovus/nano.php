@@ -229,6 +229,13 @@ class Dispatch
     $this->addRoute($ctrl);
   }
 
+  // Add a root redirection.
+  public function addRootRedirect($url)
+  {
+    $ctrl = array('root'=>True, 'redirect'=>$url);
+    $this->addRoute($ctrl);
+  }
+
   // Add a controller that see's if it can handle the path.
   public function addLookupController ($name, $method)
   {
@@ -303,6 +310,11 @@ class Dispatch
           }
         }
         if ($failed) continue;
+      }
+
+      if (isset($ctrl['redirect']))
+      {
+        $nano->url->redirect($ctrl['redirect']);
       }
 
       // Now try to find the controller name.
