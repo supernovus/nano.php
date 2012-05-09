@@ -32,20 +32,33 @@ abstract class Model implements \Iterator, \ArrayAccess
 
   public $parent;            // The object which spawned us.
 
-  // A way to get a read-only copy of the table name.
+  public $known_fields;      // If set, it's a list of fields we know about.
+                             // DO NOT set the primary key in here!
+
+  /**
+   * Return our table name.
+   */
   public function get_table ()
   {
     $table = $this->table;
     return $table;
   }
 
-  // This expects we were loaded using the Models extension.
+  /**
+   * Return the name of our class.
+   *
+   * This depends on the use of the Nano3 Models loader.
+   * If you are not using the models loader, override this.
+   */
   public function name ()
   {
     $nano = \Nano3\get_instance();
     return $nano->models->id($this);
   }
 
+  /**
+   * Build a new Model object.
+   */
   public function __construct ($opts=array())
   {
     if (!isset($opts['dsn']))
@@ -103,7 +116,9 @@ abstract class Model implements \Iterator, \ArrayAccess
     return $this->dbname;
   }
 
-  // Create a prepared statement, and set its default fetch style.
+  /**
+   *  Create a prepared statement, and set its default fetch style.
+   */
   public function query ($statement, $assoc=True)
   {
     $query = $this->db->prepare($statement);
@@ -114,25 +129,73 @@ abstract class Model implements \Iterator, \ArrayAccess
     return $query;
   }
 
-  // Wrap the results of fetch() in a nice object.
-  // If the hash is not set, or is false it returns null.
-  // If our childclass is false, we return the unchanged row.
+  /** 
+   * Wrap the results of fetch() in a nice object.
+   *
+   * If the hash is not set, or is false it returns null.
+   * If our childclass is false, we return the unchanged row.
+   */
   public function wrapRow ($rowhash)
-  { if ($rowhash)
+  { 
+    if ($rowhash)
     {
-      $class = $this->childclass;
-      if (!$class)
+      $object = $this->newChild($rowhash);
+      if (isset($object))
+        return $object;
+      else
         return $rowhash;
-      $object = new $class($rowhash, $this, $this->table, $this->primary_key);
-      return $object;
     }
-    else
-      return null;
   }
 
-  // Return a DB\ResultSet representing an executed query.
-  // If it cannot find the resultclass, it instead executes the statement
-  // and returns the PDOResult object.
+  /** 
+   * Get an instance of our child class, representing a row.
+   *
+   * This is used by wrapRow() for existing rows, and can be used directly
+   * to return a child row with no primary key set, that can be inserted into
+   * the database using $row->save();
+   *
+   * If the known_fields class member is set, it will be used to ensure
+   * all of the known fields are passed to the child class with some form
+   * of default value (if not specified in the known_fields array, the
+   * default value is 0.)
+   */
+  public function newChild ($data=array())
+  {
+    if (isset($this->known_fields) && is_array($this->known_fields))
+    {
+      foreach ($this->known_fields as $key => $val)
+      {
+        if (is_numeric($key))
+        {
+          $field   = $val;
+          $default = 0;
+        }
+        else
+        {
+          $field   = $key;
+          $default = $val;
+        }
+        if (!array_key_exists($field, $data))
+        { // Add a placeholder value, to ensure the field is present.
+          $data[$field] = $default;
+        }
+      }
+    }
+    $class = $this->childclass;
+    if ($class)
+    {
+      $class = $this->childclass;
+      $object = new $class($data, $this, $this->table, $this->primary_key);
+      return $object;
+    }
+  }
+
+  /** 
+  * Return a ResultSet representing an executed query.
+   *
+   * If it cannot find the resultclass, it instead executes the statement
+   * and returns the PDOResult object.
+   */
   public function execute ($statement, $data=array(), $class=Null)
   {
     if (!isset($class))
@@ -149,10 +212,12 @@ abstract class Model implements \Iterator, \ArrayAccess
     return $object;
   }
 
-  // Get a row based on the value of a field
-  public function getRowByField ($field, $value, $ashash=false)
+  /** 
+   * Get a single row based on the value of a field.
+   */
+  public function getRowByField ($field, $value, $ashash=false, $cols='*')
   {
-    $sql = "SELECT * FROM {$this->table} WHERE $field = :value LIMIT 1";
+    $sql = "SELECT $cols FROM {$this->table} WHERE $field = :value LIMIT 1";
     $query = $this->query($sql);
     $data = array(':value'=>$value);
 #    error_log("getRowByField: $sql ;".json_encode($data));
@@ -164,10 +229,25 @@ abstract class Model implements \Iterator, \ArrayAccess
       return $this->wrapRow($row);
   }
 
-  // Get a single row, but we specify the WHERE clause and bound data.
-  public function getRowWhere ($where, $data=array(), $ashash=false)
+  /** 
+   * Get a single row based on the value of multiple fields.
+   *
+   * This is a simple AND based approach, and uses = as the comparison.
+   * If you need anything more complex, write your own method, or use
+   * getRowWhere() instead.
+   */
+  public function getRowByFields ($fields, $ashash=False, $cols='*')
   {
-    $sql = "SELECT * FROM {$this->table} WHERE $where LIMIT 1";
+    $sql = "SELECT $cols FROM {$this->table} WHERE ";
+    $data = array();
+    foreach ($fields as $key => $value)
+    {
+      if (count($data))
+        $sql .= "AND ";
+      $sql .= "$key = :$key ";
+      $data[$key] = $value;
+    }
+    $sql .= " LIMIT 1";
     $query = $this->query($sql);
     $query->execute($data);
     $row = $query->fetch();
@@ -177,26 +257,49 @@ abstract class Model implements \Iterator, \ArrayAccess
       return $this->wrapRow($row);
   }
 
-  // Get a row based on the value of the primary key, here called Id.
-  public function getRowById ($id, $ashash=false)
+  /** 
+   * Get a single row, specifying the WHERE clause and bound data.
+   */
+  public function getRowWhere ($where, $data=array(), $ashash=False, $cols='*')
   {
-    return $this->getRowByField($this->primary_key, $id, $ashash);
+    $sql = "SELECT $cols FROM {$this->table} WHERE $where LIMIT 1";
+    $query = $this->query($sql);
+    $query->execute($data);
+    $row = $query->fetch();
+    if ($ashash)
+      return $row;
+    else
+      return $this->wrapRow($row);
   }
 
-  // Return a result set for all rows in our table.
+  /** 
+   * Get a single row based on the value of the primary key.
+   */
+  public function getRowById ($id, $ashash=False, $cols='*')
+  {
+    return $this->getRowByField($this->primary_key, $id, $ashash, $cols);
+  }
+
+  /** 
+   * Return a ResultSet (or other result class) for all rows in our table.
+   */
   public function all ()
   {
     $query = "SELECT * FROM {$this->table}";
     return $this->execute($query);
   }
 
-  // Insert a new row. Note this does no checking to ensure
-  // the specified fields are valid, so wrap this in your own
-  // classes with more specific versions. It's also not recommended
-  // that you include the primary key field, as it should be auto
-  // generated by the database. To this end, by default we disallow
-  // the primary key field. As the output of an insert is not consistent
-  // we just return the query object, if you're at all interested.
+  /** 
+   * Insert a new row. 
+   *
+   * Note this does no checking to ensure
+   * the specified fields are valid, so wrap this in your own
+   * classes with more specific versions. It's also not recommended
+   * that you include the primary key field, as it should be auto
+   * generated by the database. To this end, by default we disallow
+   * the primary key field. As the output of an insert is not consistent
+   * we just return the query object, if you're at all interested.
+   */
   public function newRow ($row, $opts=array())
   { // Check for options.
     if (isset($opts['table']))
@@ -247,6 +350,7 @@ abstract class Model implements \Iterator, \ArrayAccess
   // Iterator interface to use a DBModel in a foreach loop.
   // If you attempt to use this with resultclass set to false,
   // things will break, badly. Just don't do it.
+
   public function rewind ()
   {
     $this->resultset = $this->all();
