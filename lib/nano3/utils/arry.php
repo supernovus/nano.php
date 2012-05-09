@@ -71,29 +71,30 @@ class Arry
     $cartesic = array();
    
     //calculate expected size of cartesian array...
-    $size=(sizeof($arrays)>0)?1:0;
-    foreach($arrays as $array)
+    $size = (sizeof($arrays)>0) ? 1 : 0;
+    foreach ($arrays as $array)
     {
-      $size= $size*sizeof($array);
+      $size = $size * sizeof($array);
     }
-    for($i=0; $i<$size;$i++) 
+    for ($i=0; $i<$size; $i++) 
     {
       $cartesic[$i] = array();
        
-      for($j=0;$j<sizeof($arrays);$j++)
+      for ($j=0; $j<sizeof($arrays); $j++)
       {
         $current = current($arrays[$j]); 
         array_push($cartesic[$i], $current);    
       }
-      //set cursor on next element in the arrays, beginning with the last array
-      for($j=(sizeof($arrays)-1);$j>=0;$j--)
+      // Set cursor on next element in the arrays, beginning with the last array
+      for ($j=(sizeof($arrays)-1); $j>=0; $j--)
       {
         //if next returns true, then break
-        if(next($arrays[$j])) {
+        if (next($arrays[$j])) 
+        {
           break;
         } 
         else 
-        { //if next returns false, then reset and go on with previuos array...
+        { // If next returns false, then reset and go on with previous array.
           reset($arrays[$j]);
         }
       }
