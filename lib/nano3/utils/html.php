@@ -910,7 +910,15 @@ class HTML
   // Another way to call get().
   public function __call ($method, $params)
   {
-    return $this->get($method, $params);
+    if (count($params)>0)
+    {
+      $data = $params[0];
+    }
+    else
+    {
+      $data = array();
+    }
+    return $this->get($method, $data);
   }
 
 }
