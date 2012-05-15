@@ -292,7 +292,7 @@ abstract class Model implements \Iterator, \ArrayAccess
   /**
    * Return a result set using a map of fields.
    */
-  public function listByFields ($fields, $cols='*')
+  public function listByFields ($fields, $cols='*', $append=Null)
   {
     $query = "SELECT $cols FROM {$this->table} WHERE ";
     $data = array();
@@ -303,6 +303,9 @@ abstract class Model implements \Iterator, \ArrayAccess
       $sql .= "$key = :$key ";
       $data[$key] = $value;
     }
+    if (isset($append))
+      $sql .= " $append";
+
     return $this->execute($query, $data);
   }
 
