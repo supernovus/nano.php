@@ -294,7 +294,7 @@ abstract class Model implements \Iterator, \ArrayAccess
    */
   public function listByFields ($fields, $cols='*', $append=Null)
   {
-    $query = "SELECT $cols FROM {$this->table} WHERE ";
+    $sql = "SELECT $cols FROM {$this->table} WHERE ";
     $data = array();
     foreach ($fields as $key => $value)
     {
@@ -306,7 +306,7 @@ abstract class Model implements \Iterator, \ArrayAccess
     if (isset($append))
       $sql .= " $append";
 
-    return $this->execute($query, $data);
+    return $this->execute($sql, $data);
   }
 
   /** 
