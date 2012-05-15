@@ -280,6 +280,32 @@ abstract class Model implements \Iterator, \ArrayAccess
     return $this->getRowByField($this->primary_key, $id, $ashash, $cols);
   }
 
+  /**
+   * Return a result set using a WHERE clause.
+   */
+  public function listWhere ($where, $data, $cols='*')
+  {
+    $query = "SELECT $cols FROM {$this->table} WHERE $where";
+    return $this->execute($query, $data);
+  }
+
+  /**
+   * Return a result set using a map of fields.
+   */
+  public function listByFields ($fields, $cols='*')
+  {
+    $query = "SELECT $cols FROM {$this->table} WHERE ";
+    $data = array();
+    foreach ($fields as $key => $value)
+    {
+      if (count($data))
+        $sql .= "AND ";
+      $sql .= "$key = :$key ";
+      $data[$key] = $value;
+    }
+    return $this->execute($query, $data);
+  }
+
   /** 
    * Return a ResultSet (or other result class) for all rows in our table.
    */
