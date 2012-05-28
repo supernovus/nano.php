@@ -212,11 +212,19 @@ abstract class Model implements \Iterator, \ArrayAccess
     return $object;
   }
 
+  protected function get_cols ($cols)
+  {
+    if (is_array($cols))
+      $cols = join(',', $cols);
+    return $cols;
+  }
+
   /** 
    * Get a single row based on the value of a field.
    */
   public function getRowByField ($field, $value, $ashash=false, $cols='*')
   {
+    $cols = $this->get_cols($cols);
     $sql = "SELECT $cols FROM {$this->table} WHERE $field = :value LIMIT 1";
     $query = $this->query($sql);
     $data = array(':value'=>$value);
@@ -238,6 +246,7 @@ abstract class Model implements \Iterator, \ArrayAccess
    */
   public function getRowByFields ($fields, $ashash=False, $cols='*')
   {
+    $cols = $this->get_cols($cols);
     $sql = "SELECT $cols FROM {$this->table} WHERE ";
     $data = array();
     foreach ($fields as $key => $value)
@@ -262,6 +271,7 @@ abstract class Model implements \Iterator, \ArrayAccess
    */
   public function getRowWhere ($where, $data=array(), $ashash=False, $cols='*')
   {
+    $cols = $this->get_cols($cols);
     $sql = "SELECT $cols FROM {$this->table} WHERE $where LIMIT 1";
     $query = $this->query($sql);
     $query->execute($data);
@@ -277,6 +287,7 @@ abstract class Model implements \Iterator, \ArrayAccess
    */
   public function getRowById ($id, $ashash=False, $cols='*')
   {
+    $cols = $this->get_cols($cols);
     return $this->getRowByField($this->primary_key, $id, $ashash, $cols);
   }
 
@@ -285,6 +296,7 @@ abstract class Model implements \Iterator, \ArrayAccess
    */
   public function listWhere ($where, $data, $cols='*')
   {
+    $cols = $this->get_cols($cols);
     $query = "SELECT $cols FROM {$this->table} WHERE $where";
     return $this->execute($query, $data);
   }
@@ -294,6 +306,7 @@ abstract class Model implements \Iterator, \ArrayAccess
    */
   public function listByFields ($fields, $cols='*', $append=Null)
   {
+    $cols = $this->get_cols($cols);
     $sql = "SELECT $cols FROM {$this->table} WHERE ";
     $data = array();
     foreach ($fields as $key => $value)
