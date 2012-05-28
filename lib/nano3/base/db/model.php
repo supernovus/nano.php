@@ -292,13 +292,21 @@ abstract class Model implements \Iterator, \ArrayAccess
   }
 
   /**
+   * Return a result set using a hand crafted SQL statement.
+   */
+  public function listRows ($stmt, $data, $cols='*')
+  {
+    $cols = $this->get_cols($cols);
+    $query = "SELECT $cols FROM {$this->table} $stmt";
+    return $this->execute($query, $data);
+  }
+
+  /**
    * Return a result set using a WHERE clause.
    */
   public function listWhere ($where, $data, $cols='*')
   {
-    $cols = $this->get_cols($cols);
-    $query = "SELECT $cols FROM {$this->table} WHERE $where";
-    return $this->execute($query, $data);
+    return $this->listRows("WHERE $where", $data, $cols);
   }
 
   /**
