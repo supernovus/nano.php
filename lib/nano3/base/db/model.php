@@ -455,7 +455,30 @@ abstract class Model implements \Iterator, \ArrayAccess
     throw new Exception('You cannot set DB Model values that way.');
   }
 
-}
+  // Simple row cloning.
+  public function cloneRow ($rowid)
+  {
+    $pk  = $this->primary_key;
+    $row = $this->getRowById($rowid);
+    if (isset($row))
+    {
+      if (is_callable(array($row, 'save')))
+      {
+        unset($row[$pk]);
+        $row->save();
+      }
+      else
+      {
+        throw new Exception('Attempt to clone a row with no save() method.');
+      }
+    }
+    else
+    {
+      throw new Exception('Attempt to clone an invalid row.');
+    }
+    return $row;
+  }
 
-// End of base class.
+} // end class Model
 
+// End of library.
