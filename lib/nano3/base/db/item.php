@@ -34,7 +34,7 @@ class Item implements \ArrayAccess
 
   // If set to an array of field names, only those fields will be
   // used when finding the id of a newly created row.
-  protected $new_query_fields;
+  public $new_query_fields;
 
   // Can't get much easier than this.
   public function __construct ($data, $parent, $table, $primary_key=Null)
@@ -83,7 +83,15 @@ class Item implements \ArrayAccess
       throw new Exception('Cannot overwrite primary key.');
 
     $this->modified_data[$name] = $this->data[$name];
-    $this->data[$name] = $value;
+    $meth = "_set_$name";
+    if (is_callable(array($this, $meth)))
+    {
+      $this->$meth($value);
+    }
+    else
+    {
+      $this->data[$name] = $value;
+    }
     if ($this->auto_save)
     {
       $this->save();
@@ -123,7 +131,15 @@ class Item implements \ArrayAccess
   public function __get ($name)
   {
     $name = $this->db_field($name);
-    return $this->data[$name];
+    $meth = "_get_$name";
+    if (is_callable(array($this, $meth)))
+    {
+      return $this->$meth();
+    }
+    else
+    {
+      return $this->data[$name];
+    }
   }
 
   /** 
@@ -222,33 +238,25 @@ class Item implements \ArrayAccess
     }
     else
     { // Insert a new row.
-      $opts = array();
-      if (!$this->auto_generated_pk)
+      $model = $this->parent;
+      $opts = array('return'=>$model::return_key);
+      if ($this->auto_generated_pk)
+        $setpk = False;
+      else
+        $setpk = True;
+
+      if ($setpk)
         $opts['allowpk'] = True;
 
-      $this->parent->newRow($this->data, $opts);
-
-      if (isset($this->data[$pk])) return True; // We're done.
-
-      // Let's find out our new primary key.
-
       if (isset($this->new_query_fields))
-      { // We have a list of specific fields to query.
-        $query = array();
-        foreach ($this->new_query_fields as $field)
-        {
-          $query[$field] = $this->data[$field];
-        }
-      }
-      else
-      { // We're going to search by all known fields.
-        $query = $this->data;
-      }
+        $opts['columns'] = $this->new_query_fields;
 
-      $find = $this->parent->getRowByFields($query, True, $pk);
-      if (isset($find) && isset($find[$pk]))
-      { // We need to insert into $data directly.
-        $this->data[$pk] = $find[$pk];
+      $newpk = $this->parent->newRow($this->data, $opts);
+
+      if ($setpk && isset($this->data[$pk])) return True; // We're done.
+      elseif ($newpk)
+      {
+        $this->data[$pk] = $newpk;
         return True;
       }
       return False;

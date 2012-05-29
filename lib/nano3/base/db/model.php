@@ -35,6 +35,11 @@ abstract class Model implements \Iterator, \ArrayAccess
   public $known_fields;      // If set, it's a list of fields we know about.
                              // DO NOT set the primary key in here!
 
+  // Constants used in the newRow() method.
+  const return_row = 1; // Return a proper Row object.
+  const return_raw = 2; // Return a raw DB query object.
+  const return_key = 3; // Return the primary key value.
+
   /**
    * Return our table name.
    */
@@ -394,6 +399,39 @@ abstract class Model implements \Iterator, \ArrayAccess
     $query->execute($fielddata);
 #    error_log("sterr: ".json_encode($query->errorInfo()));
 #    error_log("dberr: ".json_encode($this->db->errorInfo()));
+#
+    if (isset($opts['return']))
+    {
+      $return_type = $opts['return'];
+      if (isset($opts['columns']) && is_array($opts['columns']))
+      {
+        $fields = $opts['columns'];
+      }
+      else
+      {
+        $fields = $row;
+      }
+      if ($return_type == $this::return_row)
+      {
+        return $this->getRowByFields($fields);
+      }
+      elseif ($return_type == $this::return_raw)
+      {
+        return $this->getRowByFields($fields, True); 
+      }
+      elseif ($return_type == $this::return_key)
+      {
+        $rawrow = $this->getRowByFields($fields, True, $pk);
+        if (isset($rawrow) && isset($rawrow[$pk]))
+        {
+          return $rawrow[$pk];
+        }
+        else
+        {
+          return Null;
+        }
+      }
+    }
     return $query;
   }
 
