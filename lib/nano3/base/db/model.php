@@ -462,19 +462,15 @@ abstract class Model implements \Iterator, \ArrayAccess
     $row = $this->getRowById($rowid);
     if (isset($row))
     {
+      unset($row[$pk]);
       if (is_callable(array($row, 'save')))
       {
-        unset($row[$pk]);
         $row->save();
-      }
-      else
-      {
-        throw new Exception('Attempt to clone a row with no save() method.');
       }
     }
     else
     {
-      throw new Exception('Attempt to clone an invalid row.');
+      return Null;
     }
     return $row;
   }
