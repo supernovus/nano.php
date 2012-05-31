@@ -22,7 +22,7 @@
 
 namespace Nano3\Base\Controllers;
 
-abstract class Advanced extends Basic
+abstract class Advanced extends Basic implements \ArrayAccess
 {
   protected $save_uri  = True;  // Set to False for login/logout pages.
   protected $need_user = True;  // Set to False for non-user pages.
@@ -586,6 +586,28 @@ abstract class Advanced extends Basic
       }
     }
     return $models;
+  }
+
+  // ArrayAccess interface, for easier data management.
+
+  public function offsetExists ($offset)
+  {
+    return isset($this->data[$offset]);
+  }
+
+  public function offsetGet ($offset)
+  {
+    return $this->data[$offset];
+  }
+
+  public function offsetSet ($offset, $value)
+  {
+    $this->data[$offset] = $value;
+  }
+
+  public function offsetUnset ($offset)
+  {
+    unset($this->data[$offset]);
   }
 
 }
