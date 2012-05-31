@@ -42,7 +42,6 @@ abstract class Advanced extends Basic
     'warning' => array('class'=>'warning', 'prefix'=>'warn.'),
   );
   protected $html_includes;     // Override in your controller base.
-  protected $load_scripts;      // Override in your individual controllers.
 
   // Construct our object.
   public function __construct ($opts=array()) 
@@ -140,12 +139,6 @@ abstract class Advanced extends Basic
       {
         $this->data['has_status'][$msg['class']] = True;
       }
-    }
-
-    // Add any javascript files we want available to the $scripts var.
-    if (is_array($this->load_scripts))
-    {
-      $this->add_js($this->load_scripts);
     }
 
     // We want to be able to access the data, via the $data attribute

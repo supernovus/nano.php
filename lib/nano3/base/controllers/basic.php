@@ -12,6 +12,21 @@
  * It now has integration with the nano.js project, and can populate
  * the $scripts template variable with appropriate javascript files.
  *
+ * Hooks
+ *
+ * Controller.return_content:
+ *   Receives a pointer to the content as a string.
+ *   Allows you to apply a filter to the content before it
+ *   gets returned.
+ *
+ * Controller.send_json
+ *   Gets a copy of the data to be sent/converted to JSON and
+ *   allows you to make adjustments to it before any conversion.
+ *
+ * Controller.send_xml
+ *   Geta a copy of the data to be sent/converted to XML and
+ *   allows you to make adjustments to it before any conversion.
+ *
  */
 
 namespace Nano3\Base\Controllers;
@@ -21,7 +36,7 @@ abstract class Basic
 {
   public $models = array(); // Any Models we have loaded.
 
-  protected $data;          // Our data to send to the templates.
+  protected $data = array();// Our data to send to the templates.
   protected $screen;        // Set if needed, otherwise uses $this->name().
   protected $model_opts;    // Options to pass to load_model(), via model().
 
@@ -59,34 +74,41 @@ abstract class Basic
   );
 
   /**
-   * Hooks
-   *
-   * Controller.return_content:
-   *   Receives a pointer to the content as a string.
-   *   Allows you to apply a filter to the content before it
-   *   gets returned.
-   *
-   * Controller.send_json
-   *   Gets a copy of the data to be sent/converted to JSON and
-   *   allows you to make adjustments to it before any conversion.
-   *
-   * Controller.send_xml
-   *   Geta a copy of the data to be sent/converted to XML and
-   *   allows you to make adjustments to it before any conversion.
+   * Display the contents of a screen, typically within a common layout.
+   * We use the $data class member as the array of variables to pass to
+   * the template.
    */
+  public function display ($opts=array())
+  {
+    // Get Nano.
+    $nano = \Nano3\get_instance();
 
-  // Process a screen template with the given data.
-  public function process_template ($screen, $data, $layout=NULL)
-  { $nano = \Nano3\get_instance();
-    if (is_null($layout))
+    // Figure out which screen to display.
+    if (isset($opts['screen']))
+      $screen = $opts['screen'];
+    elseif (isset($this->screen))
+      $screen = $this->screen;
+    else
+      $screen = $this->name();
+
+    // Now figure out what we want for a layout.
+    if (isset($opts['layout']))
+      $layout = $opts['layout'];
+    else
       $layout = $this->layout;
-    // Okay, let's get the view screen output.
-    $page = $nano->screens->load($screen, $data);
-    if (isset($layout))
-    { // We're using a layout model.
-      // Please ensure your layout has a view_content variable.
-      $data['view_content'] = $page;
-      $template = $nano->layouts->load($layout, $data);
+
+    // Make sure the 'parent' is set correctly.
+    if (!isset($this->data['parent']))
+      $this->data['parent'] = $this;
+
+    // Okay, let's get the screen output.
+    // The screen may use the $parent object to modify our data.
+    $page = $nano->screens->load($screen, $this->data);
+
+    if ($layout)
+    { // Please ensure your layout has a view_content variable.
+      $this->data['view_content'] = $page;
+      $template = $nano->layouts->load($layout, $this->data);
       $nano->callHook('Controller.return_content', array(&$template));
       return $template;
     }
@@ -95,36 +117,6 @@ abstract class Basic
       $nano->callHook('Controller.return_content', array(&$page));
       return $page;
     }
-  }
-
-  // A wrapper for process_template that is more friendly.
-  public function display ($data=null, $screen=null)
-  {
-    if (isset($data) && is_array($data))
-    {
-      if (isset($this->data) && is_array($this->data))
-      {
-        $data += $this->data;
-      }
-    }
-    else
-    {
-      if (isset($this->data) && is_array($this->data))
-      {
-        $data = $this->data;
-      }
-      else
-      {
-        $data = array();
-      }
-    }
-    if (is_null($screen))
-    { if (isset($this->screen))
-        $screen = $this->screen;
-      else
-        $screen = $this->name();
-    }
-    return $this->process_template($screen, $data);
   }
 
   // Sometimes we want to send JSON data instead of a template.
