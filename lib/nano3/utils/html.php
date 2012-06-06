@@ -155,6 +155,24 @@ class HTML
       $prefix = '';
     }
 
+    // For processing complex entities.
+    if (isset($opts['labelkey']))
+    {
+      $label_key = $opts['labelkey'];
+    }
+    else
+    {
+      $label_key = 'text';
+    }
+    if (isset($opts['valuekey']))
+    {
+      $value_key = $opts['valuekey'];
+    }
+    else
+    {
+      $value_key = 'id';
+    }
+
     // Add attributes.
     foreach ($attrs as $aname=>$aval)
     {
@@ -177,6 +195,14 @@ class HTML
     }
     foreach ($array as $value=>$label)
     {
+      if (is_array($label))
+      { // Process complex entries.
+        if (isset($label[$value_key]))
+          $value = $label[$value_key];
+        if (isset($label[$label_key]))
+          $label = $label[$label_key];
+      }
+
       $option = $select->addChild('option', $label);
       $option->addAttribute('value', $value);
       if 
