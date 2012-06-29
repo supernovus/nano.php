@@ -262,9 +262,11 @@ abstract class Model implements \Iterator, \ArrayAccess
       $data[$key] = $value;
     }
     $sql .= " LIMIT 1";
+#    error_log("getRowByFields: sql = \"$sql\" and fields = ".json_encode($data));
     $query = $this->query($sql);
     $query->execute($data);
     $row = $query->fetch();
+#    error_log("Found: ".json_encode($row));
     if ($ashash)
       return $row;
     else
@@ -332,6 +334,9 @@ abstract class Model implements \Iterator, \ArrayAccess
     if (isset($append))
       $sql .= " $append";
 
+#    error_log("sql: $sql");
+#    error_log("data: ".json_encode($data));
+
     return $this->execute($sql, $data);
   }
 
@@ -381,10 +386,9 @@ abstract class Model implements \Iterator, \ArrayAccess
     {
       $key = $keys[$i];
       if ($key == $pk && !$allowpk) continue; // Skip primary key.
-      $fk = ":$key";
       $fieldnames .= $key;
-      $fieldvals  .= $fk;
-      $fielddata[$fk] = $row[$key];
+      $fieldvals  .= ':'.$key;
+      $fielddata[$key] = $row[$key];
       if ($i != $kc - 1)
       {
         $fieldnames .= ', ';
@@ -395,6 +399,7 @@ abstract class Model implements \Iterator, \ArrayAccess
     $fieldvals  .= ')';
     $sql .= "$fieldnames VALUES $fieldvals";
 #    error_log("newRow. sql = \"$sql\" and fields = ".json_encode($fielddata));
+#    error_log("newRow.fielddata: ".json_encode($fielddata));
     $query = $this->query($sql);
     $query->execute($fielddata);
 #    error_log("sterr: ".json_encode($query->errorInfo()));
@@ -409,10 +414,11 @@ abstract class Model implements \Iterator, \ArrayAccess
       }
       else
       {
-        $fields = $row;
+        $fields = $fielddata;
       }
       if ($return_type == $this::return_row)
       {
+#        error_log("Return Row object.");
         return $this->getRowByFields($fields);
       }
       elseif ($return_type == $this::return_raw)
@@ -422,6 +428,7 @@ abstract class Model implements \Iterator, \ArrayAccess
       elseif ($return_type == $this::return_key)
       {
         $rawrow = $this->getRowByFields($fields, True, $pk);
+#        error_log("rawrow: ".json_encode($rawrow));
         if (isset($rawrow) && isset($rawrow[$pk]))
         {
           return $rawrow[$pk];
@@ -501,6 +508,10 @@ abstract class Model implements \Iterator, \ArrayAccess
     if (isset($row))
     {
       unset($row[$pk]);
+      if (is_callable(array($row, 'updateClone')))
+      {
+        $row->updateClone();
+      }
       if (is_callable(array($row, 'save')))
       {
         $row->save();
