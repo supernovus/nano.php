@@ -39,16 +39,18 @@ class Conf extends \Nano3\Base\Data\Arrayish
     '.yml'  => 'yaml',
     '.d'    => 'dir',
     '.url'  => 'confs',
+    '.txt'  => 'scalar',
   );
   // A map of filename matches to determine type.
   // Used in load_file() and in autoload scanning.
   protected $_file_type_matches = array
   (
-    'json'  => '/\.jso?n$/i',
-    'ini'   => '/\.ini$/i',
-    'yaml'  => '/\.ya?ml/i',
-    'dir'   => '/\.d$/i',
-    'confs' => '/\.url$/i',
+    'json'   => '/\.jso?n$/i',
+    'ini'    => '/\.ini$/i',
+    'yaml'   => '/\.ya?ml/i',
+    'dir'    => '/\.d$/i',
+    'confs'  => '/\.url$/i',
+    'scalar' => '/\.txt$/i',
   );
   
   public $strict_mode = True;  // If true, we die on failure.
@@ -93,6 +95,10 @@ class Conf extends \Nano3\Base\Data\Arrayish
     if ($type == 'ini')
     {
       return parse_ini_file($filename, true);
+    }
+    elseif ($type == 'scalar')
+    {
+      return file_get_contents($filename);
     }
     elseif ($type == 'confs')
     {
@@ -261,6 +267,9 @@ class Conf extends \Nano3\Base\Data\Arrayish
     // Okay, get the item.
     $data = $this[$id];
 
+    if (is_scalar($data))
+      return $data;
+
     if (is_array($data))
     { // Parse each array element.
       $array = array();
@@ -280,6 +289,7 @@ class Conf extends \Nano3\Base\Data\Arrayish
     { // Use toArray on the data itself.
       $array = $data->to_array();
     }
+    return $array;
   }
 
   /**
