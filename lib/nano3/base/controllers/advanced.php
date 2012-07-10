@@ -41,6 +41,9 @@ abstract class Advanced extends Basic implements \ArrayAccess
     'error'   => array('class'=>'error',   'prefix'=>'err.'),
     'warning' => array('class'=>'warning', 'prefix'=>'warn.'),
   );
+  // Default status action type.
+  protected $status_action_type = 'submit';
+
   protected $html_includes;     // Override in your controller base.
 
   // Construct our object.
@@ -195,6 +198,42 @@ abstract class Advanced extends Basic implements \ArrayAccess
     $text = $this->text->getStr($prefix.$name, $opts);
 
     $message = array('name'=>$name, 'class'=>$class, 'text'=>$text);
+
+    // Handle 
+    if (isset($opts['actions']))
+    {
+      $actions = array();
+      foreach ($opts['actions'] as $aid => $adef)
+      {
+        if (is_array($adef))
+          $action = $adef;
+        else
+          $action = array();
+
+        if (!isset($action['name']))
+        {
+          if (is_numeric($aid) && is_string($adef))
+            $action['name'] = $adef;
+          elseif (is_string($aid))
+            $action['name'] = $aid;
+          else
+            throw new \Exception("Status action requires a name.");
+        }
+
+        if (isset($action['ns']))
+          $ns = $action['ns'];
+        else
+          $ns = 'action.';
+
+        $action['text'] = $this->text->getStr($ns.$action['name'], $action);
+
+        if (!isset($action['type']))
+          $action['type'] = $this->status_action_type; 
+
+        $actions[] = $action;
+      }
+      $message['actions'] = $actions;
+    }
 
     if (isset($opts['session']) && $opts['session'])
     {
