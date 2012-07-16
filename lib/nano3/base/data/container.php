@@ -24,11 +24,16 @@ abstract class Container extends Arrayish
   }
 
   // Add an item to our index.
-  protected function add_data_index ($item)
+  protected function add_data_index ($item, $indexname=Null)
   {
+    // First and foremost, if indexname is specified, it overrides all else.
+    if (isset($indexname))
+    {
+      $this->data_index[$indexname] = $item;
+    }
     // If we are an object, see if we have the data_identifier() method.
     // Yes, that's right, we are using Duck Typing.
-    if (is_object($item) && is_callable(array($item, 'data_identifier')))
+    elseif (is_object($item) && is_callable(array($item, 'data_identifier')))
     {
       $id = $item->data_identifier();
       $this->data_index[$id] = $item;
@@ -43,6 +48,7 @@ abstract class Container extends Arrayish
   }
 
   // Get the index number based on key.
+  // Only useful if we're using numbered indexing.
   public function get_data_index ($key)
   {
     $dcount = count($this->data);
@@ -132,16 +138,16 @@ abstract class Container extends Arrayish
     return $array;
   }
 
-  public function append ($item)
+  public function append ($item, $indexname=Null)
   {
     $this->data[] = $item;
-    $this->add_data_index($item);
+    $this->add_data_index($item, $indexname);
   }
 
-  public function insert ($item, $pos=0)
+  public function insert ($item, $pos=0, $indexname=Null)
   {
     parent::insert($item, $pos);
-    $this->add_data_index($item);
+    $this->add_data_index($item, $indexname);
   }
 
   // We override ArrayAccess to use $this->data_index for its source.
