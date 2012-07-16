@@ -23,13 +23,15 @@ abstract class Container extends Arrayish
     $this->data_index = array();
   }
 
-  // Add an item to our index.
+  // Add an item to our index. Override this if you need anything
+  // more complex than the rules below.
   protected function add_data_index ($item, $indexname=Null)
   {
     // First and foremost, if indexname is specified, it overrides all else.
     if (isset($indexname))
     {
       $this->data_index[$indexname] = $item;
+      return True;
     }
     // If we are an object, see if we have the data_identifier() method.
     // Yes, that's right, we are using Duck Typing.
@@ -37,14 +39,17 @@ abstract class Container extends Arrayish
     {
       $id = $item->data_identifier();
       $this->data_index[$id] = $item;
+      return True;
     }
     // Similarly, if we are an array, and have a key of 'id', use it.
     elseif (is_array($item) && isset($item['id']))
     {
       $id = $item['id'];
       $this->data_index[$id] = $item;
+      return True;
     }
     // Anything else, isn't added to our index.
+    return False;
   }
 
   // Get the index number based on key.
