@@ -75,15 +75,15 @@ class Item implements \ArrayAccess
    * Unless $auto_generated_pk is set to False, this will throw an
    * exception if you try to set the value of the primary key.
    */
-  public function __set ($name, $value)
+  public function __set ($field, $value)
   {
-    $name = $this->db_field($name);
+    $name = $this->db_field($field);
 
     if ($name == $this->primary_key && $this->auto_generated_pk)
       throw new Exception('Cannot overwrite primary key.');
 
     $this->modified_data[$name] = $this->data[$name];
-    $meth = "_set_$name";
+    $meth = "_set_$field";
     if (is_callable(array($this, $meth)))
     {
       $this->$meth($value);
@@ -128,10 +128,10 @@ class Item implements \ArrayAccess
   /** 
    * Get a database field.
    */
-  public function __get ($name)
+  public function __get ($field)
   {
-    $name = $this->db_field($name);
-    $meth = "_get_$name";
+    $name = $this->db_field($field);
+    $meth = "_get_$field";
     if (is_callable(array($this, $meth)))
     {
       return $this->$meth();
