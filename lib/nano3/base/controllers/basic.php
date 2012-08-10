@@ -72,6 +72,8 @@ abstract class Basic
   ( // A set of common scripts included in the nano.js toolkit.
     '#common' => array('jquery','json2','json.jq','disabled.jq','exists.jq'),
   );
+  // Keep track of scripts and groups we've added, and don't duplicate stuff.
+  protected $script_added = array();
 
   /**
    * Display the contents of a screen, typically within a common layout.
@@ -394,6 +396,11 @@ abstract class Basic
       return; // All done.
     }
 
+    if (isset($this->script_added[$name]))
+    { // We've already added this script or group.
+      return;
+    }
+
     // If this is a group, we process the group members.
     if (isset($this->script_groups[$name]))
     {
@@ -401,6 +408,7 @@ abstract class Basic
       {
         $this->add_js($script, $opts);
       }
+      $this->script_added[$name] = $name;
       return; // We've imported the group, let's leave now.
     }
 
@@ -432,6 +440,7 @@ abstract class Basic
     }
 
     $this->data['scripts'][] = $file;
+    $this->script_added[$name] = $file;
   }
 
   /**

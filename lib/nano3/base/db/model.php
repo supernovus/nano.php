@@ -35,6 +35,11 @@ abstract class Model implements \Iterator, \ArrayAccess
   public $known_fields;      // If set, it's a list of fields we know about.
                              // DO NOT set the primary key in here!
 
+  // The following are used by the pager() function to generate ORDER BY and LIMIT statements.
+  public $sort_orders = array();
+  public $default_sort_order;
+  public $default_page_count = 10;
+
   // Constants used in the newRow() method.
   const return_row = 1; // Return a proper Row object.
   const return_raw = 2; // Return a raw DB query object.
@@ -88,6 +93,22 @@ abstract class Model implements \Iterator, \ArrayAccess
       $this->primary_key = $opts['primary_key'];
     elseif (!isset($this->primary_key))
       $this->primary_key = 'id';
+
+    $pk = $this->primary_key;
+
+    // Default sort orders if you don't override it.
+    if (count($this->sort_orders) == 0)
+    {
+      $this->sort_orders[$pk.'_up']   = "$pk ASC";
+      $this->sort_orders[$pk.'_down'] = "$pk DESC";
+    }
+
+    // If no default sort order has been specified, we do it now.
+    if (!isset($this->default_sort_order))
+    {
+      $sort_orders = array_keys($this->sort_orders);
+      $this->default_sort_order = $sort_orders[0];
+    }
 
     if (isset($opts['parent']))
       $this->parent = $opts['parent'];
@@ -440,6 +461,83 @@ abstract class Model implements \Iterator, \ArrayAccess
       }
     }
     return $query;
+  }
+
+  /**
+   * Row count.
+   */
+  public function rowcount ($where=Null)
+  {
+    $sql = "SELECT count(id) FROM {$this->table}";
+    $data = array();
+    if (is_array($where) && count($where) > 0)
+    {
+      $sql .= ' WHERE ';
+      foreach ($where as $key => $value)
+      {
+        if (count($data))
+          $sql .= 'AND ';
+        $sql .= "$key = :$key ";
+        $data[$key] = $value;
+      }
+    }
+    elseif (is_string($where))
+    {
+      $sql .= " WHERE $where";
+    }
+    $query = $this->query($sql, False);
+    $query->execute($data);
+    $row = $query->fetch();
+    return $row[0];
+  }
+
+  /**
+   * Page count.
+   */
+  public function pagecount ($rowcount=Null, $opts=array())
+  {
+    if (!is_numeric($rowcount))
+    {
+      $rowcount = $this->rowcount($rowcount);
+    }
+
+    if (isset($opts['count']) && $opts['count'] > 0)
+      $perpage = $opts['count'];
+    else
+      $perpage = $this->default_page_count;
+
+    $pages = ceil($rowcount / $perpage);
+
+    return $pages;
+  }
+
+  /**
+   * Generate ORDER BY and LIMIT statements, based on a provided sort order,
+   * number of items to display per page, and what page you are currently on.
+   * NOTE: pages start with 1, not 0.
+   */
+  public function pager ($opts=array())
+  {
+    if (isset($opts['sort']))
+      $sort = $opts['sort'];
+    else
+      $sort = $this->default_sort_order;
+
+    if (isset($opts['page']) && $opts['page'] > 0)
+      $page = $opts['page'];
+    else
+      $page = 1;
+
+    if (isset($opts['count']) && $opts['count'] > 0)
+      $count = $opts['count'];
+    else
+      $count = $this->default_page_count;
+
+    $offset = $count * ($page - 1);
+
+    $statement = "ORDER BY {$this->sort_orders[$sort]} LIMIT $offset, $count";
+#    error_log("pager statement: $statement");
+    return $statement;
   }
 
   // Iterator interface to use a DBModel in a foreach loop.
