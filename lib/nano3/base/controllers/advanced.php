@@ -49,6 +49,11 @@ abstract class Advanced extends Basic implements \ArrayAccess
   // Construct our object.
   public function __construct ($opts=array()) 
   {
+    $this->__construct_controller($opts=array());
+  }
+
+  public function __construct_controller ($opts=array())
+  {
     $nano = \Nano3\get_instance();
     if (!isset($this->default_url))
     {
