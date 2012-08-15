@@ -1,6 +1,7 @@
 <?php
 
 namespace Nano3\Utils;
+use Nano3\Exception;
 
 /**
  * An object-oriented wrapper for the PHP cURL library.
