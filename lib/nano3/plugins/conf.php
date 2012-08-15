@@ -55,6 +55,11 @@ class Conf extends \Nano3\Base\Data\Arrayish
   
   public $strict_mode = True;  // If true, we die on failure.
 
+  public function dir ()
+  {
+    return $this->autoload_dir;
+  }
+
   /**
    * Pass in a filename, and find out if it is a supported type.
    */
