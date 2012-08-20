@@ -1,9 +1,10 @@
 <?php
 
-/* Nano3 Framework Engine
-   A modular, extendible, object-oriented engine for building
-   PHP web applications. This is the 3rd generation engine
-   and requires PHP 5.3 or higher.
+/** 
+ * Nano3 Framework Engine
+ * A modular, extendible, object-oriented engine for building
+ * PHP web applications. This is the 3rd generation engine
+ * and requires PHP 5.3 or higher.
  */
 
 namespace Nano3;
@@ -17,7 +18,13 @@ set_include_path(get_include_path().PATH_SEPARATOR.NANO_CLASS_DIR);
 spl_autoload_extensions('.php');
 spl_autoload_register('spl_autoload');
 
-// Get the output content from a PHP file.
+/** 
+ * Get the output content from a PHP file.
+ * This is used as the backend function for all View related methods.
+ *
+ * @param string $filename    The PHP file to get the content from.
+ * @param array  $data        An array of fields to extract into local variables.
+ */
 function get_php_content ($__view_file, $__view_data=NULL)
 { 
   // First, start saving the buffer.
@@ -41,7 +48,14 @@ function get_php_content ($__view_file, $__view_data=NULL)
   return $buffer;
 }
 
-// Add or remove a flag to a given binary mask.
+/** 
+ * Add or remove a flag to a given binary mask.
+ *
+ * @param integer $flags   The bitmask representing the currently set flags.
+ * @param integer $flag    The value of the flag to add or remove.
+ * @param boolean $action  If true, we add the flag, if false, we remove the flag.
+ *                         Defaults to true.
+ */
 function set_flag (&$flags, $flag, $value=true)
 {
   if ($value)
@@ -50,13 +64,18 @@ function set_flag (&$flags, $flag, $value=true)
     $flags = $flags - ($flags & $flag);
 }
 
-/* The base class for Nano Exceptions */
+/** 
+ * The base class for Nano Exceptions 
+ */
 class Exception extends \Exception {}
 
-// The following can be used to find the Nano object.
-// If none exists, it will create a new one.
-// However this does not allow you to set any constructor options.
+// Storage for the global Nano object.
 global $__nano__instance;
+
+/**
+ * Get or create the Nano3 instance.
+ * Only one instance of Nano3 can exist in a single PHP process.
+ */
 function get_instance ()
 {
   global $__nano__instance;
@@ -70,9 +89,10 @@ function get_instance ()
   }
 }
 
-/* The base class for Nano loaders. 
-   Extend this as needed. The default loads the library and nothing more.
-   Useful for helper engines such as Nano extensions.
+/**
+ * The base class for Nano loaders. 
+ * Extend this as needed. The default loads the library and nothing more.
+ * Useful for helper engines such as Nano extensions.
  */
 class Loader
 { 
@@ -93,7 +113,11 @@ class Loader
       throw new Exception('Invalid opts passed to NanoLoader contructor.');
   }
 
-  // Return the filename associated with the given class.
+  /** 
+   * Return the filename associated with the given class.
+   *
+   * @param string $classname  The class name to look for.
+   */
   public function file ($class)
   {
     if (isset($this->dir))
@@ -113,7 +137,11 @@ class Loader
       return Null;
   }
 
-  // Does the given class exist?
+  /** 
+   * Does the given class exist?
+   *
+   * @param string $classname  The class name to look for.
+   */
   public function is ($class)
   {
     if (isset($this->dir))
@@ -137,9 +165,13 @@ class Loader
     return Null;
   }
 
-  // Find the file associated with a class.
-  // Similar to is() but returns the first file that
-  // exists, or Null if no possible matches were found.
+  /** 
+   * Find the file associated with a class.
+   * Similar to is() but returns the first file that
+   * exists, or Null if no possible matches were found.
+   *
+   * @param string $classname   The class name to look for.
+   */
   public function find ($class)
   {
     if (isset($this->dir))
@@ -162,7 +194,12 @@ class Loader
     }
   }
 
-  // Load the given class. Override this as needed.
+  /** 
+   * Load the given class. Override this as needed.
+   *
+   * @param string $classname   The class name to load.
+   * @param mixed  $data        Reserved for sub-classes.
+   */
   public function load ($class, $data=NULL)
   {
     if (isset($this->dir))
@@ -183,7 +220,11 @@ class Loader
     }
   }
 
-  // Add a directory to search through.
+  /** 
+   * Add a directory to search through.
+   *
+   * @param string $dirname   The name of the directory to add.
+   */
   public function addDir ($dir)
   {
     if (is_null($this->dir))
@@ -198,12 +239,12 @@ class Loader
   }
 }
 
-/* The base class for the Nano framework.
-   Either make an instance of this directly, or make your own base
-   class that extends this. As per the notice above, you cannot have
-   more than one instance of a Nano-derived object at one time.
+/** 
+ * The base class for the Nano framework.
+ * Either make an instance of this directly, or make your own base
+ * class that extends this. As per the notice above, you cannot have
+ * more than one instance of a Nano-derived object at one time.
  */
-
 class Nano3 implements \ArrayAccess
 {
   public $lib   = array();    // Library objects.
@@ -214,7 +255,13 @@ class Nano3 implements \ArrayAccess
   public $call_hooks = False;  // Unknown methods dispatch to hooks?
   public $call_load  = False;  // Dispatch load* methods to loaders?
 
-  // Add a library object to Nano. 
+  /** 
+   * Add a library object to our collection.
+   *
+   * @param string $name   The local name to call the library.
+   * @param mixed  $class  Either the class name, or class instance.
+   * @param mixed  $opts   Passed as constructor parameter if $class is a string.
+   */
   public function addLib ($name, $class, $opts=NULL)
   { // Override default opts if a conf is found.
     if (
@@ -242,7 +289,13 @@ class Nano3 implements \ArrayAccess
     }
   }
 
-  // Add a loader.
+  /** 
+   * Add a loader object to our collection.
+   *
+   * @param string $name   The local name for the loader.
+   * @param mixed  $opts   Eiter an array of options, or the directory name.
+   * @param string $type   (optional) Subclass of Loader to use.
+   */
   public function addLoader ($name, $opts, $type=Null)
   {
     // If $opts is not an array, assume it is the 'dir' opt.
@@ -265,26 +318,40 @@ class Nano3 implements \ArrayAccess
     $this->addLib($name, $class, $opts);
   }
 
-  // Add a NanoClassLoader library.
+  /** 
+   * Add a ClassLoader object to our collection.
+   *
+   * @param string $name   The local name for the loader.
+   * @param string $type   The classname pattern (without application namespace)
+   * @param array  $opts   Options to initialize the ClassLoader with.
+   */
   public function addClass ($name, $type, $opts=array())
   {
     $opts['type'] = $type;
     $this->addLoader($name, $opts, 'Class');
   }
 
-  // Add a NanoViewLoader library.
+  /** 
+   * Add a ViewLoader object to our collection.
+   *
+   * @param string $name  The local name for the loader.
+   * @param mixed  $dir   An array of dirs, or a single dir as a string.
+   * @param array  $opts  Options to initialize the ViewLoader with.
+   */
   public function addViews ($name, $dir, $opts=array())
   {
     $opts['dir'] = $dir;
     $this->addLoader($name, $opts, 'View');
   }
 
-  // Construct a new Nano object. By default we build a 'nano' loader which
-  // loads Nano extensions from our own folder. You can override the folder
-  // of the loader via the 'nanodir' option to the constructor.
-  // This loader is expected to be available by other extensions, so don't
-  // mess with it. Oh, and it's a basic constructor, so it only loads
-  // libraries, nothing more, nothing less.
+  /**
+   * Construct a new Nano object. By default we build a 'nano' loader which
+   * loads Nano extensions from our own folder. You can override the folder
+   * of the loader via the 'nanodir' option to the constructor.
+   * This loader is expected to be available by other extensions, so don't
+   * mess with it. Oh, and it's a basic constructor, so it only loads
+   * libraries, nothing more, nothing less.
+   */
   public function __construct ($opts=array())
   {
     global $__nano__instance;
@@ -300,6 +367,8 @@ class Nano3 implements \ArrayAccess
     // Now register this as the 'nano' loader.
     $this->addLoader('nano', $nano_dir);
 
+    // Load a preset Configuration library.
+    // NOTICE: this feature is deprecated, and may be removed in a future version.
     if (isset($opts['conf']))
     {
       if (is_array($opts['conf']))
@@ -318,8 +387,12 @@ class Nano3 implements \ArrayAccess
 
   }
 
-  // Pragmas change the behavior of the current script.
-  // You can specify multiple pragmas by separating them with a space.
+  /**
+   * Pragmas change the behavior of the current script.
+   * You can specify multiple pragmas by separating them with a space.
+   *
+   * @param string $statement  A space separated list of pragmas.
+   */
   public function pragma ($statement)
   {
     $pragmas = explode(' ', $statement);
@@ -332,15 +405,23 @@ class Nano3 implements \ArrayAccess
     }
   }
 
-  // Meta extensions add features to Nano3 itself.
-  // This is used by the Nano3 library loader (see __get() for details.)
+  /** 
+   * Meta extensions add features to Nano3 itself.
+   * This is used by the Nano3 library loader (see __get() for details.)
+   *
+   * @param string $name  Name of the meta extension to execute.
+   */
   public function extend ($name)
   {
     $this->lib['nano']->load("meta/$name");
   }
 
-  // Nano Plugins. Add pre-created library objects to Nano3.
-  // This is used by the Nano3 library loader (see __get() for details.)
+  /**
+   * Nano Plugins. Add pre-created library objects to Nano3.
+   * This is used by the Nano3 library loader (see __get() for details.)
+   *
+   * @param string $name   Name of the plugin to load and add to our collection.
+   */
   public function addPlugin ($name)
   {
     $class = "\\Nano3\\Plugins\\$name";
@@ -349,6 +430,9 @@ class Nano3 implements \ArrayAccess
 
   /* We're using psuedo-accessors to make life easier */
 
+  /**
+   * See if we have a library loaded already.
+   */
   public function __isset ($offset)
   {
     return isset($this->lib[$offset]);
@@ -364,6 +448,18 @@ class Nano3 implements \ArrayAccess
     throw new Exception("You cannot remove Nano extensions.");
   }
 
+  /**
+   * Get a library object from our collection.
+   * If a named library object does not exist in our collection,
+   * but a Plugin or Meta Extension exists with the same name,
+   * the library will be loaded automatically using extend() or addPlugin().
+   *
+   * NOTE:
+   *   Plugins have preference over Meta Extensions, so if a plugin exists with
+   *   the same name as a meta extension, the plugin version will be auto-loaded.
+   *   If you want to use the meta extension, you will have to explicitly call
+   *   $nano->extend($extension_name);
+   */
   public function __get ($offset)
   {
     if (isset($this->lib[$offset]))
@@ -384,6 +480,9 @@ class Nano3 implements \ArrayAccess
 
   /* Plus the ArrayAccess interface for extra flexibility. */
 
+  /**
+   * Alias to __isset()
+   */
   public function offsetExists ($name)
   {
     return $this->__isset($name);
@@ -399,23 +498,21 @@ class Nano3 implements \ArrayAccess
     return $this->__unset($name);
   }
 
+  /**
+   * Alias to __get()
+   */
   public function offsetGet ($name)
   {
     return $this->__get($name);
   }
 
   /**
-   * Hooks.
+   * Add a named hook callback.
+   * The callback you supply, must match the interface of the hook
+   * as required 
    *
-   * A hook can be placed anywhere in your code.
-   * Other pieces of code can add callbacks to be called
-   * when that hook is called. Hooks can return data,
-   * which will be saved in an array of results.
-   *
-   * The code calling the hooks specifies the interface to
-   * the hooks, so any hook handlers added to that hook need
-   * to implement that interface.
-   *
+   * @param string $name        The name of the hook.
+   * @param mixed  $callback    The callback to be executed.
    */
   public function addHook ($name, $callback)
   {
@@ -423,7 +520,7 @@ class Nano3 implements \ArrayAccess
     {
       $this->hooks[$name] = array();
     }
-    array_push($this->hooks[$name], $callback);
+    $this->hooks[$name][] = $callback;
   }
 
   public function callHook ($name, $opts=array())
@@ -433,7 +530,7 @@ class Nano3 implements \ArrayAccess
     { // A hook exists, let's call any registered hooks.
       foreach ($this->hooks[$name] as $hook)
       {
-        $hook_out = call_user_func_array($hook, $opts);
+        $hook_out[] = call_user_func_array($hook, $opts);
       }
     }
     return $hook_out;
@@ -456,7 +553,6 @@ class Nano3 implements \ArrayAccess
    *
    * Class method calls, object method calls and closures are handled
    * as per the standard PHP callback rules.
-   *
    */
   public function addMethod ($name, $callback)
   {
