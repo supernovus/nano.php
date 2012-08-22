@@ -66,6 +66,7 @@ abstract class Basic
   (
     'jquery'     => array('file'=>'scripts/nano/jquery.js'),
     'underscore' => array('file'=>'scripts/nano/underscore.js'),
+    'less'       => array('file'=>'scripts/nano/less.js'),
   );
   // Groups can be included easily.
   protected $script_groups = array
