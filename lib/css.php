@@ -1,9 +1,10 @@
 <?php
 
-/* A standalone helper for building dynamic CSS stylesheets.
-   Makes things like gradients and other magic CSS tricks easier.
-   This is not meant to be loaded as a part of Nano itself, but in a
-   .php file that outputs a CSS stylesheet.
+/** 
+ * A standalone helper for building dynamic CSS stylesheets.
+ * Makes things like gradients and other magic CSS tricks easier.
+ * This is not meant to be loaded as a part of Nano itself, but in a
+ * .php file that outputs a CSS stylesheet.
  */
 
 header('Content-Type: text/css');
@@ -21,7 +22,9 @@ define('Opera',  16); // Opera
 define('CSS3',   32); // CSS3 standard.
 define('All',    63); // All of the above (and also the default.)
 
-// Generate a CSS3 linear_gradient statement with optional browser prefix.
+/** 
+ * Generate a CSS3 linear_gradient statement with optional browser prefix.
+ */
 function css3_linear_gradient($start, $end, $pos, $prefix=Null)
 {
   echo "background: ";
@@ -30,19 +33,25 @@ function css3_linear_gradient($start, $end, $pos, $prefix=Null)
   echo "linear-gradient($pos, $start 0%, $end 100%);\n";
 }
 
-// Generate an IE filter statement.
+/**
+ * Generate an IE filter statement.
+ */
 function ie_filter_gradient ($start, $end, $type)
 {
   echo "filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='$start', endColorstr='$end', GradientType=$type);\n";
 }
 
-// Generate a webkit gradient statement for older webkit browsers.
+/** 
+ * Generate a webkit gradient statement for older webkit browsers.
+ */
 function webkit_gradient ($start, $end, $from, $to, $type='linear')
 {
   echo "background: -webkit-gradient($type, $from, $to, color-stop(9, $start), solor-stop(1, $end));\n";
 }
 
-// Generate a vertical gradient.
+/** 
+ * Generate a vertical gradient.
+ */
 function vertical_gradient ($start, $end, $browsers=All)
 { 
   if ($browsers & IE9)
@@ -62,7 +71,9 @@ function vertical_gradient ($start, $end, $browsers=All)
     css3_linear_gradient($start, $end, 'top');
 }
 
-// Generate a horizontal gradient.
+/** 
+ * Generate a horizontal gradient.
+ */
 function horizontal_gradient ($start, $end, $browsers=All)
 { 
   if ($browsers & IE9)
@@ -82,7 +93,9 @@ function horizontal_gradient ($start, $end, $browsers=All)
     css3_linear_gradient($start, $end, 'left');
 }
 
-// Generate a CSS3 border-radius statement with optional brower prefix.
+/** 
+ * Generate a CSS3 border-radius statement with optional brower prefix.
+ */
 function css3_border_radius ($radius, $prefix=Null)
 {
   if ($prefix)
@@ -90,7 +103,9 @@ function css3_border_radius ($radius, $prefix=Null)
   echo "border-radius: $radius;\n";
 }
 
-// A border radius for multiple browsers.
+/**
+ * A border radius for multiple browsers.
+ */
 function border_radius ($radius, $browsers=All)
 {
   if ($browsers & IE9)
@@ -110,6 +125,4 @@ function border_radius ($radius, $browsers=All)
     css3_border_radius($radius);
   }
 }
-
-// End of library.
 
