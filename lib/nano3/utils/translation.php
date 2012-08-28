@@ -245,6 +245,59 @@ class Translation implements \ArrayAccess
     return $assoc;
   }
 
+  /** 
+   * Generate a translation table from an associative array.
+   * In this version, we support a complex nested structure,
+   * were the first level key is the prefix (minus separator)
+   * and the definitions nest from there.
+   * The default separator between prefix and name is a period.
+   * You can also specify an optional top-level prefix or namespace
+   * which the rest of the prefixes must exist within. No separator
+   * will be put between the namespace and the inner prefix, so specify
+   * it in its entirety with closing colon (e.g. "mysection:")
+   */
+  public function strStruct ($array, $sep='.', $ns='')
+  {
+    $result = array();
+    foreach ($array as $prefix => $def)
+    {
+      $result[$prefix] = $this->strStruct_getDef($def, $prefix, $sep, $ns);
+    }
+    return $result;
+  }
+
+  // Private helper method for strStruct().
+  private function strStruct_getDef ($def, $prefix, $sep, $ns)
+  {
+    $result = array();
+    foreach ($def as $index => $value)
+    {
+      if (is_array($value))
+      {
+        $result[$index] = $this->strStruct_getDef($value, $prefix, $sep, $ns);
+        continue;
+      }
+      elseif (is_numeric($index))
+      {
+        $key     = $value;
+        $default = $value;
+      }
+      else
+      {
+        $key     = $index;
+        $default = $value;
+      }
+      $id  = $ns.$prefix.$sep.$key;
+      $val = $this->getStr($id);
+      if ($val == $id)
+      {
+        $val = $default;
+      }
+      $result[$key] = $val;
+    }
+    return $result;
+  }
+
   // Reverse lookup of a string. If found, it returns the key.
   public function lookupStr ($string, $opts=array())
   {
