@@ -56,18 +56,17 @@ abstract class Basic
   // The default assumes you have a a "scripts" folder, and
   // within it, a copy or link to the Nano.js scripts folder called 'nano'.
   protected $script_path = array('scripts', 'scripts/nano');
+
   // Override this on a global or per-controller basis to set the
-  // preferred script extensions. By default we prefer Closure Compiler,
-  // followed by minified, followed by raw .js.
-  protected $script_exts = array('.cc.js', '.min.js', '.js');
-  // A few scripts included with nano.js use the raw .js extension but are
-  // in fact minified. To help sort those ones out, we list them here.
-  protected $script_opts = array
-  (
-    'jquery'     => array('file'=>'scripts/nano/jquery.js'),
-    'underscore' => array('file'=>'scripts/nano/underscore.js'),
-    'less'       => array('file'=>'scripts/nano/less.js'),
-  );
+  // preferred script extensions. The default load order is:
+  //
+  //   1. Distribution script.
+  //   2. Closure Compiler script.
+  //   3. Minified script.
+  //   4. Raw script.
+  //
+  protected $script_exts = array('.dist.js', '.cc.js', '.min.js', '.js');
+
   // Groups can be included easily.
   protected $script_groups = array
   ( // A set of common scripts included in the nano.js toolkit.
