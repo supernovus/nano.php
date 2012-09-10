@@ -155,9 +155,13 @@ class URL
     }
     else
     {
-      $filename = basename($file); // Chop the directory portion.
-      $filesize = filesize($file); // Get the filesize.
+      if (isset($opts['filename']))
+        $filename = $opts['filename'];
+      else
+        $filename = basename($file); // Chop the directory portion.
+      $filesize = filesize($file);   // Get the filesize.
     }
+
     header('Content-Description: File Transfer');
     header("Content-Type: $type;" . 'name="' . $filename . '"');
     header('Content-Disposition: attachment; filename="'.$filename.'"');
