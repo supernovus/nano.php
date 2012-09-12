@@ -1,11 +1,5 @@
 <?php
 
-/* Controller Dispatch for Nano.
-   Supports a broad array of rules to dispatch using.
-   We no longer support the CodeIgniter implicit dispatching directly.
-   You can simulate it using rules though.
- */
-
 namespace Nano3\Plugins;
 use Nano3\Exception;
 
@@ -43,7 +37,9 @@ function remove_invisible_characters($str, $url_encoded = TRUE)
 	return $str;
 }
 
-// Return the path info.
+/**
+ * Return the PATH information.
+ */
 function get_path ()
 { // Extracted from get_routing for use elsewhere.
   #$path = (isset($_SERVER['PATH_INFO'])) ? $_SERVER['PATH_INFO'] : @getenv('PATH_INFO');
@@ -53,8 +49,11 @@ function get_path ()
   return $path;
 }
 
-// Look up the path the user went to, and expand it into an array.
-// Based on code from CodeIgniter, but greatly simplified.
+/**
+ * Return an array representing the individual elements of a path.
+ *
+ * @param String $path   The path to parse into an array.
+ */
 function get_routing ($path=null) 
 { // We use the PATH_INFO to determine our routing.
   if (is_null($path))
@@ -72,7 +71,12 @@ function get_routing ($path=null)
   return $paths;
 }
 
-// A base class to implement dispatch rules.
+/**
+ * Dispatch to Controllers based on rules.
+ *
+ * Most rules match specific URL patterns, and so one script can dispatch
+ * to many different controllers and methods, depending on the current URL.
+ */
 class Dispatch
 {
   protected $controllers = array();                // Known controllers.
@@ -80,7 +84,11 @@ class Dispatch
 
   public $url_prefix;                              // Use if in subdir.
 
-  // A quick method to set the url_prefix.
+  /** 
+   * Set the URL prefix.
+   *
+   * @param String $dir    URL Prefix.
+   */
   public function url_prefix ($dir=Null)
   {
     if (is_null($dir))
@@ -90,8 +98,14 @@ class Dispatch
     $this->url_prefix = $dir;
   }
 
-  // Add a controller to the explicit controllers list.
-  // Catchall rules should be added last.
+  /**
+   * Add a dispatch rule to be processed.
+   * The order rules are added is important.
+   * Catchall rules should be added last, and to the very bottom!
+   *
+   * @param Array $rules   The rule specification to add.
+   * @param Bool  $top     If set to True, add to the top.
+   */
   public function addRoute ($rules, $top=false)
   {
     if ($top)
@@ -100,9 +114,12 @@ class Dispatch
       array_push($this->controllers, $rules);
   }
 
-  // Add a single controller that handles multiple routes.
-  // NOTE: pre-existing prefix rule will be appended to
-  // the method for the prefix to look for.
+  /**
+   * Add rules that map multiple routes to a single controller.
+   * 
+   * @param Array $baserules   The base rules used to build individual rules.
+   * @param Array $methods     A list of methods the controller supports.
+   */
   public function addRoutes ($baserules, $methods)
   {
     if (is_string($baserules))
@@ -170,10 +187,13 @@ class Dispatch
     }
   }
 
-  // Add a single controller that handles multiple routes
-  // with a given prefix. A simple wrapper to addRoutes().
-  // This assumes a lot, so if you need something more advanced,
-  // write your own addRoutes() call.
+  /** 
+   * Add a single controller that handles multiple routes
+   * with a given prefix. Very simplistic.
+   *
+   * @param String $name     The name of the controller, and URL prefix.
+   * @param Array  $handles  List of methods (see addRoutes() for details.)
+   */
   public function addPrefixController ($name, $handles)
   {
     $rules = array
@@ -186,8 +206,12 @@ class Dispatch
     return $this->addRoutes($rules, $handles);
   }
 
-  // Add a single controller which uses the prefix as the controller name.
-  // Like addPrefixController this assumes a lot.
+  /** 
+   * Add a single controller which uses the prefix as the controller name.
+   *
+   * @param String $name     The name of the controller and URL prefix.
+   * @param Int    $offset   If set to an integer, defines path offset.
+   */
   public function addSingleController ($name, $offset=False)
   {
     $rules = array
@@ -205,7 +229,41 @@ class Dispatch
     return $this->addRoute($rules);
   }
 
-  // Add a CodeIgniter-style controller.
+  /** 
+   * Add a controller to a nested path specification.
+   *
+   * Due to the way Dispatch matches rules, you must make sure
+   * deeper nested path specs are added first, so they match before
+   * their parent paths.
+   *
+   * @param Array   $paths       The path segments to match (no slashes.)
+   * @param String  $name        The controller name.
+   * @param Int     $offset      If set to an integer, defines path offset.
+   */    
+  public function addNestedController ($paths, $name, $offset=False)
+  {
+    $rules = array
+    (
+      'name'    => $name,
+      'ispath'  => $paths,
+      'defpath' => False,
+    );
+    if (is_numeric($offset))
+    {
+      $rules['setpath'] = $offset;
+    }
+    return $this->addRoute($rules);
+  }
+
+  /** 
+   * Add CodeIgniter-style controller dispatching.
+   *
+   * Adds a controller rule that will determine the controller name
+   * and method name based on the URL path. If you use this, it should
+   * be added after any explicit URL matching rules.
+   *
+   * @param Bool $splice    Remove the first two path entries? [True]
+   */
   public function addDynamicController ($splice=true)
   {
     $ctrl = array('cpath'=>0, 'mpath'=>1);
@@ -214,39 +272,74 @@ class Dispatch
     $this->addRoute($ctrl);
   }
 
-  // Add a default controller with a given name.
-  // Unlike previous versions, this does not have a default name.
+  /**
+   * Add a default controller that will be used if no other rules match.
+   *
+   * This should be done only after ALL other rules have been added, as this
+   * rule will always match, and therefore no rule after it will ever be
+   * matched.
+   *
+   * @param String $name   Name of the controller to dispatch to.
+   */
   public function addDefaultController ($name)
   {
     $ctrl = array('name'=>$name);
     $this->addRoute($ctrl);
   }
 
-  // Add a root controller with a given name.
+  /** 
+   * Add a controller which will be used at the "root" URL.
+   *
+   * This matches the "base" or "root" URL only.
+   * There can be only one "root" controller, and the first one
+   * found will be dispatched to.
+   *
+   * @param String $name    Name of the controller to dispatch to.
+   */
   public function addRootController($name)
   {
     $ctrl = array('name'=>$name, 'root'=>True);
     $this->addRoute($ctrl);
   }
 
-  // Add a root redirection.
+  /**
+   * Add a redirection rule as the "root" controller.
+   *
+   * This is mutually exclusive with addRootController().
+   * As with any "root" controller, there can be only one.
+   *
+   * @param String $url   The URL to redirect the "root" path to.
+   */
   public function addRootRedirect($url)
   {
     $ctrl = array('root'=>True, 'redirect'=>$url);
     $this->addRoute($ctrl);
   }
 
-  // Add a controller that see's if it can handle the path.
+  /** 
+   * Add a controller that see's if it can handle the path via a method.
+   *
+   * The lookup method can return a few different values:
+   *
+   *   - String:  the method name that handles the path.
+   *   - True:    this path is handled, use the default method name.
+   *   - False:   this path is not handled, this rule thus fails.  
+   *
+   * @param String $name    The name of the controller.
+   * @param String $method  The name of the lookup method.
+   */
   public function addLookupController ($name, $method)
   {
      $ctrl = array('name'=>$name, 'lookup'=>$method);
      $this->addRoute($ctrl);
   }
 
-  // Find a controller based on the path.
-  // At a bare minimum, expects that there is a controller called default,
-  // and a handle_dispatch() method in each controller.
-  function dispatch ($reverse=false)
+  /**
+   * Dispatch to a controller based on the rules we have added.
+   *
+   * @param Bool $reverse   If set to True, process rules in reverse order.
+   */
+  public function dispatch ($reverse=false)
   { // A few things we need first.
 
     $nano = \Nano3\get_instance();
@@ -343,17 +436,30 @@ class Dispatch
       // Load the controller using the magic from the controllers extension.
       $controller = $nano->controllers->load($controller);
 
+      // If we define a lookup rule, then we look up if we can handle the
+      // path based on the method name in the lookup rule.
+      //
+      // If the lookup method returns False or Null, it is skipped.
+      // If the method returns True as a boolean value, we continue.
+      // If the method returns a String, we make that our method name,
+      // and continue.
+      if (isset($ctrl['lookup']))
+      { $lookup = $ctrl['lookup'];
+        if (!is_callable(array($controller, $lookup))) continue;
+        $can_handle = $ctrl->$lookup($path);
+        if (is_string($can_handle))
+        {
+          $method = $can_handle;
+        }
+        else
+        {
+          if (!$can_handle) continue;
+        }
+      }
+
       // Okay, now let's ensure the method is valid.
       if (!isset($method)) continue;
       if (!is_callable(array($controller, $method))) continue;
-
-      // Now, one last filter rule, for controllers that have their
-      // own method of determining if they handle a path.
-      if (isset($ctrl['lookup']))
-      { $lookup = $ctrl['lookup'];
-      	if (!is_callable(array($controller, $lookup))) continue;
-        if (!$method->$lookup($path)) continue;
-      }
 
       // Okay, now let's figure out what all data we need to send to the
       // controller. Typically we send the $_REQUEST and $paths, but this

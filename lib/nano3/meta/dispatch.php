@@ -19,6 +19,7 @@ $nano->addMethod('setDefault', array($dispatch, 'addDefaultController'));
 $nano->addMethod('setRoot',    array($dispatch, 'addRootController'));
 $nano->addMethod('addPrefix',  array($dispatch, 'addPrefixController'));
 $nano->addMethod('addSingle',  array($dispatch, 'addSingleController'));
+$nano->addMethod('addNested',  array($dispatch, 'addNestedController'));
 
 $nano->addMethod('redirectRoot', array($dispatch, 'addRootRedirect'));
   
