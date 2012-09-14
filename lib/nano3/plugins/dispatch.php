@@ -236,12 +236,23 @@ class Dispatch
    * deeper nested path specs are added first, so they match before
    * their parent paths.
    *
-   * @param Array   $paths       The path segments to match (no slashes.)
+   * @param Mixed   $paths       The path to match. See below.
    * @param String  $name        The controller name.
    * @param Int     $offset      If set to an integer, defines path offset.
+   *
+   * The $paths can be specified in two formats. One is a simple path
+   * string, with / characters separating the path segments. The other
+   * is to specify an array of path components. If using the array method,
+   * you must ensure the path components are valid and contain no / characters.
    */    
   public function addNestedController ($paths, $name, $offset=False)
   {
+    // We support a path string for easier use.
+    if (!is_array($paths))
+    {
+      $paths = explode('/', trim($paths, "/ \n\r"));
+    }
+
     $rules = array
     (
       'name'    => $name,
