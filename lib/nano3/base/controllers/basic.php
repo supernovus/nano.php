@@ -24,8 +24,11 @@
  *   allows you to make adjustments to it before any conversion.
  *
  * Controller.send_xml
- *   Geta a copy of the data to be sent/converted to XML and
+ *   Gets a copy of the data to be sent/converted to XML and
  *   allows you to make adjustments to it before any conversion.
+ *
+ * Controller.send_html
+ *   Gets a copy of the output text before sending it.
  *
  */
 
@@ -119,6 +122,18 @@ abstract class Basic
       $nano->callHook('Controller.return_content', array(&$page));
       return $page;
     }
+  }
+
+  /**
+   * Sometimes we don't want to display a primary screen with a layout,
+   * but instead a sub-screen, with no layout, and using specified data.
+   */
+  public function send_html ($screen, $data)
+  {
+    $nano = \Nano3\get_instance();
+    $page = $nano->screens->load($screen, $data);
+    $nano->callHook('Controller.send_html', array(&$page));
+    return $page;
   }
 
   // Sometimes we want to send JSON data instead of a template.
