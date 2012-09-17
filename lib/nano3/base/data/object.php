@@ -308,7 +308,7 @@ abstract class Object
 
       $xml = $parent->addChild($tag);
     }
-    elseif (isset($opts['default_element'))
+    elseif (isset($opts['default_element']))
     {
       $defxml = $opts['default_element'];
       if ($defxml instanceof \SimpleXMLElement)
