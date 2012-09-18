@@ -476,6 +476,18 @@ abstract class Basic
     $this->data[$method] = $closure;
   }
 
+  /**
+   * Is the server using a POST request?
+   */
+  public function is_post ()
+  {
+    if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST))
+    {
+      return True;
+    }
+    return False;
+  }
+
 }
 
 // End of base class.
