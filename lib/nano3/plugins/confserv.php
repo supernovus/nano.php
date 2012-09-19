@@ -65,13 +65,12 @@ class ConfServ
   }
 
   // Process a request. PHP value to encode.
-  // If you want to send it a pre-encoded JSON string, pass True as
-  // the second parameter.
-  public function sendJSON ($data, $encoded=False)
+  // To send a pre-encoded value, pass 'encoded'=>True as an option.
+  public function sendJSON ($data, $opts=array())
   {
     $nano = \Nano3\get_instance();
     $nano->pragma('json no-cache');
-    if ($encoded)
+    if (isset($opts['encoded']) && $opts['encoded'])
     {
       echo $data;
     }
@@ -79,11 +78,15 @@ class ConfServ
     {
       if (is_object($data) && is_callable(array($data, 'to_json')))
       {
-        echo $data->to_json();
+        echo $data->to_json($opts);
       }
       else
       {
-        echo json_encode($data, true);
+        $json_opts = 0;
+        if (isset($opts['fancy']) && $opts['fancy'])
+          $json_opts = JSON_PRETTY_PRINT;
+
+        echo json_encode($data, $json_opts);
       }
     }
     exit;
@@ -91,10 +94,10 @@ class ConfServ
 
   // A simple JSON-based request. If you need anything more complex
   // than this, you'll need to do it yourself.
-  public function jsonRequest ($path, $full=False)
+  public function jsonRequest ($path, $full=False, $fancy=False)
   {
     $data = $this->getPath($path, $full);
-    $this->sendJSON($data);
+    $this->sendJSON($data, ['fancy'=>$fancy]);
   }
 
 }

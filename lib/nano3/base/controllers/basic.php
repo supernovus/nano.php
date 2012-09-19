@@ -137,14 +137,17 @@ abstract class Basic
   }
 
   // Sometimes we want to send JSON data instead of a template.
-  public function send_json ($data)
+  public function send_json ($data, $opts=array())
   { 
     $nano = \Nano3\get_instance();
     $nano->pragma('json no-cache');    // Don't cache this.
     $nano->callHook('Controller.send_json', array(&$data));
     if (is_array($data)) 
     { // Basic usage is to send simple arrays.
-      $json = json_encode($data);
+      $json_opts = 0;
+      if (isset($opts['fancy']) && $opts['fancy'])
+        $json_opts = JSON_PRETTY_PRINT;
+      $json = json_encode($data, $json_opts);
     }
     elseif (is_string($data))
     { // A passthrough for JSON strings.
@@ -154,9 +157,7 @@ abstract class Basic
     { // Magic for converting objects to JSON.
       $method = $this->to_json_method;
       if (is_callable(array($data, $method)))
-        $json = $data->$method();
-      elseif (is_callable(array($this, $method)))
-        $json = $this->$method($data);
+        $json = $data->$method($opts);
       else
         throw new Exception('Unsupported object sent to send_json()');
     }
