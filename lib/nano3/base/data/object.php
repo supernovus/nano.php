@@ -240,7 +240,12 @@ abstract class Object
   // Output as a JSON string. Again, pretty cheap.
   public function to_json ($opts=Null)
   {
-    return json_encode($this->to_array($opts));
+    $json_opts = 0;
+    if (isset($opts['fancy']) && $opts['fancy'])
+    {
+      $json_opts = JSON_PRETTY_PRINT;
+    }
+    return json_encode($this->to_array($opts), $json_opts);
   }
 
   // And again, the same as above, but with YAML.
