@@ -219,7 +219,13 @@ class HTML
         $option->addAttribute('selected', 'selected');
       }
     }
-    return $this->return_value($select, $opts);
+    $html = $this->return_value($select, $opts);
+    if (substr(trim($html), -2) == '/>')
+    {
+      $html = substr_replace(trim($html), '></select>', -2);
+#      error_log("Correcting singleton select HTML: $html");
+    }
+    return $html;
   }
 
   // Backend function that powers the ul()/ol() methods.
