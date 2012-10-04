@@ -1,11 +1,12 @@
 <?php
 
+namespace Nano3\Utils;
+use finfo;
+
 /**
  * File class. Offers a bunch of wrappers to common file operations
  * including managing uploaded files.
  */
-
-namespace Nano3\Utils;
 
 class File
 {
@@ -13,7 +14,10 @@ class File
   public $type;      // Mime type, if any.
   public $size;      // The size of the file.
   public $file;      // The filename on the system.
-
+  
+  /**
+   * Build a new File object.
+   */
   public function __construct ($file=Null)
   {
     if (isset($file) && file_exists($file))
@@ -26,6 +30,9 @@ class File
     }
   }
 
+  /**
+   * See if a standard HTTP upload of a set name exists.
+   */
   public static function hasUpload ($name)
   {
     if (isset($_FILES[$name]) && $_FILES[$name]['error'] === UPLOAD_ERR_OK)
@@ -35,6 +42,9 @@ class File
     return False;
   }
 
+  /**
+   * Create a File object from a standard HTTP upload.
+   */
   public static function getUpload ($name)
   {
     if (isset($_FILES[$name]))
@@ -51,6 +61,39 @@ class File
         return $upload;
       }
       return $file['error'];
+    }
+    return Null;
+  }
+
+  /**
+   * Create a File object from a Fine Uploader (qq.FileUploader) request.
+   */
+  public static function getUploadQQ ($name='qqfile')
+  {
+    if (isset($_GET[$name]))
+    {
+      $class = __CLASS__;
+      $input = fopen("php://input", "r");
+      $tmpname = tempnam("/tmp", "qqupload_");
+      $tmpfile = fopen($tmpname, "w");
+      $size  = stream_copy_to_stream($input, $tmpfile);
+      fclose($input);
+      fclose($tmpfile);
+      if ($size == (int)$_SERVER['CONTENT_LENGTH'])
+      {
+        $upload = new $class();
+        $upload->name = $_GET[$name];
+        $upload->size = $size;
+        $upload->file = $tmpname;
+        $finfo = new finfo(FILEINFO_MIME);
+        $upload->type = $finfo->file($file);
+        return $upload;
+      }
+      return ['error'=>'Upload size mismatch'];
+    }
+    elseif (isset($_FILES[$name]))
+    {
+      return $class::getUpload($name);
     }
     return Null;
   }
