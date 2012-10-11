@@ -44,6 +44,7 @@ function get_path ()
 { // Extracted from get_routing for use elsewhere.
   #$path = (isset($_SERVER['PATH_INFO'])) ? $_SERVER['PATH_INFO'] : @getenv('PATH_INFO');
   $path = (isset($_SERVER['PATH_INFO'])) ? $_SERVER['PATH_INFO'] : $_SERVER['REQUEST_URI'];
+  $path = explode('?', $path)[0]; // strip off any queries.
   $path = remove_invisible_characters($path, FALSE);
 #  error_log("found path: $path");
   return $path;
