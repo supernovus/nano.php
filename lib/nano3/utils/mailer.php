@@ -1,9 +1,10 @@
 <?php
 
-/* \Nano3\Utils\Mailer: A quick class to send e-mail.
-   Use it as a standalone component, or extend it for additional features.
-   It now uses Swift Mailer as its backend for added flexibility.
-   Swiftmailer must be installed via Pear.
+/**
+ * A quick class to send e-mails with.
+ * Use it as a standalone component, or extend it for additional features.
+ * It now uses Swift Mailer as its backend for added flexibility.
+ * Swiftmailer must be installed via Pear.
  */
 
 namespace Nano3\Utils;
@@ -30,7 +31,7 @@ class Mailer
   public function __construct ($fields, $opts=array())
   {
     if (!is_array($fields))
-      throw new NanoException('NanoMailer requires a field list.');
+      throw new \Nano3\Exception('NanoMailer requires a field list.');
     $this->fields = $fields;
     if (isset($opts['template']))
       $this->template = $opts['template'];
