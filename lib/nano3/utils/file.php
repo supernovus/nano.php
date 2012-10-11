@@ -70,8 +70,10 @@ class File
    */
   public static function getUploadQQ ($name='qqfile')
   {
+#    error_log("In getUploadQQ");
     if (isset($_GET[$name]))
     {
+#      error_log("  A GET parameter '$name' exists.");
       $class = __CLASS__;
       $input = fopen("php://input", "r");
       $tmpname = tempnam("/tmp", "qqupload_");
@@ -81,20 +83,23 @@ class File
       fclose($tmpfile);
       if ($size == (int)$_SERVER['CONTENT_LENGTH'])
       {
+#        error_log("The size is correct.");
         $upload = new $class();
         $upload->name = $_GET[$name];
         $upload->size = $size;
         $upload->file = $tmpname;
         $finfo = new finfo(FILEINFO_MIME);
-        $upload->type = $finfo->file($file);
+        $upload->type = $finfo->file($tmpname);
         return $upload;
       }
       return ['error'=>'Upload size mismatch'];
     }
     elseif (isset($_FILES[$name]))
     {
+#      error_log("  A FILES element '$name' exists.");
       return $class::getUpload($name);
     }
+#    error_log("Could not find anything called '$name', sorry.");
     return Null;
   }
 
