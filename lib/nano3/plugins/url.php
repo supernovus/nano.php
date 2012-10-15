@@ -331,14 +331,14 @@ class URL
    */
   public static function decodeArray ($string, $serialize=False, $assoc=True)
   {
-    $decoded = base64_decode(strtr($string, '-_.', '+/=');
+    $decoded = base64_decode(strtr($string, '-_.', '+/='));
     if ($serialize)
     {
       return unserialize($decoded);
     }
     else
     {
-      return json_decode($decoded), $assoc);
+      return json_decode($decoded, $assoc);
     }
   }
 
