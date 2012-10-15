@@ -5,8 +5,8 @@ namespace Nano3\Base\Controllers;
 /**
  * Simple controller.
  *
- * It's the Basic controller, with an ArrayAccess interface to make working with
- * the data for views a lot easier.
+ * Adds an array-like interface to the Basic controller for easier
+ * handling of View template data.
  */
 
 abstract class Simple extends Basic implements \ArrayAccess
