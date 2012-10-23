@@ -138,12 +138,12 @@ class File
 
   public function getString ()
   {
-    file_get_contents($this->file);
+    return file_get_contents($this->file);
   }
 
   public function getArray ()
   {
-    file($this->file);
+    return file($this->file);
   }
 
   public function getContents ()
