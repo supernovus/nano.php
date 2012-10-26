@@ -25,6 +25,10 @@ abstract class Auth extends Advanced
 
   public function handle_login ($opts, $path=Null)
   { // Let's log into the system.
+    if (method_exists($this, 'prep_auth'))
+    {
+      $this->prep_auth($opts);
+    }
     $this->screen = $this->view_login;
     if (method_exists($this, 'pre_login'))
     {
@@ -74,7 +78,7 @@ abstract class Auth extends Advanced
         }
         if (method_exists($this, 'post_login'))
         {
-          $this->post_login($opts);
+          $this->post_login($opts, $uinfo);
         }
         $nano = \Nano3\get_instance();
         $lastpath = $nano->sess->lasturi;
@@ -98,7 +102,12 @@ abstract class Auth extends Advanced
     $this->redirect(PAGE_LOGIN);
   }
   public function handle_forgot ($opts, $path)
-  { $this->screen = $this->view_forgot; // The forgot password screen.
+  { // Welcome to Forgot password.
+    if (method_exists($this, 'prep_auth'))
+    {
+      $this->prep_auth($opts);
+    }
+    $this->screen = $this->view_forgot; 
     $this->data['title'] = $this->text['title.forgot'];
     if (isset($path) && is_array($path) && count($path)>1 && $path[1])
     { // We have a validation code.
@@ -109,6 +118,15 @@ abstract class Auth extends Advanced
       {
         return $this->invalid("Invalid forgot password code: $validCode");
       }
+
+      if (method_exists($this, 'pre_reset'))
+      {
+        if (!$this->pre_reset($validInfo, $opts))
+        { // We cannot continue.
+          return;
+        }
+      }
+
       $uid  = $validInfo['uid'];
       $code = $validInfo['code'];
       $user = $this->model('users')->getUser($uid);
@@ -137,6 +155,12 @@ abstract class Auth extends Advanced
         // Okay, we made it this far, as the passwords match, let's reset.
         $user->resetReset(False);  // The old code no longer works.
         $user->changePassword($opts['newpass']);
+
+        if (method_exists($this, 'post_reset'))
+        {
+          $this->post_reset($user, $opts);
+        }
+
         // Finally, let's login for the user.
         return $this->handle_login(array('user'=>$uid,'pass'=>$opts['newpass']));
       }
@@ -149,6 +173,15 @@ abstract class Auth extends Advanced
       {
         return $this->invalid("Invalid e-mail passed to forget password: $email");
       }
+
+      if (method_exists($this, 'pre_email'))
+      {
+        if (!$this->pre_email($user, $opts))
+        { // Cannot continue.
+          return;
+        }
+      }
+
       $nano = \Nano3\get_instance();
       $code = $user->resetReset();
       $uid  = $user->id;
@@ -172,7 +205,15 @@ abstract class Auth extends Advanced
         'siteurl'  => $this->site_url(),
         'code'     => $validCode,
       );
+      if (method_exists($this, 'prep_email'))
+      {
+        $this->prep_email($email, $opts);
+      }
       $mail->send($mail_data);
+      if (method_exists($this, 'post_email'))
+      {
+        $this->post_email($mail, $opts);
+      }
     }
     return $this->display();
   }

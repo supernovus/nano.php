@@ -56,6 +56,11 @@ abstract class Basic
   protected $use_model_cache = False;
 
   /**
+   * Defines the view variable name for the list of scripts.
+   */
+  protected $script_name = 'scripts';
+
+  /**
    * Defines the paths to look for Javascript files in when using
    * the add_js() method.
    *
@@ -109,6 +114,36 @@ abstract class Basic
 
   // Keep track of scripts and groups we've added, and don't duplicate stuff.
   protected $script_added = array();
+
+  /**
+   * Stylesheet variable name.
+   */
+  protected $css_name = 'stylesheets';
+
+  /**
+   * Stylesheet paths.
+   */
+  protected $css_path = array('style');
+
+  /**
+   * Stylesheet extensions.
+   */
+  protected $css_exts = array('.css');
+
+  /**
+   * Stylesheet groups.
+   */
+  protected $css_groups = array();
+
+  /**
+   * Stylesheet options, same caveats as script_options.
+   */
+  protected $css_opts = array();
+
+  /**
+   * Keep track of which stylesheets we've added.
+   */
+  protected $css_added = array();
 
   /**
    * Display the contents of a screen, typically within a common layout.
@@ -538,15 +573,18 @@ abstract class Basic
   }
 
   /**
-   * Find a javascript file, based on the known paths and extensions.
-   * 
-   * @param String $name   The name without path or extension (i.e. 'jquery')
-   * @param Array $opts    Options that affect the search:
+   * Find a resource file, based on known paths and extensions.
    *
-   *   'exts'  If specified, overrides $this->script_exts for this search.
-   *   'path'  If specified, overrides $this->script_path for this search.
+   * @param String $name    The resource name without path or extension.
+   * @param String $type    The resource type.
+   * @param Array  $opts    Options that affect the search:
+   *
+   *   'exts'  If specified, overrides default exts for this search.
+   *   'path'  If specified, overrides default path for this search.
+   *
+   * Currently supported resource types: 'script' and 'css'.
    */
-  public function find_script ($name, $opts=array())
+  protected function find_resource ($name, $type, $opts=Array())
   {
     if (isset($opts['exts']))
     {
@@ -554,7 +592,8 @@ abstract class Basic
     }
     else
     {
-      $exts = $this->script_exts;
+      $rexts = $type . '_exts';
+      $exts = $this->$rexts;
     }
     if (isset($opts['path']))
     {
@@ -562,7 +601,8 @@ abstract class Basic
     }
     else
     {
-      $path = $this->script_path;
+      $rpath = $type . '_path';
+      $path = $this->$rpath;
     }
 
     foreach ($path as $dir)
@@ -578,46 +618,53 @@ abstract class Basic
     }
   }
 
+  public function find_js ($name, $opts=array())
+  {
+    return $this->find_resource($name, 'script', $opts);
+  }
+
+  public function find_css ($name, $opts=array())
+  {
+    return $this->find_resource($name, 'css', $opts);
+  }
+
   /**
-   * Add a Javascript file or group to an array data variable called $scripts
-   * which can be used in a view template to populate a collection of
-   * <script src="..."></script> tags.
+   * Add a resource file to an array of resources for use in view templates.
    *
-   * We keep track of what files and groups have been added so that they
-   * don't get duplicated. This is useful as multiple groups may have the
-   * same script in them, and we don't want multiple <script/> tags added.
+   * TODO: better documentation.
    */
-  public function add_js ($name, $opts=array())
+  protected function add_resource ($name, $type, $opts=array())
   {
     // Handle array input.
     if (is_array($name))
     {
-      foreach ($name as $script)
+      foreach ($name as $res)
       {
-        $this->add_js($script, $opts);
+        $this->add_resource($res, $type, $opts);
       }
       return; // All done.
     }
 
-    if (isset($this->script_added[$name]))
-    { // We've already added this script or group.
-      return;
-    }
+    // See if the resource has already been added.
+    $added = $type . '_added';
+    if (isset($this->{$added}[$name])) return;
 
     // If this is a group, we process the group members.
-    if (isset($this->script_groups[$name]))
+    $groups = $type . '_groups';
+    if (isset($this->{$groups}[$name]))
     {
-      foreach ($this->script_groups[$name] as $script)
+      foreach ($this->{$groups}[$name] as $res)
       {
-        $this->add_js($script, $opts);
+        $this->add_resource($res, $type, $opts);
       }
-      $this->script_added[$name] = $name;
+      $this->{$added}[$name] = $name;
       return; // We've imported the group, let's leave now.
     }
 
-    if (isset($this->script_opts[$name]))
+    $override = $type . '_opts';
+    if (isset($this->{$override}[$name]))
     {
-      $opts += $this->script_opts[$name];
+      $opts += $this->{$override}[$name];
     }
 
     if (isset($opts['file']))
@@ -625,25 +672,42 @@ abstract class Basic
       $file = $opts['file'];
       if (!file_exists($file))
       {
-        throw new Exception("Invalid script file specified for: '$name'.");
+        error_log("Invalid $type file specified for: '$name'.");
+        return;
       }
     }
     else
     {
-      $file = $this->find_script($name, $opts);
+      $file = $this->find_resource($name, $type, $opts);
       if (!isset($file))
       {
-        throw new Exception("Could not find script file for: '$name'.");
+        error_log("Could not find $type file for: '$name'.");
+        return;
       } 
     }
 
-    if (!isset($this->data['scripts']))
+    $resname = $type . '_name';
+    $resname = $this->$resname;
+
+#    error_log("Adding $type '$name' to $resname as $file");
+
+    if (!isset($this->data[$resname]))
     {
-      $this->data['scripts'] = array();
+      $this->data[$resname] = array();
     }
 
-    $this->data['scripts'][] = $file;
-    $this->script_added[$name] = $file;
+    $this->data[$resname][] = $file;
+    $this->{$added}[$name] = $file;
+  }
+
+  public function add_js ($name, $opts=array())
+  {
+    return $this->add_resource($name, 'script', $opts);
+  }
+
+  public function add_css ($name, $opts=array())
+  {
+    return $this->add_resource($name, 'css', $opts);
   }
 
   /**
