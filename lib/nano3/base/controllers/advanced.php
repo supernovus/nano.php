@@ -32,7 +32,7 @@ abstract class Advanced extends Simple
   protected $shown = array();   // If an id exists in shown, don't show again.
 
   // Paths to find e-mail message templates in.
-  protected $message_path = array('views/messages', 'views/nano/messages');
+  protected $message_path = array('views/messages');
 
   // A list of default status message types.
   protected $status_types = array
