@@ -19,7 +19,7 @@ class XML
    * @param   object $child     A SimpleXMLElement or DOMElement to append.
    * @return  bool              Returns false if invalid params were passed.
    */
-  public function append ($parent, $child)
+  public static function append ($parent, $child)
   {
     if ($parent instanceof \SimpleXMLElement)
     {
@@ -46,7 +46,7 @@ class XML
    * @param  string  $text      The text to append as a DOMTextNode.
    * @return bool               Returns false if invalid params were passed.
    */
-  public function appendText ($parent, $text)
+  public static function appendText ($parent, $text)
   {
     if ($parent instanceof \SimpleXMLElement)
     {
