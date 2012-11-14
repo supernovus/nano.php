@@ -35,6 +35,8 @@ abstract class Model implements \Iterator, \ArrayAccess
   public $known_fields;      // If set, it's a list of fields we know about.
                              // DO NOT set the primary key in here!
 
+  protected $get_fields;     // Set to fields to get if none are specified.
+
   // The following are used by the pager() function to generate ORDER BY and LIMIT statements.
   public $sort_orders = array();
   public $default_sort_order;
@@ -240,8 +242,23 @@ abstract class Model implements \Iterator, \ArrayAccess
 
   protected function get_cols ($cols)
   {
+    if (is_null($cols))
+    { // No columns were passed, check for a default set.
+      if (isset($this->get_fields))
+      { // Use default set.
+        $cols = $this->get_fields;
+      }
+      else
+      { // No default set found, return everything.
+        $cols = '*';
+      }
+    }
+
     if (is_array($cols))
+    { // The set of fields is an array, turn it into a string.
       $cols = join(',', $cols);
+    }
+
     return $cols;
   }
 
@@ -322,7 +339,7 @@ abstract class Model implements \Iterator, \ArrayAccess
   /**
    * Return a result set using a hand crafted SQL statement.
    */
-  public function listRows ($stmt, $data, $cols='*')
+  public function listRows ($stmt, $data, $cols=Null)
   {
     $cols = $this->get_cols($cols);
     $query = "SELECT $cols FROM {$this->table} $stmt";
@@ -332,7 +349,7 @@ abstract class Model implements \Iterator, \ArrayAccess
   /**
    * Return a result set using a WHERE clause.
    */
-  public function listWhere ($where, $data, $cols='*')
+  public function listWhere ($where, $data, $cols=Null)
   {
     return $this->listRows("WHERE $where", $data, $cols);
   }
@@ -340,7 +357,7 @@ abstract class Model implements \Iterator, \ArrayAccess
   /**
    * Return a result set using a map of fields.
    */
-  public function listByFields ($fields, $cols='*', $append=Null)
+  public function listByFields ($fields, $cols=Null, $append=Null)
   {
     $cols = $this->get_cols($cols);
     $sql = "SELECT $cols FROM {$this->table} WHERE ";
