@@ -66,7 +66,7 @@ class Item implements \ArrayAccess
     elseif ($name == $this->primary_key)
       return $name;
     else
-      throw new Exception('Unknown field');
+      throw new Exception("Unknown field '$name'");
   }
 
   /** 
