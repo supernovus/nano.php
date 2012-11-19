@@ -39,6 +39,7 @@ abstract class Model implements \Iterator, \ArrayAccess
 
   // The following are used by the pager() function to generate ORDER BY and LIMIT statements.
   public $sort_orders = array();
+  public $sort_items  = array();
   public $default_sort_order;
   public $default_page_count = 10;
 
@@ -101,8 +102,11 @@ abstract class Model implements \Iterator, \ArrayAccess
     // Default sort orders if you don't override it.
     if (count($this->sort_orders) == 0)
     {
-      $this->sort_orders[$pk.'_up']   = "$pk ASC";
-      $this->sort_orders[$pk.'_down'] = "$pk DESC";
+      if (count($this->sort_items) == 0)
+      {
+        $this->sort_items = array($pk);
+      }
+      $this->build_sort_orders();
     }
 
     // If no default sort order has been specified, we do it now.
@@ -114,6 +118,21 @@ abstract class Model implements \Iterator, \ArrayAccess
 
     if (isset($opts['parent']))
       $this->parent = $opts['parent'];
+  }
+
+  // Build a default set of sort_orders based on sort_items.
+  protected function build_sort_orders ()
+  {
+    foreach ($this->sort_items as $sortref => $sortrow)
+    {
+      if (is_numeric($sortref)) 
+      {
+        $sortref = $sortrow;
+      }
+
+      $this->sort_orders[$sortref.'_up']   = "$sortrow ASC";
+      $this->sort_orders[$sortref.'_down'] = "$sortrow DESC";
+    }
   }
 
   /**
@@ -552,7 +571,15 @@ abstract class Model implements \Iterator, \ArrayAccess
 
     $offset = $count * ($page - 1);
 
-    $statement = "ORDER BY {$this->sort_orders[$sort]} LIMIT $offset, $count";
+    if (isset($this->sort_orders[$sort]))
+    {
+      $statement = "ORDER BY {$this->sort_orders[$sort]} LIMIT $offset, $count";
+    }
+    else
+    {
+      $statement = "LIMIT $offset, $count";
+    }
+
 #    error_log("pager statement: $statement");
     return $statement;
   }
