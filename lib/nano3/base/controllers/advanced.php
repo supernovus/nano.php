@@ -52,7 +52,8 @@ abstract class Advanced extends Simple
     $this->__construct_controller($opts=array());
   }
 
-  public function __construct_controller ($opts=array())
+  // Call this in your custom __construct() function.
+  protected function __construct_controller ($opts=array())
   {
     $nano = \Nano3\get_instance();
     if (!isset($this->default_url))

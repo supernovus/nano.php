@@ -56,94 +56,57 @@ abstract class Basic
   protected $use_model_cache = False;
 
   /**
-   * Defines the view variable name for the list of scripts.
-   */
-  protected $script_name = 'scripts';
-
-  /**
-   * Defines the paths to look for Javascript files in when using
-   * the add_js() method.
+   * Resources represent external files, such as scripts, stylesheets, etc.
+   * They are managed through a generic system that allows for easy future
+   * expansion.
    *
-   * The default is based on the layout used by the Nano.js project:
+   * Each group as a resource id, such as 'js', 'css', etc, and the following
+   * definitions:
    *
-   *  1.) 'scripts'
-   *  2.) 'scripts/nano'
+   *   name:      The variable name for templates.
+   *   path:      An array of paths to look for resource files in.
+   *   exts:      An array of extensions to look for resource files.
+   *   groups:    An array of arrays, each being named groups.
+   *              It is recommended to prefix groups with an identifier
+   *              such as '#'.  We define a group called #common which
+   *              represents a small set of plugins from the Nano.js project.
+   *   added:     An empty array, will be populated by use_resource();
    *
-   */
-  protected $script_path = array('scripts', 'scripts/nano');
-
-  /**
-   * Defines the list of Javascript extensions to search for when using
-   * the add_js() method.
-   *
-   * Override this on a global or per-controller basis to set the
-   * preferred script extensions. The default load order is based on the
-   * extenions used by the Nano.js project:
-   *
-   *   1.) .dist.js         - Distribution script.
-   *   2.) .cc.js           - Closure Compiler script.
-   *   3.) .min.js          - Minified script.
-   *   4.) .js              - Raw script.
+   *  A group for one resource type MAY in fact depend on a resource of another
+   *  type. For instance, you may have a Javascript file that depends on a
+   *  CSS stylesheet being loaded. You can define a rule that will include it,
+   *  by using a 'type:name' format, such as 'css:foobar'.
    *
    */
-  protected $script_exts = array('.dist.js', '.cc.js', '.min.js', '.js');
-
-  /** 
-   * Override or extend this to provide groups of Javascript files to
-   * include in one large set. We include a default group called '#common'
-   * which provides the following scripts from the Nano.js project:
-   *
-   *  1.) jquery                  - The jQuery framework.
-   *  2.) json2                   - The JSON object for older browsers.
-   *  3.) json.jq                 - A .JSON() method for jQuery.
-   *  4.) disabled.jq             - .enable() and .disable() jQuery methods.
-   *  5.) exists.jq               - A .exists() method for jQuery.
-   *
-   */
-  protected $script_groups = array
-  ( // A set of common scripts included in the nano.js toolkit.
-    '#common' => array('jquery','json2','json.jq','disabled.jq','exists.jq'),
+  protected $resources = array
+  (
+    'js' => array
+    (
+      'name' => 'scripts',
+      'path' => array('scripts', 'scripts/nano'),
+      'exts' => array('.dist.js', '.cc.js', '.min.js', '.js'),
+      'groups' => array
+      (
+        '#common' => array
+        (
+          'jquery', 
+          'json2', 
+          'json.jq', 
+          'disabled.jq',
+          'exists.jq',
+        )
+      ),
+      'added' => array(), 
+    ),
+    'css' => array
+    (
+      'name'   => 'stylesheets',
+      'path'   => array('style'),
+      'exts'   => array('.css'),
+      'groups' => array(),
+      'added'  => array(),
+    ),
   );
-
-  /**
-   * Define this in your own class to provide script specific overrides for
-   * the $script_path and $script_exts properties. This is likely not needed
-   * or recommended, but is kept for flexibility.
-   */
-  protected $script_opts = array();
-
-  // Keep track of scripts and groups we've added, and don't duplicate stuff.
-  protected $script_added = array();
-
-  /**
-   * Stylesheet variable name.
-   */
-  protected $css_name = 'stylesheets';
-
-  /**
-   * Stylesheet paths.
-   */
-  protected $css_path = array('style');
-
-  /**
-   * Stylesheet extensions.
-   */
-  protected $css_exts = array('.css');
-
-  /**
-   * Stylesheet groups.
-   */
-  protected $css_groups = array();
-
-  /**
-   * Stylesheet options, same caveats as script_options.
-   */
-  protected $css_opts = array();
-
-  /**
-   * Keep track of which stylesheets we've added.
-   */
-  protected $css_added = array();
 
   /**
    * Display the contents of a screen, typically within a common layout.
@@ -575,35 +538,16 @@ abstract class Basic
   /**
    * Find a resource file, based on known paths and extensions.
    *
-   * @param String $name    The resource name without path or extension.
    * @param String $type    The resource type.
-   * @param Array  $opts    Options that affect the search:
-   *
-   *   'exts'  If specified, overrides default exts for this search.
-   *   'path'  If specified, overrides default path for this search.
-   *
-   * Currently supported resource types: 'script' and 'css'.
+   * @param String $name    The resource name without path or extension.
    */
-  protected function find_resource ($name, $type, $opts=Array())
+  public function find_resource ($type, $name)
   {
-    if (isset($opts['exts']))
-    {
-      $exts = $opts['exts'];
-    }
-    else
-    {
-      $rexts = $type . '_exts';
-      $exts = $this->$rexts;
-    }
-    if (isset($opts['path']))
-    {
-      $path = $opts['path'];
-    }
-    else
-    {
-      $rpath = $type . '_path';
-      $path = $this->$rpath;
-    }
+    if (!isset($this->resources[$type]))
+      return Null; 
+
+    $exts = $this->resources[$type]['exts'];
+    $path = $this->resources[$type]['path'];
 
     foreach ($path as $dir)
     {
@@ -618,76 +562,62 @@ abstract class Basic
     }
   }
 
-  public function find_js ($name, $opts=array())
-  {
-    return $this->find_resource($name, 'script', $opts);
-  }
-
-  public function find_css ($name, $opts=array())
-  {
-    return $this->find_resource($name, 'css', $opts);
-  }
-
   /**
    * Add a resource file to an array of resources for use in view templates.
    *
-   * TODO: better documentation.
+   * @param String $type    The resource type.
+   * @param String $name    The resource or group name.
    */
-  protected function add_resource ($name, $type, $opts=array())
+  public function use_resource ($type, $name)
   {
+    // Make sure it's a valid resource type.
+    if (!isset($this->resources[$type])) return False;
+
     // Handle array input.
     if (is_array($name))
     {
       foreach ($name as $res)
       {
-        $this->add_resource($res, $type, $opts);
+        $this->use_resource($type, $res);
       }
-      return; // All done.
+      return True; // All done.
     }
 
-    // See if the resource has already been added.
-    $added = $type . '_added';
-    if (isset($this->{$added}[$name])) return;
+    if (isset($this->resources[$type]['added'][$name]))
+    {
+      return True;
+    }
 
     // If this is a group, we process the group members.
-    $groups = $type . '_groups';
-    if (isset($this->{$groups}[$name]))
+    if (isset($this->resources[$type]['groups'][$name]))
     {
-      foreach ($this->{$groups}[$name] as $res)
+      $group = $this->resources[$type]['groups'][$name];
+      foreach ($group as $res)
       {
-        $this->add_resource($res, $type, $opts);
+        if (strpos($res, ':') === False)
+        {
+          $this->use_resource($type, $res);
+        }
+        else
+        {
+          $parts = explode(':', $res);
+          $etype = $parts[0];
+          $ename = $parts[1];
+          $this->use_resource($etype, $ename);
+        }
       }
-      $this->{$added}[$name] = $name;
-      return; // We've imported the group, let's leave now.
+      $this->resources[$type]['added'][$name] = $name;
+      return True; // We've imported the group, let's leave now.
     }
 
-    $override = $type . '_opts';
-    if (isset($this->{$override}[$name]))
+    $file = $this->find_resource($type, $name);
+    if (!isset($file))
     {
-      $opts += $this->{$override}[$name];
+      error_log("Could not find $type file for: '$name'.");
+      return False;
     }
 
-    if (isset($opts['file']))
-    {
-      $file = $opts['file'];
-      if (!file_exists($file))
-      {
-        error_log("Invalid $type file specified for: '$name'.");
-        return;
-      }
-    }
-    else
-    {
-      $file = $this->find_resource($name, $type, $opts);
-      if (!isset($file))
-      {
-        error_log("Could not find $type file for: '$name'.");
-        return;
-      } 
-    }
-
-    $resname = $type . '_name';
-    $resname = $this->$resname;
+    $resname = $this->resources[$type]['name'];
 
 #    error_log("Adding $type '$name' to $resname as $file");
 
@@ -697,17 +627,24 @@ abstract class Basic
     }
 
     $this->data[$resname][] = $file;
-    $this->{$added}[$name] = $file;
+    $this->resources[$type]['added'][$name] = $file;
+    return True;
   }
 
-  public function add_js ($name, $opts=array())
+  /**
+   * Add a Javascript file or group to our used resources.
+   */
+  public function add_js ($name)
   {
-    return $this->add_resource($name, 'script', $opts);
+    return $this->use_resource('js', $name);
   }
 
-  public function add_css ($name, $opts=array())
+  /**
+   * Add a CSS stylesheet file or group to our used resources.
+   */
+  public function add_css ($name)
   {
-    return $this->add_resource($name, 'css', $opts);
+    return $this->use_resource('css', $name);
   }
 
   /**
