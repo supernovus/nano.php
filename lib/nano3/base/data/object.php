@@ -388,7 +388,19 @@ abstract class Object
   public function to_xml ($opts=Null)
   {
     $simplexml = $this->to_simple_xml($opts);
-    return $simplexml->asXML();
+    $xmlstring = $simplexml->asXML();
+    if (isset($opts['reformat']) && $opts['reformat'])
+    {
+      $dom = new \DOMDocument('1.0');
+      $dom->preserveWhiteSpace = False;
+      $dom->formatOutput = True;
+      $dom->loadXML($xmlstring);
+      return $dom->saveXML();
+    }
+    else
+    {
+      return $xmlstring;
+    }
   }
 
   // Return the lowercase "basename" of our class.
