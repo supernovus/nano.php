@@ -13,6 +13,13 @@ class Curl
   protected $curl;              // The current cURL object, created by init().
   protected $curl_opts;         // Options to initialize the cURL object.
 
+  // How to handle headers. If $raw_headers is True, then $headers should
+  // be a flat array of strings, each one representing an HTTP header.
+  // If $raw_headers is False, then $headers should be an associative
+  // array where the Key is the header name, and the value is the header value.
+  public $raw_headers  = False;
+  public $headers = array();
+
   // The following is a map of friendly option names to curl option integers.
   protected $curl_map = array
   (
@@ -93,6 +100,18 @@ class Curl
     return isset($this->curl_opts[$opt]);
   }
 
+  public function content_type ($type)
+  {
+    if ($this->raw_headers)
+    {
+      $this->headers[] = "Content-Type: $type";
+    }
+    else
+    {
+      $this->headers['Content-Type'] = $type;
+    }
+  }
+
   public function init ()
   {
     if (isset($this->curl))
@@ -117,6 +136,22 @@ class Curl
     if (!isset($this->curl))
     {
       $this->init();
+    }
+    if (count($this->headers) > 0)
+    {
+      if ($this->raw_headers)
+      {
+        $headers = $this->headers;
+      }
+      else
+      {
+        $headers = array();
+        foreach ($this->headers as $key => $val)
+        {
+          $headers[] = "$key: $val";
+        }
+      }
+      curl_setopt($this->curl, CURLOPT_HTTPHEADER, $headers);
     }
     curl_setopt($this->curl, CURLOPT_URL, $url);
     return curl_exec($this->curl);
@@ -158,14 +193,19 @@ class Curl
     return $output;
   }
 
-  public function post ($url, $postdata=Null)
+  public function post ($url, $postdata=Null, $add_length=False)
   {
     $this->post = True;
     if (isset($postdata))
     {
       $this->postdata = $postdata;
+      if ($add_length && ! $this->raw_headers)
+      {
+        $this->headers['Content-Length'] = strlen($postdata);
+      }
     }
     return $this->get($url);
   }
 
 }
+
