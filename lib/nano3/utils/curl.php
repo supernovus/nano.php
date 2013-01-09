@@ -161,7 +161,7 @@ class Curl
   {
     if (isset($this->curl))
     {
-      return curl_error($curl);
+      return curl_error($this->curl);
     }
   }
 
@@ -170,7 +170,7 @@ class Curl
     if (isset($this->curl) && isset($this->curl_info[$info]))
     {
       $what = $this->curl_info[$info];
-      return curl_info($curl, $what);
+      return curl_getinfo($this->curl, $what);
     }
   }
 
