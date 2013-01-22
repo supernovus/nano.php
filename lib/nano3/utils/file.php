@@ -70,11 +70,11 @@ class File
    */
   public static function getUploadQQ ($name='qqfile')
   {
-#    error_log("In getUploadQQ");
+    #    error_log("In getUploadQQ");
+    $class = __CLASS__;
     if (isset($_GET[$name]))
     {
 #      error_log("  A GET parameter '$name' exists.");
-      $class = __CLASS__;
       $input = fopen("php://input", "r");
       $tmpname = tempnam("/tmp", "qqupload_");
       $tmpfile = fopen($tmpname, "w");
