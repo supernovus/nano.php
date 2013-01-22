@@ -4,4 +4,13 @@
  * The output content will be JSON.
  */
 
-header('Content-Type: application/json');
+// A horrible hack, make future versions of IE better please?
+if (\Nano3\Utils\Browser::is_ie())
+{
+  header('Content-Type: text/plain');
+}
+else
+{
+  header('Content-Type: application/json');
+}
+
