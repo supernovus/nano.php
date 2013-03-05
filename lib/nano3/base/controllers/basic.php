@@ -90,7 +90,7 @@ abstract class Basic
         '#common' => array
         (
           'jquery', 
-          'json2', 
+          'json3', 
           'json.jq', 
           'disabled.jq',
           'exists.jq',
