@@ -167,6 +167,31 @@ class Arry
     return $results;
   }
 
+  /**
+   * Another powerset algorithm.
+   * Found in a few places on the net.
+   */
+  public function powerset2 ($in, $minLength=1)
+  {
+    $count = count($in);
+    $members = pow(2,$count);
+    $return = array();
+    for ($i = 0; $i < $members; $i++)
+    {
+      $b = sprintf("%0".$count."b",$i);
+      $out = array();
+      for ($j = 0; $j < $count; $j++)
+      {
+        if ($b{$j} == '1') $out[] = $in[$j];
+      }
+      if (count($out) >= $minLength)
+      {
+        $return[] = $out;
+      }
+    }
+    return $return; 
+  }
+
   // TODO: add permutations and other useful helpers.
 
 }
