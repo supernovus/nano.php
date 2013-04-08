@@ -1,0 +1,46 @@
+Ideas for Nano4
+--------------------------------------------------------------------------------
+
+ * PHP 5.4 exclusive. Namespaces and Traits used everywhere, all old fallback
+   support is to be dropped. Modern PHP only.
+
+ * Refactor how Loaders/Meta/Plugins work. Loaders should be far simpler,
+   without the custom logic code like addLoader, addViews, etc.
+
+   The general idea is that the 'meta' category should go away entirely.
+   Plugins and Pragmas should be the only two kinds of extensions.
+   Loading plugins and pragmas can be done explicitly or implicitly.
+   The only plugin loaded by default is the Plugins plugin, which is used to
+   load other plugins, including the Pragmas plugin.
+
+    $nano->plugins->load($name, $options); // Explicit load.
+    $nano->plugin_name->do_something();    // Load-on-demand.
+    $nano->pragmas->load($name); // Load a single pragma.
+    $nanp->pragmas->load([$name1, $name2, $name3]); // Load multiple pragmas.
+    $nano->pragmas[$name]; // Shortcut to load a single pragma.
+    $nano->pragmas['name1,name2,name3']; // Shortcut to load multiple pragmas.
+
+ * Calling recursive View templates should have more flexibility, such as the
+   ability to automatically unwrap the $parent->data structure into the context
+   so that changes to the parent data made from a higher level view will be
+   reflected in the called view.
+
+ * Make adding search paths to the Loader Namespace easier. No more constants!
+
+ * Separate get_instance() from make_instance(). All initialization details
+   such as setting the various search paths, should be done in make_instance().
+   Again, no more constants!
+
+ * Dispatch plugin should keep track of the current controller.
+
+ * The "hooks" feature should become a plugin.
+
+ * The magic "check for loaders" code can go away, if you really want it,
+   use a proper extension method.
+
+ * Since Hooks and magic loader functions are gone, extension methods are the 
+   only ones supported in __call(). All 'call_xxx' options are removed.
+
+ * Nano's $meths property renamed to $methods for consistency.
+
+--------------------------------------------------------------------------------
