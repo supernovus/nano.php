@@ -475,7 +475,7 @@ abstract class Model implements \Iterator, \ArrayAccess
       }
       if ($return_type == $this::return_row)
       {
-#        error_log("Return Row object.");
+#        error_log("Return Row object: ".json_encode($fields));
         return $this->getRowByFields($fields);
       }
       elseif ($return_type == $this::return_raw)
