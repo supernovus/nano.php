@@ -83,12 +83,19 @@ class HTML
    * output options:
    *
    *  'selected' => mixed     The current selected value.
+   *
    *  'mask'     => boolean   If true, selected value is a bitmask.
+   *
    *  'id'       => boolean   If true, and no 'id' attrib exists,
    *                          we set the 'id' for the select to be the same
    *                          as the 'name' attribute.
+   *
    *  'ns'       => string    Translation prefix. This is only valid if the
    *                          HTML object has a 'translate' object set.
+   *
+   *  'ttns'     => string    Tooltip translation prefix. If you set this,
+   *                          and the HTML object has a 'translate' object,
+   *                          tooltips can be added to your options.
    *
    * @returns mixed   Output depends on the options.
    */
@@ -155,6 +162,16 @@ class HTML
       $prefix = '';
     }
 
+    // Check for a 'ttns' option, specifying a tooltip translation prefix.
+    if (isset($opts['ttns']))
+    {
+      $ttns = $opts['ttns'];
+    }
+    else
+    {
+      $ttns = null;
+    }
+
     // For processing complex entities.
     if (isset($opts['labelkey']))
     {
@@ -188,13 +205,29 @@ class HTML
       $translate = isset($this->translate);
     }
 
+    // Used only if translation service is enabled.
+    $tooltips = [];
+
     // Add options, with potential translation processing.
     if ($translate)
     {
       $array = $this->translate->strArray($array, $prefix);
+      if (isset($ttns))
+      {
+        $tooltips = $this->translate->strArray($array, $ttns);
+      }
     }
     foreach ($array as $value=>$label)
     {
+      if (isset($tooltips[$value]) && $tooltips[$value] != $value)
+      {
+        $tooltip = $tooltips[$value];
+      }
+      else
+      {
+        $tooltip = null;
+      }
+
       if (is_array($label))
       { // Process complex entries.
         if (isset($label[$value_key]))
@@ -205,6 +238,10 @@ class HTML
 
       $option = $select->addChild('option', $label);
       $option->addAttribute('value', $value);
+      if (isset($tooltip))
+      {
+        $option->addAttribute('title', $tooltip);
+      }
       if 
       (
         isset($selected)
