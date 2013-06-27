@@ -50,7 +50,7 @@ class Item implements \ArrayAccess
   /** 
    * Look for a field
    *
-   * If the field exists in the database row, it's returned unchanged. 
+   * If the field exists in the database, it's returned unchanged.
    *
    * If an alias exists, the alias target field will be returned.
    *
