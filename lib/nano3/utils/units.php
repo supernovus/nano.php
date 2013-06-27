@@ -9,14 +9,29 @@ use Nano3\Exception;
  * Return information about Units, including conversion numbers.
  */
 
-// TODO: Methods for obtaining conversion values, and performing
-//       conversions. The methods should exist within the UnitsItem
-//       class, and have convenience wrappers in Units.
+trait HasUnits
+{
+  protected $units;
+
+  public function convert ($value, $from, $to)
+  {
+    if (is_string($from))
+    {
+      $from = $this->units[$from];
+    }
+    if (isset($from) && $from instanceof UnitsItem)
+    {
+      return $from->convert($value, $to);
+    }
+    throw new Exception("Invalid 'from' unit passed to convert()");
+  }
+}
 
 class Units implements \ArrayAccess, \Countable
 {
+  use HasUnits;
+
   protected $classes; // A list of classes.
-  protected $units;   // A list of units.
 
   /**
    * Build a Units object.
@@ -88,9 +103,22 @@ class Units implements \ArrayAccess, \Countable
 
 class UnitsClass implements \ArrayAccess, \Countable, \Iterator
 {
+  use HasUnits;
+
   public $base;     // The id of our baseline unit (if applicable.)
   public $step;     // Step increment between units (if applicable.)
-  protected $units; // A list of units.
+
+  /**
+   * Return the base item class.
+   */
+  public function base ()
+  {
+    if (isset($this->base))
+    {
+      return $this->units[$this->base];
+    }
+    throw new Exception("No base unit defined");
+  }
 
   /**
    * Return the total count of units in our class.
@@ -175,14 +203,13 @@ class UnitsItem
   public $class; // Our Unit Class.
   public $to;    // Multiply by this to convert this to a base value.
   public $from;  // Multiply by this to convert a base value to this.
-  public $prev;  // The unit previous to this one.
-  public $next;  // The unit next after this one.
+  public $pos;   // The position, for a stepping unit.
   public $sign;  // The symbol to use for the unit in expressions.
 
   public function __construct ($opts, $class)
   {
     $this->class = $class;
-    foreach (['to','from','prev','next','sign'] as $field)
+    foreach (['to','from','pos','sign'] as $field)
     {
       if (isset($opts[$field]))
       {
@@ -191,5 +218,68 @@ class UnitsItem
     }
   }
 
+  public function to_base ($value)
+  {
+    if (isset($this->to))
+    {
+      return $value * $this->to;
+    }
+    return $value;
+  }
+
+  public function from_base ($value)
+  {
+    if (isset($this->from))
+    {
+      return $value * $this->from;
+    }
+    return $value;
+  }
+
+  public function convert ($value, $unit)
+  {
+    if (is_string($unit))
+    {
+      $unit = $this->class[$unit];
+    }
+    if (isset($unit) && $unit instanceof UnitsItem)
+    {
+      if (isset($this->pos))
+      {
+        if (isset($this->class->step))
+        {
+          $step = $this->class->step;
+          $pos1 = $this->pos + 1;
+          $pos2 = $unit->pos + 1;
+          if ($pos1 == $pos2)
+          { // It's the same unit.
+            return $value;
+          }
+          if ($pos1 > $pos2)
+          { // We're converting into a larger unit.
+            $diff = $pos1 - $pos2;
+            $conv = pow($step, $diff);
+            return $value / $conv;
+          }
+          else
+          { // We're converting into a smaller unit.
+            $diff = $pos2 - $pos1;
+            $conv = pow($step, $diff);
+            return $value * $conv;
+          }
+        }
+        throw new Exception("No 'step' defined");
+      }
+      else
+      { // We're using to/from conversions.
+        $base = $this->to_base($value);
+        $base_unit = $this->class->base();
+        if ($base_unit === $unit)
+          return $base;
+        return $unit->from_base($base);
+      }
+    }
+    throw new Exception("Invalid 'to' unit passed to convert()");
+  }
 }
 
