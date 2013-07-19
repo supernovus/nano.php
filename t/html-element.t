@@ -1,11 +1,13 @@
 <?php 
 
-require_once "lib/nano3/init.php";
+require_once "lib/nano4/init.php";
 require_once "lib/test.php";
 
 plan(4);
 
-$html = new \Nano3\Utils\HTML\Element('html');
+\Nano4\initialize(['no'=>true]);
+
+$html = new \Nano4\Utils\HTML\Element('html');
 $head = $html->head();
 $head->title('A test page');
 $head->link(['rel'=>'stylesheet', 'href'=>'main.css']);

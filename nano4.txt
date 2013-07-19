@@ -16,9 +16,7 @@ Ideas for Nano4
     $nano->plugins->load($name, $options); // Explicit load.
     $nano->plugin_name->do_something();    // Load-on-demand.
     $nano->pragmas->load($name); // Load a single pragma.
-    $nanp->pragmas->load([$name1, $name2, $name3]); // Load multiple pragmas.
-    $nano->pragmas[$name]; // Shortcut to load a single pragma.
-    $nano->pragmas['name1,name2,name3']; // Shortcut to load multiple pragmas.
+    $nano->pragmas['name1 name2']; // Shortcut to load multiple pragmas.
 
  * Calling recursive View templates should have more flexibility, such as the
    ability to automatically unwrap the $parent->data structure into the context

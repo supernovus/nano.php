@@ -1,9 +1,11 @@
 <?php 
 
-require_once "lib/nano3/init.php";
-#require_once "lib/test.php";
+require_once "lib/nano4/init.php";
+require_once "lib/test.php";
 
-#plan(2);
+plan(2);
+
+\Nano4\initialize(['no'=>true]);
 
 $src1 = 
 [
@@ -11,16 +13,20 @@ $src1 =
   ['< 19', '19-25', '25-50', '> 50'],
 ];
 
-$res1 = Nano3\Utils\Arry::cartesian_product($src1);
+$want1 = '[["male","< 19"],["male","19-25"],["male","25-50"],["male","> 50"],["female","< 19"],["female","19-25"],["female","25-50"],["female","> 50"],["other","< 19"],["other","19-25"],["other","25-50"],["other","> 50"]]';
 
-echo json_encode($res1) . "\n\n";
+$res1 = json_encode(Nano4\Utils\Arry::cartesian_product($src1));
+
+is($res1, $want1);
 
 $src2 =
 [
   ['male','female']
 ];
 
-$res2 = Nano3\Utils\Arry::cartesian_product($src2);
+$res2 = json_encode(Nano4\Utils\Arry::cartesian_product($src2));
 
-echo json_encode($res2);
+$want2 = '[["male"],["female"]]';
+
+is($res2, $want2);
 
