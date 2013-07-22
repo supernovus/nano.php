@@ -3,13 +3,13 @@
 namespace Nano4\Controllers;
 
 /**
- * Simple controller.
+ * Adds an array-like interface to your controller for easier
+ * handling of View template data. 
  *
- * Adds an array-like interface to the Basic controller for easier
- * handling of View template data.
+ * You MUST declare your class to implement \ArrayAccess for this to work.
  */
 
-abstract class Simple extends Basic implements \ArrayAccess
+trait ViewData
 {
   public function offsetExists ($offset)
   {
@@ -31,3 +31,4 @@ abstract class Simple extends Basic implements \ArrayAccess
     unset($this->data[$offset]);
   }
 }
+

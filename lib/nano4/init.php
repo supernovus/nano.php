@@ -124,7 +124,9 @@ class Nano implements \ArrayAccess
     $this->lib['plugins'] = new \Nano4\Plugins\Plugins();
   }
 
-  /* We're using psuedo-accessors to make life easier */
+  /* We're using psuedo-accessors to make life easier. 
+   * Properties are mapped to loaded plugin libraries.
+   */
 
   /**
    * See if we have a library loaded already.
@@ -203,32 +205,62 @@ class Nano implements \ArrayAccess
     }
   }
 
-  /* Plus the ArrayAccess interface for extra flexibility. */
+  /* The ArrayAccess interface is mapped to the options. */
 
   /**
-   * Alias to __isset()
+   * Does the option exist?
    */
-  public function offsetExists ($name)
+  public function offsetExists ($path)
   {
-    return $this->__isset($name);
-  }
-
-  public function offsetSet ($name, $value)
-  {
-    return $this->__set($name, $value);
-  }
-
-  public function offsetUnset ($name)
-  {
-    return $this->__unset($name);
+    $get = $this->offsetGet($path);
+    if (isset($get))
+      return True;
+    else
+      return False;
   }
 
   /**
-   * Alias to __get()
+   * Set an option.
    */
-  public function offsetGet ($name)
+  public function offsetSet ($path, $value)
   {
-    return $this->__get($name);
+    $tree = explode('.', $path);
+    $data = &$this->opts;
+    $key  = array_pop($tree);
+    foreach ($tree as $part)
+    {
+      if (!isset($data[$part]))
+        $data[$part] = [];
+      $data = &$data[$part];
+    }
+    $data[$key] = $value;
+  }
+
+  /**
+   * Unset an option.
+   * This simply sets the value to null.
+   * Maybe a future version will be more comprehensive.
+   */
+  public function offsetUnset ($path)
+  {
+    $this->offsetSet($path, null);
+  }
+
+  /**
+   * Get an option based on a path.
+   */
+  public function offsetGet ($path)
+  {
+    $find = explode('.', $path);
+    $data = $this->opts;
+    foreach ($find as $part)
+    {
+      if (is_array($data) && isset($data[$part]))
+        $data = $data[$part];
+      else
+        return Null;
+    }
+    return $data;
   }
 
   /**

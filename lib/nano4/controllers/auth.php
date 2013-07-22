@@ -2,20 +2,27 @@
 
 /* 
  * Auth Controller Trait. Add to your own authentication controllers.
+ * 
+ *  It requires the Translation trait.
+ *  It recommends the Constructor trait.
+ *
+ * You should define "page.default" and "page.login" options.
  */
 
 namespace Nano4\Controllers;
 
 trait Auth
 { 
-  // Set up our basic settings.
-  protected $need_user = False;
-  protected $save_uri  = False;
-
   // Override these as you see fit.
   protected $view_login  = 'login';
   protected $view_forgot = 'forgot_password';
   protected $view_reset  = 'reset_password';
+
+  protected function __construct_auth_controller ($opts=[])
+  {
+    $this->need_user = False;
+    $this->save_uri  = False;
+  }
 
   protected function invalid ($message)
   {
@@ -84,7 +91,7 @@ trait Auth
         $lastpath = $nano->sess->lasturi;
         if (!$lastpath || $lastpath = $this->request_uri())
         {
-          $lastpath = PAGE_DEFAULT;
+          $lastpath = $this->get_page('default');
         }
         $this->redirect($lastpath);
       }
@@ -100,7 +107,8 @@ trait Auth
   {
     $auth = \Nano4\Utils\SimpleAuth::getInstance();
     $auth->logout(True);
-    $this->redirect(PAGE_LOGIN);
+    $page = $this->get_page('login');
+    $this->redirect($page);
   }
 
   public function handle_forgot ($opts, $path)

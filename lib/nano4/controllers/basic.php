@@ -9,27 +9,14 @@
  * You should create a base class to extend this that provides
  * any application-specific common controller methods.
  *
+ * Your framework needs to define 'screens' and 'layouts' as view plugins.
+ * This is as easy as:
+ *
+ *   $nano->screens = ['plugin'=>'views', 'dir'=>'./views/screens'];
+ *   $nano->layouts = ['plugin'=>'views', 'dir'=>'./views/layouts'];
+ *
  * It now has integration with the nano.js project, and can populate
  * the $scripts template variable with appropriate javascript files.
- *
- * Hooks
- *
- * Controller.return_content:
- *   Receives a pointer to the content as a string.
- *   Allows you to apply a filter to the content before it
- *   gets returned.
- *
- * Controller.send_json
- *   Gets a copy of the data to be sent/converted to JSON and
- *   allows you to make adjustments to it before any conversion.
- *
- * Controller.send_xml
- *   Gets a copy of the data to be sent/converted to XML and
- *   allows you to make adjustments to it before any conversion.
- *
- * Controller.send_html
- *   Gets a copy of the output text before sending it.
- *
  */
 
 namespace Nano4\Controllers;
@@ -39,7 +26,7 @@ abstract class Basic
 {
   public $models = array(); // Any Models we have loaded.
 
-  protected $data = array();// Our data to send to the templates.
+  protected $data = [];     // Our data to send to the templates.
   protected $screen;        // Set if needed, otherwise uses $this->name().
   protected $model_opts;    // Options to pass to load_model(), via model().
 
@@ -109,6 +96,21 @@ abstract class Basic
   );
 
   /**
+   * Get a page path definition from the Nano options.
+   * If not defined, we return '/'.
+   */
+  public function get_page ($name)
+  {
+    $nano = \Nano4\get_instance();
+    $page = $nano["page.$name"];
+    if (isset($page))
+    {
+      return $page;
+    }
+    return '/';
+  }
+
+  /**
    * Display the contents of a screen, typically within a common layout.
    * We use the $data class member as the array of variables to pass to
    * the template.
@@ -153,12 +155,10 @@ abstract class Basic
     { // Please ensure your layout has a view_content variable.
       $this->data['view_content'] = $page;
       $template = $nano->layouts->load($layout, $this->data);
-      $nano->callHook('Controller.return_content', array(&$template));
       return $template;
     }
     else
     { // We're going to directly return the content of the view.
-      $nano->callHook('Controller.return_content', array(&$page));
       return $page;
     }
   }
@@ -180,7 +180,6 @@ abstract class Basic
       $data = $this->data;
     $nano = \Nano4\get_instance();
     $page = $nano->screens->load($screen, $data);
-    $nano->callHook('Controller.send_html', array(&$page));
     return $page;
   }
 
@@ -209,8 +208,7 @@ abstract class Basic
   public function send_json ($data, $opts=array())
   { 
     $nano = \Nano4\get_instance();
-    $nano->pragma('json no-cache');    // Don't cache this.
-    $nano->callHook('Controller.send_json', array(&$data));
+    $nano->pragmas['json no-cache'];    // Don't cache this.
     if (is_array($data)) 
     { // Basic usage is to send simple arrays.
       $json_opts = 0;
@@ -266,8 +264,7 @@ abstract class Basic
   public function send_xml ($data, $opts=Null)
   {
     $nano = \Nano4\get_instance();
-    $nano->pragma('xml no-cache');
-    $nano->callHook('Controller.send_xml', array(&$data));
+    $nano->pragmas['xml no-cache'];
     if (is_string($data))
     { // Passthrough.
       $xml = $data;

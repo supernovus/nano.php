@@ -1,25 +1,20 @@
-The Nano Framework
+The Nano PHP Framework Toolkit
 By: Timothy Totten <2010@totten.ca>
 ------------------------------------------------------------------------------
 
-Nano is a PHP framework for building web applications.
-It's meant to be smaller than a micro-framework, and is very flexible.
+Nano is a PHP toolkit for building web application frameworks.
 
-At it's core, is a set of classes for loading libraries, classes, object
-instances and dynamic page content. There is no fixed method for using
-these classes, but default patterns and extensions are found as Meta classes.
+The core library is a small object that loads plugins which give it
+different abilities as required by your application needs.
 
-Meta classes for MVC-style applications are included, as well as for a
-powerful and flexible URL-based controller dispatch system.
+Several extendable abstract classes for controllers and models are included, 
+as well as a URL-based dispatch plugin, configuration plugin, and a set of
+simple helper libraries providing some useful functions for your applications.
 
-In addition, several simple base classes for controllers and models are
-included, as well as a few simple helper libraries providing some useful
-functions for your applications.
-
-The current generation of Nano is Nano3, and it lives in the lib/nano3
-folder. Both previous generations of Nano have been discontinued.
+The current generation of Nano is Nano4, and it lives in the lib/nano4
+folder. Nano3 can be found in the 'nano3' git branch.
 
 ~~
-2012-03-15
+2013-07-22
 ~~
 

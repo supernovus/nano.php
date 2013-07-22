@@ -1,5 +1,6 @@
-* Add proper PHPDoc documentation to all class files.
-* Rewrite Dispatch plugin to be modular and extendable.
+* Remove all use of global constants!
 * Calling recursive and nested Views should automatically unwrap the
   parent data into the context, so changes will be reflected properly.
+* Rewrite Dispatch plugin to be modular and extendable.
+* Add proper PHPDoc documentation to all class files.
 
