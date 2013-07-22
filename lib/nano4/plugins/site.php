@@ -19,11 +19,6 @@ use Nano4\Exception;
  *
  */
 
-if (!defined('SITE_DEFAULT_CONF'))
-{
-  define('SITE_DEFAULT_CONF', 'conf/site.json');
-}
-
 class Site
 {
   protected $template; // Either a view, or a filename.
@@ -34,13 +29,17 @@ class Site
     { // Load our provided config file.
       $nano->conf->loadFile($configfile);
     }
-    elseif (file_exists(SITE_DEFAULT_CONF))
-    {
-      $nano->conf->loadFile(SITE_DEFAULT_CONF);
-    }
     else
     {
-      throw new Exception('Could not find configuration.');
+      $siteconf = $nano['site.conf'];
+      if (isset($siteconf))
+      {
+        $nano->conf->loadFile($siteconf);
+      }
+      else
+      {
+        throw new Exception('Could not find configuration.');
+      }
     }
     if (!isset($nano->conf->template))
     {
