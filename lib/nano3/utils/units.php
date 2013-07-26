@@ -25,100 +25,6 @@ trait HasUnits
     }
     throw new Exception("Invalid 'from' unit passed to convert()");
   }
-}
-
-class Units implements \ArrayAccess, \Countable
-{
-  use HasUnits;
-
-  protected $classes; // A list of classes.
-
-  /**
-   * Build a Units object.
-   */
-  public function __construct ($conf)
-  {
-    $classes = [];
-    $units = [];
-    foreach ($conf as $uid => $udef)
-    {
-      $cid = $udef['class'];
-      if (!isset($classes[$cid]))
-        $classes[$cid] = new UnitsClass();
-      $class = $classes[$cid];
-      $unit = new UnitsItem($udef, $class);
-      $class[$uid] = $unit;
-      $units[$uid] = $unit;
-      if (isset($udef['base']) && $udef['base'])
-        $class->base = $uid;
-      if (isset($udef['step']))
-        $class->step = $udef['step'];
-    }
-    $this->classes = $classes;
-    $this->units = $units;
-  }
-
-  /**
-   * Return the total count of known units.
-   */
-  public function count ()
-  {
-    return count($this->units);
-  }
-
-  /**
-   * Does a class exist?
-   */
-  public function offsetExists ($offset)
-  {
-    return isset($this->classes[$offset]);
-  }
-
-  /**
-   * Get a Class.
-   */
-  public function offsetGet ($offset)
-  {
-    if (isset($this->classes[$offset]))
-      return $this->classes[$offset];
-  }
-
-  /**
-   * Classes are read only.
-   */
-  public function offsetSet ($offset, $value)
-  {
-    throw new Exception("Cannot set Unit Classes.");
-  }
-
-  /**
-   * Classes are read only.
-   */
-  public function offsetUnset ($offset)
-  {
-    throw new Exception("Cannot unset Unit Classes.");
-  }
-
-}
-
-class UnitsClass implements \ArrayAccess, \Countable, \Iterator
-{
-  use HasUnits;
-
-  public $base;     // The id of our baseline unit (if applicable.)
-  public $step;     // Step increment between units (if applicable.)
-
-  /**
-   * Return the base item class.
-   */
-  public function base ()
-  {
-    if (isset($this->base))
-    {
-      return $this->units[$this->base];
-    }
-    throw new Exception("No base unit defined");
-  }
 
   /**
    * Return the total count of units in our class.
@@ -191,9 +97,69 @@ class UnitsClass implements \ArrayAccess, \Countable, \Iterator
     return ($this->current() !== False);
   }
 
+}
+
+class Units implements \ArrayAccess, \Countable, \Iterator
+{
+  use HasUnits;
+
+  protected $classes; // A list of classes.
+
+  /**
+   * Build a Units object.
+   */
+  public function __construct ($conf)
+  {
+    $classes = [];
+    $units = [];
+    foreach ($conf as $uid => $udef)
+    {
+      $cid = $udef['class'];
+      if (!isset($classes[$cid]))
+        $classes[$cid] = new UnitsClass();
+      $class = $classes[$cid];
+      $unit = new UnitsItem($udef, $class);
+      $class[$uid] = $unit;
+      $units[$uid] = $unit;
+      if (isset($udef['base']) && $udef['base'])
+        $class->base = $uid;
+      if (isset($udef['step']))
+        $class->step = $udef['step'];
+    }
+    $this->classes = $classes;
+    $this->units = $units;
+  }
+
+  public function getclass ($class)
+  {
+    if (isset($this->classes[$class]))
+      return $this->classes[$class];
+  }
+
+}
+
+class UnitsClass implements \ArrayAccess, \Countable, \Iterator
+{
+  use HasUnits;
+
+  public $base;     // The id of our baseline unit (if applicable.)
+  public $step;     // Step increment between units (if applicable.)
+
+  /**
+   * Return the base item class.
+   */
+  public function base ()
+  {
+    if (isset($this->base))
+    {
+      return $this->units[$this->base];
+    }
+    throw new Exception("No base unit defined");
+  }
+
   public function units ()
   {
-    return array_keys($this->data);
+    return array_keys($this->units);
   }
 
 }
