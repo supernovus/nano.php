@@ -383,6 +383,10 @@ class HTML
    */
   public function json ($name, $struct, $opts=array())
   {
+    if (is_object($struct) && is_callable([$struct, 'to_array']))
+    {
+      $struct = $struct->to_array($opts);
+    }
     $json = json_encode($struct);
     $input = new \SimpleXMLElement('<input/>');
     $input->addAttribute('type',   'hidden');
