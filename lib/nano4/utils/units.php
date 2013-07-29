@@ -168,14 +168,13 @@ class UnitsItem
 {
   public $class; // Our Unit Class.
   public $to;    // Multiply by this to convert this to a base value.
-  public $from;  // Multiply by this to convert a base value to this.
   public $pos;   // The position, for a stepping unit.
   public $sign;  // The symbol to use for the unit in expressions.
 
   public function __construct ($opts, $class)
   {
     $this->class = $class;
-    foreach (['to','from','pos','sign'] as $field)
+    foreach (['to','pos','sign'] as $field)
     {
       if (isset($opts[$field]))
       {
@@ -195,9 +194,9 @@ class UnitsItem
 
   public function from_base ($value)
   {
-    if (isset($this->from))
+    if (isset($this->to))
     {
-      return $value * $this->from;
+      return $value * (1 / $this->to);
     }
     return $value;
   }
