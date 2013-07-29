@@ -1,6 +1,6 @@
 <?php
 
-namespace Nano3\Utils\Currency\OpenExchangeRates;
+namespace Nano3\Utils\Currency;
 
 /**
  * Get exchange rates and conversions using the OpenExchangeRates API.
