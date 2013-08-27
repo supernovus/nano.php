@@ -35,14 +35,8 @@ trait Namespaces
   public function is ($class)
   {
 #    error_log("namespace is: ".json_encode($this->namespace));
-    foreach ($this->namespace as $ns)
-    {
-      $classname = $ns . "\\" . $class;
-      if (class_exists($classname))
-      {
-        return True;
-      }
-    }
+    if (isset($this->find($class))
+      return True;
     return False;
   }
 
