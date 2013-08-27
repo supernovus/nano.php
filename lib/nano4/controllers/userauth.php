@@ -8,18 +8,26 @@ namespace Nano4\Controllers;
 
 trait UserAuth
 {
-  protected $save_uri  = True;  // Set to False for login/logout pages.
-  protected $need_user = True;  // Set to False for non-user pages.
   protected $user;              // This will be set on need_user pages.
 
   protected function __construct_userauth_controller ($opts=[])
   {
+    if (property_exists($this, 'save_uri'))
+      $save_uri = $this->save_uri;
+    else
+      $save_uri = True;
+
+    if (property_exists($this, 'need_user'))
+      $need_user = $this->need_user;
+    else
+      $need_user = True;
+
     $nano = \Nano4\get_instance();
-    if ($this->save_uri)
+    if ($save_uri)
     {
       $nano->sess->lasturi = $this->request_uri();
     }
-    if ($this->need_user)
+    if ($need_user)
     {
       $login = $this->get_page('login');
       $auth = \Nano4\Utils\SimpleAuth::getInstance();

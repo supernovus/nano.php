@@ -5,8 +5,8 @@
  *
  */
 
-// We are using Nano3 as our framework.
-require_once 'lib/nano3/init.php';
+// We are using Nano4 as our framework.
+require_once 'lib/nano4/init.php';
 
 // Define our namespace here.
 define('NANO_CLASS_PREFIX', "\\ExampleApp");
@@ -20,13 +20,13 @@ define('PAGE_LOGOUT',  '/logout');
 define('LAYOUT_DEFAULT', 'default');
 
 // Create our Nano instance.
-$nano = \Nano3\get_instance();
+$nano = \Nano4\initialize();
 
 // Load our database configuration.
 $nano->conf->loadInto('db', 'conf/db.json', 'json');
 
-// Explicit use of the Dispatch extension.
-$nano->extend('dispatch');
+// Add Dispatch methods into Nano itself.
+$nano->dispatch = ['extend'=>true];
 
 // Add routes to the auth controller to handle login and logout.
 $nano->addRoutes('auth', array('login', 'logout'));

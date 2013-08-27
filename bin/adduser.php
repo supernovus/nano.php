@@ -22,8 +22,8 @@ else
   $realname = ucfirst($email[0]);
 }
 
-require_once 'lib/nano3/init.php';
-$nano  = \Nano3\get_instance();
+require_once 'lib/nano4/init.php';
+$nano  = \Nano4\initialize();
 $nano->conf->loadInto('db', './conf/db.json', 'json'); 
 $users = $nano->models->load('users', $nano->conf->db);
 

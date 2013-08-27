@@ -17,7 +17,7 @@ mkdir -p $APPDIR/bin
 cp -v $NANOBIN/adduser.php $APPDIR/bin
 cp -v $NANOBIN/make-sqlite.sh $APPDIR/bin
 chmod +x $APPDIR/bin/*
-ln -sv $NANOLIB/nano3 $APPDIR/lib/nano3
+ln -sv $NANOLIB/nano4 $APPDIR/lib/nano4
 mv $APPDIR/lib/exampleapp $APPDIR/lib/$APPDIR
 find $APPDIR -name '*.php' | xargs perl -pi -e "s/ExampleApp/$APPNAME/g"
 
