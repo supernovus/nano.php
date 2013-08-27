@@ -5,7 +5,7 @@ require_once "lib/test.php";
 
 plan(2);
 
-\Nano4\initialize(['no'=>true]);
+\Nano4\register();
 
 $src1 = 
 [

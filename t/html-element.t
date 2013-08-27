@@ -5,7 +5,7 @@ require_once "lib/test.php";
 
 plan(4);
 
-\Nano4\initialize(['no'=>true]);
+\Nano4\register();
 
 $html = new \Nano4\Utils\HTML\Element('html');
 $head = $html->head();

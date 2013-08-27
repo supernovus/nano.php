@@ -49,29 +49,34 @@ class Exception extends \Exception {}
 global $__nano__instance;
 
 /**
+ * Set up autoloader.
+ */
+function register ($opts=[])
+{
+  if (isset($opts['classroot']))
+  {
+    $classroot = $opts['classroot'];
+  }
+  else
+  {
+    $classroot = 'lib';
+  }
+  set_include_path(get_include_path().PATH_SEPARATOR.$classroot);
+  spl_autoload_extensions('.php');
+  spl_autoload_register('spl_autoload');
+}
+
+/**
  * Create and initialize a Nano4 object.
+ *
  * This also sets up the autoloader unless 'skip_autoload' is true.
  */
 function initialize ($opts=[])
 {
   if (!isset($opts['skip_autoload']) || !$opts['skip_autoload'])
   {
-    if (isset($opts['classroot']))
-    {
-      $classroot = $opts['classroot'];
-    }
-    else
-    {
-      $classroot = 'lib';
-    }
-
-    set_include_path(get_include_path().PATH_SEPARATOR.$classroot);
-    spl_autoload_extensions('.php');
-    spl_autoload_register('spl_autoload');
+    register($opts);
   }
-
-  // If 'no' => true, we don't build a Nano object.
-  if (isset($opts['no']) && $opts['no']) return;
 
   global $__nano__instance;
   if (isset($__nano__instance))
