@@ -90,14 +90,14 @@ trait Files
       if (is_array($dir))
         array_splice($this->dirs, 0, 0, $dir);
       else
-        array_unshift($this->dirs, $ns);
+        array_unshift($this->dirs, $dir);
     }
     else
     {
-      if (is_array($ns))
-        array_splice($this->dirs, -1, 0, $ns);
+      if (is_array($dir))
+        array_splice($this->dirs, -1, 0, $dir);
       else
-        $this->dirs[] = $ns;
+        $this->dirs[] = $dir;
     }
   }
 
