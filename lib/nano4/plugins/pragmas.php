@@ -3,7 +3,7 @@
 namespace Nano4\Plugins;
 use \Nano4\Loader;
 
-class Pragmas
+class Pragmas implements \ArrayAccess
 {
   use Loader\Files;
 
