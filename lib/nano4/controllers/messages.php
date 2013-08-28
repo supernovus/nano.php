@@ -32,7 +32,7 @@ trait Messages
     $name = $this->name();
     $trconf = $nano->conf->translations;
     $trns   = array($name, 'common');
-    $translations = new \Nano4\Utils\Translation($trconf, $trns, $lang);
+    $translations = new \Nano4\Utils\Translation($trconf, $trns, $this->lang);
     $this->text = $translations;
     $this->data['text'] = $translations;
 
