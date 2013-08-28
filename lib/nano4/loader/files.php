@@ -7,7 +7,7 @@ namespace Nano4\Loader;
  */
 trait Files
 { 
-  public $dir;               // The directory which contains our classes.
+  public $dirs = [];         // The directory which contains our classes.
   public $ext = '.php';      // The file extension for classes (.php)
 
   // If you are loading a class/instance you need to specify a naming pattern.
@@ -20,9 +20,9 @@ trait Files
 
   public function __construct_files ($opts=[])
   {
-    if (isset($opts['dir']))
+    if (isset($opts['dirs']))
     {
-      $this->dir = $opts['dir'];
+      $this->dirs = $opts['dirs'];
     }
     if (isset($opts['ext']))
     {
@@ -31,52 +31,14 @@ trait Files
   }
 
   /** 
-   * Return the filename associated with the given class.
+   * Does the given file exist?
    *
-   * @param string $classname  The class name to look for.
+   * @param string $filename  The class name to look for.
    */
-  public function file ($class)
+  public function is ($filename)
   {
-    if (isset($this->dir))
-    {
-      if (is_array($this->dir))
-      { // Handle array dirs.
-        $dirs = array();
-        foreach ($this->dir as $dir)
-        {
-          $dirs[] = $dir . '/' . $class . $this->ext;
-        }
-        return $dirs;
-      }
-      return $this->dir . '/' . $class . $this->ext;
-    }
-    else
-      return Null;
-  }
-
-  /** 
-   * Does the given class exist?
-   *
-   * @param string $classname  The class name to look for.
-   */
-  public function is ($class)
-  {
-    if (isset($this->dir))
-    {
-      $file = $this->file($class);
-      if (is_array($file))
-      {
-        foreach ($file as $seek)
-        {
-          if (file_exists($seek))
-          {
-            return True;
-          }
-        }
-      }
-      return file_exists($file);
-    }
-    return Null;
+    $file = $this->find_file($filename);
+    return isset($file);
   }
 
   /** 
@@ -86,22 +48,12 @@ trait Files
    *
    * @param string $classname   The class name to look for.
    */
-  public function find ($class)
+  public function find_file ($filename)
   {
-    if (isset($this->dir))
+    foreach ($this->dirs as $dir)
     {
-      $file = $this->file($class);
-      if (is_array($file))
-      {
-        foreach ($file as $seek)
-        {
-          if (file_exists($seek))
-          {
-            return $seek;
-          }
-        }
-      }
-      elseif (file_exists($file))
+      $file = $dir . '/' . $filename . $this->ext;
+      if (file_exists($file))
       {
         return $file;
       }
@@ -114,7 +66,7 @@ trait Files
    */
   public function find_class ($class)
   {
-    $file = $this->find($class);
+    $file = $this->find_file($class);
     if ($file)
     {
       require_once($file);
@@ -129,25 +81,23 @@ trait Files
   /** 
    * Add a directory to search through.
    *
-   * @param string $dirname   The name of the directory to add.
+   * @param string $dir   The name of the directory to add.
    */
   public function addDir ($dir, $top=False)
   {
-    if (is_null($this->dir))
-    {
-      $this->dir = array();
-    }
-    elseif (!is_array($this->dir))
-    {
-      $this->dir = array($this->dir);
-    }
     if ($top)
     {
-      array_unshift($this->dir, $dir);
+      if (is_array($dir))
+        array_splice($this->dirs, 0, 0, $dir);
+      else
+        array_unshift($this->dirs, $ns);
     }
     else
     {
-      $this->dir[] = $dir;
+      if (is_array($ns))
+        array_splice($this->dirs, -1, 0, $ns);
+      else
+        $this->dirs[] = $ns;
     }
   }
 

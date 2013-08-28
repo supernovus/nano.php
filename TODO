@@ -1,5 +1,3 @@
-* Make addDir and addNS support arrays, simplify Files trait directories.
-
 * Rewrite Dispatch plugin to be modular and extendable.
 * Add proper PHPDoc documentation to all class files.
 

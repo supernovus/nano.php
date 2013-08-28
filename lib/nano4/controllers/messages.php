@@ -25,7 +25,7 @@ trait Messages
     if (!isset($this->lang))
     {
       $nano = \Nano4\get_instance();
-      $this->lang = $nano['default_language'];
+      $this->lang = $nano['default_lang'];
     }
 
     // Let's load our translation table, and page title.

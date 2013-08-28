@@ -4,6 +4,8 @@ namespace Nano4\Loader;
 
 /** 
  * A Loader Provider Trait that looks for PHP classes in Namespaces.
+ *
+ * This expects that an Autoloader is in use.
  */
 trait Namespaces
 {
@@ -32,39 +34,50 @@ trait Namespaces
     }
   }
 
-  public function is ($class)
+  public function is ($classname)
   {
-    $classfile = $this->find($class);
-    return isset($classfile);
+    $class = $this->find_class($classname);
+    return isset($class);
   }
 
-  public function find ($class)
+  public function find_class ($classname)
   {
     foreach ($this->namespace as $ns)
     {
-      $classname = $ns . "\\" . $class;
-      if (class_exists($classname))
+      $class = $ns . "\\" . $classname;
+      if (class_exists($class))
       {
-        return $classname;
+        return $class;
       }
     }
   }
 
-  public function find_class ($class)
-  { // This is simply a call to find().
-    return $this->find($class);
+  public function find_file ($classname)
+  {
+    $class = $this->find_class($classname);
+    if (isset($class))
+    {
+      $reflector = new ReflectionClass($class);
+      return $reflector->getFileName();
+    }
   }
 
-  // Add a new namespace.
+  // Add namespaces to search.
   public function addNS ($ns, $top=False)
   {
     if ($top)
     {
-      array_unshift($this->namespace, $ns);
+      if (is_array($ns))
+        array_splice($this->namespace, 0, 0, $ns);
+      else
+        array_unshift($this->namespace, $ns);
     }
     else
     {
-      $this->namespace[] = $ns;
+      if (is_array($ns))
+        array_splice($this->namespace, -1, 0, $ns);
+      else
+        $this->namespace[] = $ns;
     }
   }
 

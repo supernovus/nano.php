@@ -9,7 +9,7 @@ trait Content
 {
   public function load ($class, $data=Null)
   {
-    $file = $this->find($class);
+    $file = $this->find_file($class);
     if (isset($file))
     {
       $output = \Nano4\get_php_content($file, $data);

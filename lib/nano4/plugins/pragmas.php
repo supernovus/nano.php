@@ -23,7 +23,7 @@ class Pragmas
 
   public function load ($class, $opts=[])
   {
-    $file = $this->find($class);
+    $file = $this->find_file($class);
     if (isset($file))
     {
       require_once $file;
