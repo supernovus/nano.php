@@ -69,7 +69,7 @@ class ConfServ
   public function sendJSON ($data, $opts=array())
   {
     $nano = \Nano4\get_instance();
-    $nano->pragma('json no-cache');
+    $nano->pragmas['json no-cache'];
     if (isset($opts['encoded']) && $opts['encoded'])
     {
       echo $data;

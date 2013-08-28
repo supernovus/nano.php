@@ -3,17 +3,17 @@
 /**
  * AJAX+JSON Service for Session State Storage.
  * Symbolic link into your project folder.
- * This expects Nano4 to be in the 'lib/nano3/' folder.
+ * This expects Nano4 to be in the 'lib/nano4/' folder.
  */
 
 // Boot up Nano.
-require_once 'lib/nano3/init.php';
+require_once 'lib/nano4/init.php';
 
 // Get our Nano instance.
 $nano = \Nano4\get_instance();
 
 // We're returning JSON, and don't want to cache the results.
-$nano->pragma('json no-cache');
+$nano->pragmas['json no-cache'];
 
 if (isset($nano->sess->state_store))
 {
