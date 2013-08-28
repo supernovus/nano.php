@@ -9,15 +9,17 @@ class Pragmas implements \ArrayAccess
 
   public function __construct ($opts=[])
   {
-    if (isset($opts['dir']))
+    if (isset($opts['dirs']))
     {
-      $this->dir = $opts['dir'];
+      $this->dirs = $opts['dirs'];
     }
     else
     {
       $nano = \Nano4\get_instance();
-      $root = get_include_path();
-      $this->dir = $root . PATH_SEPARATOR . 'pragmas';
+      $root = $nano['classroot'];
+      if (!isset($root)) $root = 'lib';
+      $dir = $root . '/nano4/pragmas';
+      $this->dirs = [$dir];
     }
   }
 
