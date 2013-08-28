@@ -60,6 +60,7 @@ trait Constructor
     }
     foreach ($constructors as $constructor)
     {
+#      error_log("Calling $constructor()");
       $this->constructor($constructor, $opts, $fullname);
     }
   }

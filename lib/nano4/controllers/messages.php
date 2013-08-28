@@ -22,9 +22,10 @@ trait Messages
 
   protected function __construct_messages_controller ($opts=[])
   {
+    $nano = \Nano4\get_instance();
+
     if (!isset($this->lang))
     {
-      $nano = \Nano4\get_instance();
       $this->lang = $nano['default_lang'];
     }
 
