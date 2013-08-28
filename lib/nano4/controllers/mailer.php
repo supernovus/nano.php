@@ -40,10 +40,10 @@ trait Mailer
       $lang = '';
     }
 
-    $nano->messages = 'views';
+    $nano->mail_messages = 'views';
     foreach ($dirs as $dir)
     {
-      $nano->messages->addDir($dir . $lang);
+      $nano->mail_messages->addDir($dir . $lang);
     }
   }
 

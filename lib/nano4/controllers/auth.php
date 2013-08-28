@@ -204,7 +204,7 @@ trait Auth
         'code'     => True,
       );
       $mail_opts = $nano->conf->mail;
-      $mail_opts['views']    = 'messages';
+      $mail_opts['views']    = 'mail_messages';
       $mail_opts['subject']  = $this->text['subject'];
       $mail_opts['to']       = $user->email;
       $mail_opts['template'] = 'forgot_password';
