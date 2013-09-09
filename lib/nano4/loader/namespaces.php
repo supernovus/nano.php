@@ -45,11 +45,13 @@ trait Namespaces
     foreach ($this->namespace as $ns)
     {
       $class = $ns . "\\" . $classname;
+#      error_log("Looking for $class");
       if (class_exists($class))
       {
         return $class;
       }
     }
+#    error_log(" -- Not found!");
   }
 
   public function find_file ($classname)

@@ -14,6 +14,7 @@ trait Instance
    */
   public function load ($class, $opts=[])
   {
+#    error_log("Instance::load($class)");
     // Now let's build an object and return it.
     $classname = $this->find_class($class);
     if (isset($classname))
@@ -22,7 +23,7 @@ trait Instance
     }
 
     // If we reached here, we didn't find a class.
-    throw new \Nano4\Exception("No such class: $classname");
+    throw new \Nano4\Exception("No such class: $class");
   }
 }
 
