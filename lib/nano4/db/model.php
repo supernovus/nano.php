@@ -272,7 +272,7 @@ abstract class Model implements \Iterator, \ArrayAccess
   }
 
   /** 
-  * Return a ResultSet representing an executed query.
+   * Return a ResultSet representing an executed query.
    *
    * If it cannot find the resultclass, it instead executes the statement
    * and returns the PDOResult object.
@@ -333,6 +333,62 @@ abstract class Model implements \Iterator, \ArrayAccess
       return $this->wrapRow($row);
   }
 
+  /**
+   * Build a WHERE statement.
+   *
+   * This is a fairly simplistic WHERE builder, that supports custom
+   * comparison operators, multiple values, and a few other features.
+   * 
+   * If you need more than this, build your own custom query.
+   */
+  public function buildWhere ($where, &$data, $join='AND')
+  {
+    if (is_array($where))
+    {
+      $stmt = [];
+      foreach ($where as $key => $val)
+      {
+        if (is_array($val))
+        {
+          foreach ($val as $op => $subval)
+          {
+            $subc = 0;
+            if (is_array($subval))
+            {
+              $subsubc = 0;
+              $substmt = [];
+              foreach ($subval as $subsubval)
+              {
+                $c = $key . '_' . $subc . '_' . $subsubc;
+                $substmt[] = "$key $op :$c";
+                $data[$c] = $subsubval;
+                $subsubc++;
+              }
+              $stmt[] = '( ' . join(' OR ', $substmt) . ' )';
+            }
+            else
+            {
+              $c = $key . '_' . $subc;
+              $stmt[] = "$key $op :$c";
+              $data[$c] = $subval;
+            }
+            $subc++;
+          }
+        }
+        else
+        {
+          $stmt[] = "$key = :$key";
+          $data[$key] = $val;
+        }
+      }
+      return join(" $join ", $stmt);
+    }
+    elseif (is_string($where))
+    { // We assume the string is the raw WHERE statement.
+      return $where;
+    }
+  }
+
   /** 
    * Get a single row based on the value of multiple fields.
    *
@@ -342,32 +398,15 @@ abstract class Model implements \Iterator, \ArrayAccess
    */
   public function getRowByFields ($fields, $ashash=False, $cols='*')
   {
-    $cols = $this->get_cols($cols);
-    $sql = "SELECT $cols FROM {$this->table} WHERE ";
-    $data = array();
-    foreach ($fields as $key => $value)
-    {
-      if (count($data))
-        $sql .= "AND ";
-      $sql .= "$key = :$key ";
-      $data[$key] = $value;
-    }
-    $sql .= " LIMIT 1";
-#    error_log("getRowByFields: sql = \"$sql\" and fields = ".json_encode($data));
-    $query = $this->query($sql);
-    $query->execute($data);
-    $row = $query->fetch();
-#    error_log("Found: ".json_encode($row));
-    if ($ashash)
-      return $row;
-    else
-      return $this->wrapRow($row);
+    $data  = [];
+    $where = $this->buildWhere($where, $data);
+    return $this->getRowWhere($where, $data, $ashash, $cols);
   }
 
   /** 
    * Get a single row, specifying the WHERE clause and bound data.
    */
-  public function getRowWhere ($where, $data=array(), $ashash=False, $cols='*')
+  public function getRowWhere ($where, $data=[], $ashash=False, $cols='*')
   {
     $cols = $this->get_cols($cols);
     $sql = "SELECT $cols FROM {$this->table} WHERE $where LIMIT 1";
@@ -400,35 +439,24 @@ abstract class Model implements \Iterator, \ArrayAccess
   }
 
   /**
-   * Return a result set using a WHERE clause.
+   * Return a result set using a map of fields.
    */
-  public function listWhere ($where, $data, $cols=Null)
+  public function listByFields ($fields, $cols=Null, $append=Null, $data=[])
   {
-    return $this->listRows("WHERE $where", $data, $cols);
+    $stmt  = "WHERE ";
+    $stmt .= $this->buildWhere($where, $data);
+    if (isset($append))
+      $stmt .= " $append";
+    return $this->listRows($stmt, $data, $cols);
   }
 
   /**
-   * Return a result set using a map of fields.
+   * Get a page of results.
    */
-  public function listByFields ($fields, $cols=Null, $append=Null)
+  public function listPage ($where, $pageopts, $cols=Null, $data=[])
   {
-    $cols = $this->get_cols($cols);
-    $sql = "SELECT $cols FROM {$this->table} WHERE ";
-    $data = array();
-    foreach ($fields as $key => $value)
-    {
-      if (count($data))
-        $sql .= "AND ";
-      $sql .= "$key = :$key ";
-      $data[$key] = $value;
-    }
-    if (isset($append))
-      $sql .= " $append";
-
-#    error_log("sql: $sql");
-#    error_log("data: ".json_encode($data));
-
-    return $this->execute($sql, $data);
+    $pager = $this->pager($pageopts);
+    return $this->listByFields($where, $cols, $pager, $data);
   }
 
   /** 
@@ -543,13 +571,7 @@ abstract class Model implements \Iterator, \ArrayAccess
     if (is_array($where) && count($where) > 0)
     {
       $sql .= ' WHERE ';
-      foreach ($where as $key => $value)
-      {
-        if (count($data))
-          $sql .= 'AND ';
-        $sql .= "$key = :$key ";
-        $data[$key] = $value;
-      }
+      $sql .= $this->buildWhere($where, $data);
     }
     elseif (is_string($where))
     {
