@@ -237,6 +237,40 @@ abstract class Model implements \Iterator, \ArrayAccess
     }
   }
 
+  /**
+   * Check and see if a field is known.
+   */
+  public function is_known ($field)
+  {
+    // First check to see if it is the primary key.
+    if ($field == $this->primary_key)
+    {
+      return True;
+    }
+
+    if (isset($this->known_fields) && is_array($this->known-fields))
+    {
+      // Next look through our known_fields.
+      foreach ($this->known_fields as $key => $val)
+      {
+        if (is_numeric($key))
+        {
+          $name = $val;
+        }
+        else
+        {
+          $name = $key;
+        }
+        if ($field == $name)
+        {
+          return True;
+        }
+      }
+    }
+
+    return False;
+  }
+
   /** 
   * Return a ResultSet representing an executed query.
    *

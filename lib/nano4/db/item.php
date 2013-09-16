@@ -65,6 +65,8 @@ class Item implements \ArrayAccess
       return $this->aliases[$name];
     elseif ($name == $this->primary_key)
       return $name;
+    elseif ($this->parent->is_known($name))
+      return $name;
     else
       throw new Exception("Unknown field '$name'");
   }
