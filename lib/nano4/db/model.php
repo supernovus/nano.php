@@ -444,7 +444,7 @@ abstract class Model implements \Iterator, \ArrayAccess
   public function listByFields ($fields, $cols=Null, $append=Null, $data=[])
   {
     $stmt  = "WHERE ";
-    $stmt .= $this->buildWhere($where, $data);
+    $stmt .= $this->buildWhere($fields, $data);
     if (isset($append))
       $stmt .= " $append";
     return $this->listRows($stmt, $data, $cols);
