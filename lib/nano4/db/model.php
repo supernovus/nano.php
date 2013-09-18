@@ -399,7 +399,7 @@ abstract class Model implements \Iterator, \ArrayAccess
   public function getRowByFields ($fields, $ashash=False, $cols='*')
   {
     $data  = [];
-    $where = $this->buildWhere($where, $data);
+    $where = $this->buildWhere($fields, $data);
     return $this->getRowWhere($where, $data, $ashash, $cols);
   }
 
