@@ -248,7 +248,7 @@ abstract class Model implements \Iterator, \ArrayAccess
       return True;
     }
 
-    if (isset($this->known_fields) && is_array($this->known-fields))
+    if (isset($this->known_fields) && is_array($this->known_fields))
     {
       // Next look through our known_fields.
       foreach ($this->known_fields as $key => $val)
