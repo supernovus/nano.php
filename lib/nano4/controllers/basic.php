@@ -492,13 +492,15 @@ abstract class Basic
    * a closure called $url, that when called, will make a call to $this->url()
    * with the specified parameters.
    */
-  protected function addWrapper ($method)
+  protected function addWrapper ($method, $varname=Null)
   {
+    if (is_null($varname))
+      $varname = $method;
     $that = $this; // A wrapper to ourself.
     $closure = function () use ($that, $method)
     {
       $args = func_get_args();
-      $meth = array($that, $method);
+      $meth = [$that, $method];
       return call_user_func_array($meth, $args);
     };
     $this->data[$method] = $closure;
