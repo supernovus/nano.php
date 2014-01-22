@@ -146,9 +146,14 @@ class File
     return file($this->file);
   }
 
-  public function getContents ()
+  public function getHandle ($mode='r')
   {
-    $handle   = fopen($this->file, 'rb');
+    return fopen($this->file, $mode);
+  }
+
+  public function getContents ($mode='rb')
+  {
+    $handle   = $this->getHandle($mode);
     $contents = fread($handle, $this->size);
     fclose($handle);
     return $contents;

@@ -453,6 +453,7 @@ class Dispatch
         $controller = $matches[$ctrl['cmatch']];
       elseif (isset($ctrl['cpath']) && count($paths)>=$ctrl['cpath']+1)
         $controller = $paths[$ctrl['cpath']];
+
       // Now try to find the method name.
       if (isset($ctrl['method']))
         $method = $ctrl['method'];
