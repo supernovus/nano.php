@@ -63,7 +63,7 @@ abstract class Arrayish extends Object
 
   public function valid ()
   {
-    return isset(key($this->data));
+    return key($this->data) !== NULL;
   }
 
   // ArrayAccess Interface.
