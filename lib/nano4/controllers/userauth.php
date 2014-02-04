@@ -40,10 +40,6 @@ trait UserAuth
         { 
           $this->redirect($login); 
         }
-        if (method_exists($this, 'validate_user'))
-        {
-          $this->validate_user($user);
-        }
         $this->user = $user;
         $this->data['user'] = $user;
         if (isset($user->lang) && $user->lang)
