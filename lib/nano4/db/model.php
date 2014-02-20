@@ -320,17 +320,9 @@ abstract class Model implements \Iterator, \ArrayAccess
    */
   public function getRowByField ($field, $value, $ashash=false, $cols='*')
   {
-    $cols = $this->get_cols($cols);
-    $sql = "SELECT $cols FROM {$this->table} WHERE $field = :value LIMIT 1";
-    $query = $this->query($sql);
-    $data = array(':value'=>$value);
-#    error_log("getRowByField: $sql ;".json_encode($data));
-    $query->execute($data);
-    $row = $query->fetch();
-    if ($ashash)
-      return $row;
-    else
-      return $this->wrapRow($row);
+    $where = "$field = :value";
+    $data  = [':value'=>$value];
+    return $this->getRowWhere($where, $data, $ashash, $cols);
   }
 
   /**
