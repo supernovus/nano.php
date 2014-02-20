@@ -13,11 +13,6 @@ namespace Nano4\Controllers;
 
 trait Auth
 { 
-  // Override these as you see fit.
-  protected $view_login  = 'login';
-  protected $view_forgot = 'forgot_password';
-  protected $view_reset  = 'reset_password';
-
   protected function __construct_auth_controller ($opts=[])
   {
     $this->need_user = False;
@@ -36,7 +31,7 @@ trait Auth
     {
       $this->prep_auth($opts);
     }
-    $this->screen = $this->view_login;
+    $this->screen = $this->get_prop('view_login', 'login');
     if (method_exists($this, 'pre_login'))
     {
       $this->pre_login($opts);
@@ -89,9 +84,10 @@ trait Auth
         }
         $nano = \Nano4\get_instance();
         $lastpath = $nano->sess->lasturi;
+        $default_page = $this->get_prop('default_page', 'default');
         if (!$lastpath || $lastpath = $this->request_uri())
-        {
-          $lastpath = $this->get_page('default');
+        { // Go to the default page.
+          $this->go($default_page);
         }
         $this->redirect($lastpath);
       }
@@ -103,26 +99,35 @@ trait Auth
     return $this->display();
   }
 
-  public function handle_logout ($opts, $path)
+  public function handle_logout ($opts, $path=Null)
   {
     $auth = \Nano4\Utils\SimpleAuth::getInstance();
     $auth->logout(True);
-    $page = $this->get_page('login');
-    $this->redirect($page);
+    $login_page = $this->get_prop('login_page', 'login');
+    $this->go($login_page);
   }
 
-  public function handle_forgot ($opts, $path)
+  public function handle_forgot ($opts, $path=Null)
   { // Welcome to Forgot password.
     if (method_exists($this, 'prep_auth'))
     {
       $this->prep_auth($opts);
     }
-    $this->screen = $this->view_forgot; 
+    $this->screen = $this->get_prop('view_forgot', 'forgot_password'); 
     $this->data['title'] = $this->text['title.forgot'];
-    if (isset($path) && is_array($path) && count($path)>1 && $path[1])
-    { // We have a validation code.
-      $nano = \Nano4\get_instance();
+    $validCode = Null;
+    if (isset($opts['validationCode']))
+    { // Router dispatch uses named parameters.
+      $validCode = $opts['validationCode'];
+    }
+    elseif (isset($path) && is_array($path) && count($path)>1 && $path[1])
+    { // Older dispatch uses positional parameters.
       $validCode = $path[1];
+    }
+
+    if (isset($validCode))
+    {
+      $nano = \Nano4\get_instance();
       $validInfo = $nano->url->decodeArray($validCode);
       if (!is_array($validInfo))
       {
@@ -149,7 +154,7 @@ trait Auth
         return $this->invalid("Invalid reset code for '$uid': $code");
       }
       // Okay, if we made it this far, we're ready to reset the password.
-      $this->screen = $this->view_reset;
+      $this->screen = $this->get_prop('view_reset', 'reset_password');
       $this->data['title'] = $this->text['resetname'];
       if 
       (

@@ -12,16 +12,12 @@ trait UserAuth
 
   protected function __construct_userauth_controller ($opts=[])
   {
-    if (property_exists($this, 'save_uri'))
-      $save_uri = $this->save_uri;
-    else
-      $save_uri = True;
-
-    if (property_exists($this, 'need_user'))
-      $need_user = $this->need_user;
-    else
-      $need_user = True;
-
+    // Some configurable settings, with appropriate defaults.
+    $save_uri    = $this->get_prop('save_uri',    True);
+    $need_user   = $this->get_prop('need_user',   True);
+    $users_model = $this->get_prop('users_model', 'users');
+    $login_page  = $this->get_prop('login_page',  'login');
+    
     $nano = \Nano4\get_instance();
     if ($save_uri)
     {
@@ -29,16 +25,15 @@ trait UserAuth
     }
     if ($need_user)
     {
-      $login = $this->get_page('login');
       $auth = \Nano4\Utils\SimpleAuth::getInstance();
       $userid = $auth->is_user();
       if ($userid)
       {
-        $users = $this->model('users');
+        $users = $this->model($users_model);
         $user  = $users->getUser($userid);
         if (!$user) 
         { 
-          $this->redirect($login); 
+          $this->go($login_page); 
         }
         $this->user = $user;
         $this->data['user'] = $user;
@@ -52,7 +47,7 @@ trait UserAuth
       }
       else
       {
-        $this->redirect($login);
+        $this->go($login_page);
       }
     }
   }

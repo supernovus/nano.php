@@ -42,19 +42,13 @@ abstract class Basic
   // Set to true to enable the model cache.
   protected $use_model_cache = False;
 
-  /**
-   * Get a page path definition from the Nano options.
-   * If not defined, we return '/'.
-   */
-  public function get_page ($name)
+  // Used for composed traits. Check for a property, or return a default.
+  protected function get_prop ($property, $default=Null)
   {
-    $nano = \Nano4\get_instance();
-    $page = $nano["page.$name"];
-    if (isset($page))
-    {
-      return $page;
-    }
-    return '/';
+    if (property_exists($this, $property))
+      return $this->$property;
+    else
+      return $default;
   }
 
   /**
@@ -439,9 +433,64 @@ abstract class Basic
   {
     if (is_null($url))
     {
-      $url = $this->default_url;
+      $url = isset($this->default_url) ? $this->default_url : '/';
     }
     return \Nano4\Plugins\URL::redirect($url, $opts);
+  }
+
+  /**
+   * Go to a route.
+   *
+   * This will use the Router if it is set up.
+   *
+   * In the case where the route does not exist, we can still
+   * use go('pagename') without any parameters. In this case we will
+   * expect the older "page.{name}" Nano variable to exist.
+   *
+   * The compatibility layer will be removed at the same time as the
+   * old Dispatch plugin, as at that point, the Router should be used for
+   * all application dispatching.
+   */
+  public function go ($page, $params=[], $opts=[])
+  {
+    $nano = \Nano4\get_instance();
+
+    if ($nano->router->has($page))
+    {
+      $nano->router->go($page, $params, $opts);
+    }
+    elseif (count($params) == 0)
+    {
+      $url = $nano["page.$page"];
+      $this->redirect($url, $opts);
+    }
+    else
+    {
+      throw new Exception("invalid target for Controller::go()");
+    }
+  }
+
+  /**
+   * Get a route URI.
+   *
+   * As with go() this currently has compatibility with the older page
+   * variables. That will be removed at the same time as the Dispatch plugin.
+   */
+  public function get_uri ($page, $params=[])
+  {
+    $nano = \Nano4\get_instance();
+    if ($nano->router->has($page))
+    {
+      return $nano->router->build($page, $params);
+    }
+    elseif (count($params) == 0)
+    {
+      return $nano["page.$page"];
+    }
+    else
+    {
+      throw new Exception("invalid target for Controller::get_uri()");
+    }
   }
 
   /**

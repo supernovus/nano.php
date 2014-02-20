@@ -8,6 +8,10 @@ use Nano4\Exception;
  *
  * Most rules match specific URL patterns, and so one script can dispatch
  * to many different controllers and methods, depending on the current URL.
+ *
+ * NOTE: This is being deprecated in favour of the Routing Dispatcher.
+ *       When all apps have moved to the new dispatches, this library will
+ *       be removed entirely, as it's a horrid mess.
  */
 class Dispatch
 {

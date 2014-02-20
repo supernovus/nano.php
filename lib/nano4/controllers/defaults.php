@@ -13,7 +13,8 @@ trait Defaults
     $nano = \Nano4\get_instance();
     if (!isset($this->default_url))
     {
-      $this->default_url = $this->get_page('default');
+      $default_page = $this->get_prop('default_page', 'default');
+      $this->default_url = $this->get_uri($default_page);
     }
     if (!isset($this->layout))
     {
