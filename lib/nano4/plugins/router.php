@@ -15,13 +15,13 @@ class Router
   protected $named  = [];  // Any named routes, for reverse generation.
   protected $default;      // The default route, must be explicitly set.
 
-  public $base_url = '';
+  public $base_uri = '';
 
   public function __construct ($opts=[])
   {
-    if (isset($opts['base_url']))
+    if (isset($opts['base_uri']))
     {
-      $this->base_url($opts['base_url']);
+      $this->base_uri($opts['base_uri']);
     }
     elseif (isset($opts['auto_prefix']) && $opts['auto_prefix'])
     {
@@ -40,14 +40,15 @@ class Router
   }
 
   /**
-   * Set the base_url.
+   * Set the base_uri.
    */
-  public function base_url ($newval=Null)
+  public function base_uri ($newval=Null)
   {
     if (isset($newval))
     {
-      $this->base_url = trim($newval, "/");
+      $this->base_uri = rtrim($newval, "/");
     }
+    return $this->base_uri;
   }
 
   /**
@@ -56,7 +57,7 @@ class Router
   public function auto_prefix ()
   {
     $dir = dirname($_SERVER['SCRIPT_NAME']);
-    $this->base_url($dir);
+    $this->base_uri($dir);
   }
 
   /**
@@ -153,11 +154,11 @@ class Router
    */
   public function redirect ($from_uri, $to_uri, $short=False, $is_default=False)
   {
-    $target = $short ? $to_uri : trim($this->base_uri, "/") . $to_uri;
+    $target = $short ? $to_uri : $this->base_uri . $to_uri;
     $this->add(
     [
       'uri'        => $from_uri,
-      'redirect'   => $to_uri,
+      'redirect'   => $target,
     ], $is_default);
   }
 
@@ -194,7 +195,7 @@ class Router
     {
       $routeinfo = $route->match($uri, $method);
 
-      if ($routeinfo)
+      if (isset($routeinfo))
       {
         if ($route->strict)
         {
@@ -288,7 +289,7 @@ class Router
     if ($short)
       return $route_uri;
     else
-      return $this->base_url . $route_uri;
+      return $this->base_uri . $route_uri;
   }
 
   /**
@@ -366,14 +367,23 @@ class Route
 
   public function match ($uri, $method)
   {
+
+#    error_log("Checking $uri against " . $this->uri);
+
     if (! in_array($method, $this->methods)) return; // Doesn't match method.
+
+#    error_log("  -- our method matched.");
 
     $match = "@^"
            . $this->parent->base_uri
            . $this->uri_regex()
            . "*$@i";
 
-    if (! preg_match($match, $uri, $matches)) continue; // Doesn't match URI.
+#    error_log("searching with regex: $match");
+
+    if (! preg_match($match, $uri, $matches)) return; // Doesn't match URI.
+
+#    error_log(" -- It matched!");
 
     $params = [];
 
@@ -436,7 +446,7 @@ class Route
     { // A path and controller name, using the default action.
       $ropts =
       [
-        'uri'        => trim($this->uri, "/") . $suburi,
+        'uri'        => rtrim($this->uri, "/") . $suburi,
         'action'     => $action,
         'controller' => $this->controller,
       ];
@@ -445,7 +455,7 @@ class Route
     {
       $ropts =
       [
-        'uri'        => trim($this->uri, "/") . "/$suburi/",
+        'uri'        => rtrim($this->uri, "/") . "/$suburi/",
         'action'     => 'handle_' . $suburi,
         'controller' => $this->controller,
       ];
