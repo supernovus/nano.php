@@ -56,7 +56,7 @@ class Router
   public function auto_prefix ()
   {
     $dir = dirname($_SERVER['SCRIPT_NAME']);
-    $this->url_prefix($dir);
+    $this->base_url($dir);
   }
 
   /**
@@ -305,7 +305,7 @@ Trait RouteConstructor
 {
   public function __construct ($opts=[])
   {
-    foreach (get_class_vars($this) as $field => $default)
+    foreach (get_object_vars($this) as $field => $default)
     {
       if (isset($opts[$field]))
         $this->$field = $opts[$field];
