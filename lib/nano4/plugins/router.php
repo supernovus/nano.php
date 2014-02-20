@@ -21,8 +21,11 @@ class Router
   {
     if (isset($opts['base_url']))
     {
-      $this->base_url = $opts['base_url'];
-      $this->base_url = trim($this->base_url, "\\");
+      $this->base_url($opts['base_url']);
+    }
+    elseif (isset($opts['auto_prefix']) && $opts['auto_prefix'])
+    {
+      $this->auto_prefix();
     }
 
     // Add some quick Nano wrappers.
@@ -34,6 +37,26 @@ class Router
       $nano->addMethod('addRedirect',  [$this, 'redirect']);
       $nano->addMethod('setDefault',   [$this, 'setDefault']);
     }
+  }
+
+  /**
+   * Set the base_url.
+   */
+  public function base_url ($newval=Null)
+  {
+    if (isset($newval))
+    {
+      $this->base_url = trim($newval, "/");
+    }
+  }
+
+  /**
+   * Automatically set the URL prefix based on our SCRIPT_NAME.
+   */
+  public function auto_prefix ()
+  {
+    $dir = dirname($_SERVER['SCRIPT_NAME']);
+    $this->url_prefix($dir);
   }
 
   /**
@@ -66,36 +89,36 @@ class Router
       $route = new Route($route);
       return $this->add($route, $is_default, $add_it); // magical recursion.
     }
-    elseif (is_string($route) && ! is_bool($is_default) )
-    { // The first parameter is the URI.
-      // The second is either the name of a controller,
-      // or a flat array of ['controller','action'].
-      $ropts =
-      [
-        'uri' => $route,
-      ];
-
-      // Get controller details.
-      if (is_array($is_default))
-      {
+    elseif (is_string($route))
+    { 
+      $ropts = ['uri' => $route];      
+      if (is_bool($is_default))
+      { // Assume the first parameter is the controller, and that the
+        // URI is the same as the controller name (but with slashes.)
+        $ropts['controller'] = $route;
+        $ropts['uri']        = "/$route/";
+      }
+      elseif (is_array($is_default))
+      { // Both controller and action specified.
         $ropts['controller'] = $is_default[0];
         $ropts['action']     = $is_default[1];
       }
       elseif (is_string($is_default))
-      {
+      { // Just a controller specified.
         $ropts['controller'] = $is_default;
       }
       else
-      {
+      { // What did you send?
         throw new \Exception("Invalid controller specified in Route::add()");
       }
 
-      // Handle the case for 
+      // If the third parameter is a string or array, it's allowed methods.
       if (is_string($add_it))
         $ropts['methods'] = [$add_it];
       elseif (is_array($add_it))
         $ropts['methods'] = $add_it;
 
+      // Okay, build the route, and add it.
       $route = new Route($ropts);
       return $this->add($route);
     }
@@ -299,7 +322,7 @@ class Route
 
   public $parent;                                    // The Router object.
   public $name;                                      // Optional name.
-  public $uri;                                       // URI to match.
+  public $uri         = '';                          // URI to match.
   public $controller;                                // Target controller.
   public $action      = 'handle_default';            // Target action.
   public $strict      = False;                       // Request data source.
@@ -387,7 +410,7 @@ class Route
   }
 
   // For chaining Routes.
-  public function add ($suburi, $action, $rechain=False)
+  public function add ($suburi, $action=Null, $rechain=False)
   {
     if (is_array($action))
     {
@@ -400,17 +423,22 @@ class Route
     { // A path and controller name, using the default action.
       $ropts =
       [
-        'uri'        => $this->uri . $suburi,
+        'uri'        => trim($this->uri, "/") . $suburi,
         'action'     => $action,
-        'controller' => $this->controller
+        'controller' => $this->controller,
       ];
     }
     else
     {
-      throw new \Exception("Unrecognized route sent to Router::add()");
+      $ropts =
+      [
+        'uri'        => trim($this->uri, "/") . "/$suburi/",
+        'action'     => $suburi,
+        'controller' => $this->controller,
+      ];
     }
 
-    // If we made it here, we should have an $ropts.
+    // Build the sub-route with our compiled options.
     $subroute = new Route($ropts);
     $this->parent->add($subroute);
 
