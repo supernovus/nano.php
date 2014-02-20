@@ -149,6 +149,19 @@ class Router
   }
 
   /**
+   * Add a redirect rule.
+   */
+  public function redirect ($from_uri, $to_uri, $short=False, $is_default=False)
+  {
+    $target = $short ? $to_uri : trim($this->base_uri, "/") . $to_uri;
+    $this->add(
+    [
+      'uri'        => $from_uri,
+      'redirect'   => $to_uri,
+    ], $is_default);
+  }
+
+  /**
    * See if we can match a route against a URI and method.
    *
    * Returns a RouteContext object.
@@ -433,7 +446,7 @@ class Route
       $ropts =
       [
         'uri'        => trim($this->uri, "/") . "/$suburi/",
-        'action'     => $suburi,
+        'action'     => 'handle_' . $suburi,
         'controller' => $this->controller,
       ];
     }
