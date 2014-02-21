@@ -181,6 +181,14 @@ trait Messages
     $this->redirect($url, $opts);
   }
 
+  // Go to another page, and show a message.
+  public function go_msg ($msg, $page, $params=[], $gopts=[], $mopts=[])
+  {
+    $mopts['session'] = True;
+    $this->message($msg, $mopts);
+    $this->go($page, $params, $gopts);
+  }
+
   // Add an error to the stack.
   public function error ($name, $opts=array())
   {
@@ -200,6 +208,13 @@ trait Messages
   {
     $opts['type']  = 'error';
     $this->redirect_msg($name, $url, $opts);
+  }
+
+  // Go to another page, showing an error.
+  public function go_error ($msg, $page, $params=[], $gopts=[], $mopts=[])
+  {
+    $mopts['type'] = 'error';
+    $this->go_msg($msg, $page, $params, $gopts, $mopts);
   }
 
   // Add a warning to the stack.

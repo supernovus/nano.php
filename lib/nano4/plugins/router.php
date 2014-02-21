@@ -17,6 +17,11 @@ class Router
 
   public $base_uri = '';
 
+  public function known_routes ()
+  {
+    return array_keys($this->named);
+  }
+
   public function __construct ($opts=[])
   {
     if (isset($opts['base_uri']))
@@ -76,7 +81,7 @@ class Router
         $this->routes[] = $route;
 
       /// Handle named routes.
-      if (isset($route->name))
+      if (isset($route->name) && !isset($this->named[$route->name]))
         $this->named[$route->name] = $route;
 
       // Handle the default route.
@@ -97,16 +102,18 @@ class Router
       { // Assume the first parameter is the controller, and that the
         // URI is the same as the controller name (but with slashes.)
         $ropts['controller'] = $route;
+        $ropts['name']       = $route;
         $ropts['uri']        = "/$route/";
       }
       elseif (is_array($is_default))
       { // Both controller and action specified.
-        $ropts['controller'] = $is_default[0];
-        $ropts['action']     = $is_default[1];
+        $ropts['controller'] = $ctrl   = $is_default[0];
+        $ropts['action']     = $action = $is_default[1];
+        $ropts['name'] = $ctrl.'_'.preg_replace('/^handle_/', '', $action);
       }
       elseif (is_string($is_default))
       { // Just a controller specified.
-        $ropts['controller'] = $is_default;
+        $ropts['controller'] = $ropts['name'] = $is_default;
       }
       else
       { // What did you send?
@@ -435,12 +442,13 @@ class Route
   // For chaining Routes.
   public function add ($suburi, $action=Null, $rechain=False)
   {
+    $ctrl = $this->controller;
     if (is_array($action))
     {
       $ropts = $action;
       $ropts['uri'] = $this->uri . $suburi;
       if (!isset($ropts['controller']))
-        $ropts['controller'] = $this->controller;
+        $ropts['controller'] = $ctrl;
     }
     elseif (is_string($action))
     { // A path and controller name, using the default action.
@@ -448,7 +456,8 @@ class Route
       [
         'uri'        => rtrim($this->uri, "/") . $suburi,
         'action'     => $action,
-        'controller' => $this->controller,
+        'name'       => $ctrl . '_' . preg_replace('/^handle_/', '', $action),
+        'controller' => $ctrl,
       ];
     }
     else
@@ -457,7 +466,8 @@ class Route
       [
         'uri'        => rtrim($this->uri, "/") . "/$suburi/",
         'action'     => 'handle_' . $suburi,
-        'controller' => $this->controller,
+        'name'       => $ctrl . '_' . $suburi,
+        'controller' => $ctrl,
       ];
     }
 
