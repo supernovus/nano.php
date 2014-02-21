@@ -262,7 +262,7 @@ class Router
     if (isset($context))
     {
       $route = $context->route;
-      if ($log && $route->name)
+      if ($this->log && $route->name)
         error_log("Dispatching to {$route->name}");
 
       if ($route->redirect)
