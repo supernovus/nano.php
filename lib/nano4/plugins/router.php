@@ -17,6 +17,8 @@ class Router
 
   public $base_uri = '';
 
+  public $log = False;
+
   public function known_routes ()
   {
     return array_keys($this->named);
@@ -260,6 +262,9 @@ class Router
     if (isset($context))
     {
       $route = $context->route;
+      if ($log && $route->name)
+        error_log("Dispatching to {$route->name}");
+
       if ($route->redirect)
       {
         $nano->url->redirect($route->redirect);
