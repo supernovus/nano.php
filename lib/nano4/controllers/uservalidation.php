@@ -15,10 +15,7 @@ trait UserValidation
 {
   protected function __construct_uservalidation_controller ($opts=[])
   {
-    if (property_exists($this, 'validate_user'))
-      $validate_user = $this->validate_user;
-    else
-      $validate_user = True;
+    $validate_user = $this->get_prop('validate_user', True);
 
     if 
     (

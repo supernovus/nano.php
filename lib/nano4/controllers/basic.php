@@ -2,10 +2,13 @@
 
 /** 
  * This class represents a controller foundation.
+ *
  * The controller can have multiple models, and can load
  * templates consisting of a layout, and a screen.
+ *
  * The contents of the screen will be made available as the
  * $view_content variable in the layout.
+ *
  * You should create a base class to extend this that provides
  * any application-specific common controller methods.
  *
@@ -15,8 +18,6 @@
  *   $nano->screens = ['plugin'=>'views', 'dir'=>'./views/screens'];
  *   $nano->layouts = ['plugin'=>'views', 'dir'=>'./views/layouts'];
  *
- * It now has integration with the nano.js project, and can populate
- * the $scripts template variable with appropriate javascript files.
  */
 
 namespace Nano4\Controllers;
@@ -24,11 +25,10 @@ use Nano4\Exception;
 
 abstract class Basic 
 {
-  public $models = array(); // Any Models we have loaded.
+  public $models  = [];     // Any Models we have loaded.
 
   protected $data = [];     // Our data to send to the templates.
   protected $screen;        // Set if needed, otherwise uses $this->name().
-  protected $model_opts;    // Options to pass to load_model(), via model().
 
   protected $layout;        // The default layout to use.
   protected $default_url;   // Where redirect() goes if no URL is specified.
@@ -38,9 +38,6 @@ abstract class Basic
 
   // The methood to convert objects to XML.
   protected $to_xml_method  = 'to_xml';
-
-  // Set to true to enable the model cache.
-  protected $use_model_cache = False;
 
   // Used for composed traits. Check for a property, or return a default.
   protected function get_prop ($property, $default=Null)
@@ -232,159 +229,69 @@ abstract class Basic
   }
 
   /** 
-   * Load a data model into the $this->models associative array property.
-   *
-   * @param String $model_name      The name of the model to load.
-   * @param Array  $opts            Options to be used by the class loader.
-   *
-   * The $model_name model will loaded, and saved as $this->models[$model_name]
-   */
-  protected function load_model ($model, $opts=array())
-  { $nano = \Nano4\get_instance();
-    $opts['parent'] = $this;
-    return $this->models[$model] = $nano->models->load($model, $opts);
-  }
-
-  /**
-   * Get model options from our $this->model_opts definitions.
-   *
-   * @param String $name              The model/group to look up options for.
-   * @param Array  $opts              Current/overridden options.
-   * @param Bool   $defaults          If True, use default options.
-   *
-   * If the $defaults is True, and we cannot find a set of options for the
-   * specified model, then we will look for a set of options called '.default'
-   * and use that instead.
-   *
-   * A special option called '.type' allows for nesting option defintions.
-   * If set in any level, an option group with the name of the '.type' will be 
-   * looked up, and any options in its definition will be added (if they don't
-   * already exist.) Groups may have their own '.type' option, allowing for
-   * multiple levels of nesting.
-   *
-   * The '.type' rule MUST NOT start with a dot. The group definition MUST
-   * start with a dot. The dot will be assumed on all groups.
-   *
-   * So if a '.type' option is set to 'common', then a group called '.common'
-   * will be inherited from.
-   */
-  protected function get_model_opts ($model, $opts=array(), $use_defaults=False)
-  {
-    $model = strtolower($model); // Force lowercase.
-#    error_log("Looking for model options for '$model'");
-    if (isset($this->model_opts) && is_array($this->model_opts))
-    { // We have model options in the controller.
-      if (isset($this->model_opts[$model]))
-      { // There is model-specific options.
-        $modeltype = Null;
-        $modelopts = $this->model_opts[$model];
-        if (is_array($modelopts))
-        { 
-          $opts += $modelopts;
-          if (isset($modelopts['.type']))
-          {
-            $modeltype = $modelopts['.type'];
-          }
-        }
-        elseif (is_string($modelopts))
-        {
-          $modeltype = $modelopts;
-          if (!isset($opts['.type']))
-          {
-            $opts['.type'] = $modeltype;
-          }
-        }
-        if (isset($modeltype))
-        { // Groups start with a dot.
-          $opts = $this->get_model_opts('.'.$modeltype, $opts);
-          $func = 'get_'.$modeltype.'_model_opts';
-          if (is_callable(array($this, $func)))
-          {
-#            error_log("  -- Calling $func() to get more options.");
-            $addopts = $this->$func($model, $opts);
-            if (isset($addopts) && is_array($addopts))
-            {
-#              error_log("  -- Options were found, adding to our set.");
-              $opts += $addopts;
-            }
-          }
-        }
-      }
-      elseif ($use_defaults)
-      {
-        $opts = $this->get_model_opts('.default', $opts);
-      }
-    }
-#    error_log("Returning: ".json_encode($opts));
-    return $opts;
-  }
-
-  /** 
    * Return the requested Model object.
    *
-   * @param Mixed $model      If set, must be a string, see below.
-   * @param Array $opts       Options, see below.
+   * @param Mixed $modelname       If set, must be a string, see below.
+   * @param Array $modelopts       Options to pass to model, see below.
+   * @param Array $loadopts        Options specific to this, see below.
    * 
    * If the $model is not specified or is Null, then we assume the
    * model has the same basename as the current controller.
    *
-   * The $opts will be added to the list of options used in the class loader
+   * The $modelopts will be added to the parameters used in the class loader
    * (which will in turn be passed to the constructor of the Model class.)
    *
    * If the specified $model has been loaded already by this controller,
-   * regardless of the $opts, the loaded copy will be returned.
+   * by default we will return the cached copy, ignoring any new options.
    *
-   * The same applies for if we have enabled the Session Model Cache (which
-   * is experimental and only recommended if you really know what you are
-   * doing, as otherwise you could have some seriously messed up results.)
+   * The two $loadopts options we support are:
    *
-   * If the $model has not been loaded, then we will populate the $opts
-   * by first looking up an option set with the $model name, and if not found,
-   * using the '.default' group instead. Then we will add any options from
-   * the '.common' group (if it exists) that have not been overridden.
+   *   'forceNew'               If set to True, we will always create a new
+   *                            instance of the model, even if we've loaded
+   *                            it before. If caching is on, it will override
+   *                            the previously loaded instance.
    *
-   * Finally, we will call load_model() with the $model and populated $opts.
+   *  'noCache'                 If set to true, we will not cache the model
+   *                            instance loaded by this call.
+   *
    */
-  public function model ($model=Null, $opts=array())
+  public function model ($modelname=Null, $modelopts=[], $loadopts=[])
   {
     $nano = \Nano4\get_instance();
 
-    if (is_null($model))
+    if (is_null($modelname))
     { // Assume the default model has the same name as the controller.
-      $model = $this->name();
+      $modelname = $this->name();
     }
 
-    if (!isset($this->models[$model]))
-    { // No model has been loaded yet.
-      if ($this->use_model_cache)
-      { // Check the session cache.
-        $modelcache = $nano->sess->ModelCache;
-        if (isset($modelcache) && isset($modelcache[$model]))
-        { // The model cache, a double-edged sword. Use with care.
-          return $this->models[$model] = $modelcache[$model];
-        }
-      }
-      // Load any specific options.
-      $opts = $this->get_model_opts($model, $opts, True);
-      // Load any common options.
-      $opts = $this->get_model_opts('.common', $opts);
-      $this->load_model($model, $opts);
-      if ($this->use_model_cache)
+    if 
+    (
+      !isset($this->models[$modelname]) ||
+      (isset($loadopts['forceNew']) && $loadopts['forceNew'])
+    )
+    { 
+      // If we have a populate_model_opts() method, call it.
+      if (is_callable([$this, 'populate_model_opts']))
       {
-        $modelObj = $this->models[$model];
-        if (isset($modelObj) && is_callable(array($modelObj, 'allow_cache'))
-          && $modelObj->allow_cache())
-        {
-          if (!isset($modelcache))
-          {
-            $modelcache = array();
-          }
-          $modelcache[$model] = $modelObj;
-          $nano->sess->ModelCache = $modelcache;
-        }
+        $modelopts = $this->populate_model_opts($modelname, $modelopts);
       }
+
+      // Set our parent object.
+      $modelopts['parent'] = $this;
+
+      // Load the model instance.
+      $instance = $nano->models->load($modelname, $modelopts);
+
+      // Cache the results.
+      if (!isset($loadopts['noCache']) || !$loadopts['noCache'])
+      {
+        $this->models[$modelname] = $instance;
+      }
+
+      return $instance;
     }
-    return $this->models[$model];
+
+    return $this->models[$modelname];
   }
 
   /** 

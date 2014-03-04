@@ -15,7 +15,7 @@ namespace Nano4;
  * This is used as the backend function for all View related methods.
  *
  * @param string $filename    The PHP file to get the content from.
- * @param array  $data        An array of fields to extract into local variables.
+ * @param array  $data        Array of fields to extract into local variables.
  */
 function get_php_content ($__view_file, $__view_data=NULL)
 { 
