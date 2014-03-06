@@ -289,7 +289,7 @@ class URL
    *
    *   '+' becomes '-'
    *   '/' becomes '_'
-   *   '=' becomes '.'
+   *   '=' becomes '~'
    *
    * The data encoding scheme depends on the $serialize parameter:
    *
@@ -311,7 +311,7 @@ class URL
     {
       $encoded = json_encode($object);
     }
-    return strtr(base64_encode($encoded), '+/=', '-_.');
+    return strtr(base64_encode($encoded), '+/=', '-_~');
   }
 
   /** 
@@ -331,7 +331,7 @@ class URL
    */
   public static function decodeArray ($string, $serialize=False, $assoc=True)
   {
-    $decoded = base64_decode(strtr($string, '-_.', '+/='));
+    $decoded = base64_decode(strtr($string, '-_~', '+/='));
     if ($serialize)
     {
       return unserialize($decoded);

@@ -39,10 +39,7 @@ trait UserAuth
         $this->data['user'] = $user;
         if (isset($user->lang) && $user->lang)
         {
-          if (property_exists($this, 'lang'))
-          {
-            $this->lang = $user->lang;
-          }
+          $this->set_prop('lang', $user->lang);
         }
       }
       else

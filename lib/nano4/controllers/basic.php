@@ -48,6 +48,13 @@ abstract class Basic
       return $default;
   }
 
+  // Set a property, if it exists.
+  protected function set_prop ($property, $value)
+  {
+    if (property_exists($this, $property))
+      $this->$property = $value;
+  }
+
   /**
    * Display the contents of a screen, typically within a common layout.
    * We use the $data class member as the array of variables to pass to
@@ -353,10 +360,6 @@ abstract class Basic
    * In the case where the route does not exist, we can still
    * use go('pagename') without any parameters. In this case we will
    * expect the older "page.{name}" Nano variable to exist.
-   *
-   * The compatibility layer will be removed at the same time as the
-   * old Dispatch plugin, as at that point, the Router should be used for
-   * all application dispatching.
    */
   public function go ($page, $params=[], $opts=[])
   {
@@ -381,7 +384,7 @@ abstract class Basic
    * Get a route URI.
    *
    * As with go() this currently has compatibility with the older page
-   * variables. That will be removed at the same time as the Dispatch plugin.
+   * variables, and once again, can only be used with no parameters.
    */
   public function get_uri ($page, $params=[])
   {

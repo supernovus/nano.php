@@ -20,7 +20,7 @@ namespace Nano4\Controllers;
 
 abstract class Advanced extends Basic implements \ArrayAccess
 {
-  use ViewData, Defaults, ModelConf, UserAuth, 
-      Messages, Mailer, UserValidation, Resources, Constructor;
+  use ViewData, Defaults, ModelConf, Messages, UserAuth, 
+      Mailer, UserValidation, Resources, Constructor;
 }
 

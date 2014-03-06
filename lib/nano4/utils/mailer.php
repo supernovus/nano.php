@@ -124,6 +124,7 @@ class Mailer
     { // We're using templates (recommended.)
       $nano = \Nano4\get_instance();
       $loader = $this->views;
+      #error_log("template: '$template', loader: '$loader'");
       if (isset($nano->lib[$loader]))
       { // We're using a view loader.
         $message = $nano->lib[$loader]->load($template, $fields);

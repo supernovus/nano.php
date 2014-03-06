@@ -12,7 +12,7 @@ namespace Nano4\Controllers;
 
 trait Mailer
 {
-  protected function __construct_mailer ($opts=[])
+  protected function __construct_mailer_controller ($opts=[])
   {
     $nano = \Nano4\get_instance();
     if (property_exists($this, 'email_path'))
@@ -31,19 +31,15 @@ trait Mailer
       $dirs = ['views/mail'];
     }
 
-    if (property_exists($this, 'lang'))
-    {
-      $lang = '/' . $this->lang;
-    }
-    else
-    {
-      $lang = '';
-    }
+    $lang = $this->get_prop('lang', Null);
 
     $nano->mail_messages = 'views';
     foreach ($dirs as $dir)
     {
-      $nano->mail_messages->addDir($dir . $lang);
+      if (isset($lang))
+        $nano->mail_messages->addDir($dir . '/' . $lang);
+
+      $nano->mail_messages->addDir($dir);
     }
   }
 
