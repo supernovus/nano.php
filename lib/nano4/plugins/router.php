@@ -245,6 +245,16 @@ class Router
           $request = $_REQUEST;
         }
 
+        // Let's get the body params if applicable.
+        if (strtolower($_SERVER['CONTENT_TYPE']) == "application/json")
+        {
+          $body_params = json_decode(file_get_contents("php://input"), true);
+        }
+        else
+        {
+          $body_params = [];
+        }
+
         $context = new RouteContext(
         [
           'router'         => $this,
@@ -252,6 +262,7 @@ class Router
           'path'           => $path,
           'request_params' => $request,
           'path_params'    => $routeinfo,
+          'body_params'    => $body_params,
           'method'         => $method,
         ]);
 
@@ -534,15 +545,16 @@ class RouteContext implements \ArrayAccess
 
   public $router;              // The router object.
   public $route;               // The route object.
-  public $path = [];           // The URI path elements.
+  public $path           = []; // The URI path elements.
   public $request_params = []; // The $_REQUEST, $_GET or $_POST data.
-  public $path_params = [];    // Parameters specified in the URI.
+  public $path_params    = []; // Parameters specified in the URI.
+  public $body_params    = []; // Params found in a JSON body, if applicable.
   public $method;              // The HTTP method used.
 
   // Convert this into a simple array structure.
   public function to_array ($opts=[])
   {
-    $array =  $this->path_params + $this->request_params;
+    $array =  $this->path_params + $this->body_params + $this->request_params;
     $array['_context'] = $this;
     return $array;
   }
@@ -552,6 +564,10 @@ class RouteContext implements \ArrayAccess
     if (array_key_exists($offset, $this->path_params))
     {
       return $this->path_params[$offset];
+    }
+    elseif (array_key_exists($offset, $this->body_params))
+    {
+      return $this->body_params[$offset];
     }
     elseif (array_key_exists($offset, $this->request_params))
     {
@@ -570,11 +586,15 @@ class RouteContext implements \ArrayAccess
 
   public function offsetExists ($offset)
   {
-    if (array_key_exists($offset, $this->request_params))
+    if (array_key_exists($offset, $this->path_params))
     {
       return True;
     }
-    elseif (array_key_exists($offset, $this->path_params))
+    elseif (array_key_exists($offset, $this->body_params))
+    {
+      return True;
+    }
+    elseif (array_key_exists($offset, $this->request_params))
     {
       return True;
     }
