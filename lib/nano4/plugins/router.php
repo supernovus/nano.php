@@ -42,6 +42,7 @@ class Router
       $nano->addMethod('dispatch',     [$this, 'route']);
       $nano->addMethod('addRoute',     [$this, 'add']);
       $nano->addMethod('addRedirect',  [$this, 'redirect']);
+      $nano->addMethod('addPage',      [$this, 'display']);
       $nano->addMethod('setDefault',   [$this, 'setDefault']);
     }
   }
