@@ -295,9 +295,13 @@ class Router
       }
       elseif ($route->view)
       { // We're loading a view.
+        if (isset($route->view_status))
+        {
+          http_response_code($route->view_status);
+        }
         $loader = $route->view_loader;
         return $nano->lib[$loader]->load($route->view, $context->to_array());
-      } 
+      }
       elseif ($route->controller)
       {
         // We consider it a fatal error if the controller doesn't exist.
@@ -384,6 +388,7 @@ class Route
   public $redirect;                                  // If set, we redirect.
   public $view_loader = 'views';                     // Used with 'view'.
   public $view;                                      // A view to load.
+  public $view_status;                               // HTTP status override.
 
   public $methods = ['GET','POST','PUT','DELETE'];   // Supported methods.
 
