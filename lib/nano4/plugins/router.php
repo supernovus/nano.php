@@ -148,11 +148,17 @@ class Router
     {
       return $this->add($route, True, False);
     }
+    elseif (is_array($route))
+    { // It's options for constructing a route.
+      $route = new Route($route);
+      return $this->add($route, True, False); // magical recursion.
+    }
     elseif (is_string($route))
     { // Expects a controller with the handle_default() method.
       $route = new Route(
       [
         'controller' => $route,
+        'name'       => $route,
       ]);
       return $this->add($route, True, False);
     }
@@ -169,6 +175,24 @@ class Router
       'uri'        => $from_uri,
       'redirect'   => $target,
     ], $is_default);
+  }
+
+  /**
+   * Display a view without an underlying controller.
+   */
+  public function display ($path, $view, $is_default=False)
+  {
+    $def = ['uri'=>$path];
+    if (is_array($view))
+    {
+      $def['view_loader'] = $view[0];
+      $def['view']        = $view[1];
+    }
+    else
+    {
+      $def['view'] = $view;
+    }
+    $this->add($def, $is_default);
   }
 
   /**
@@ -269,6 +293,11 @@ class Router
       {
         $nano->url->redirect($route->redirect);
       }
+      elseif ($route->view)
+      { // We're loading a view.
+        $loader = $route->view_loader;
+        return $nano->lib[$loader]->load($route->view, $context->to_array());
+      } 
       elseif ($route->controller)
       {
         // We consider it a fatal error if the controller doesn't exist.
@@ -353,6 +382,8 @@ class Route
   public $action      = 'handle_default';            // Target action.
   public $strict      = False;                       // Request data source.
   public $redirect;                                  // If set, we redirect.
+  public $view_loader = 'views';                     // Used with 'view'.
+  public $view;                                      // A view to load.
 
   public $methods = ['GET','POST','PUT','DELETE'];   // Supported methods.
 
@@ -456,7 +487,7 @@ class Route
         $ropts['controller'] = $ctrl;
     }
     elseif (is_string($action))
-    { // A path and controller name, using the default action.
+    { // Specified the action, using our controller and path.
       $ropts =
       [
         'uri'        => rtrim($this->uri, "/") . $suburi,
@@ -466,7 +497,7 @@ class Route
       ];
     }
     else
-    {
+    { // Action will be 'handle_suburi', don't include the / in the $suburi.
       $ropts =
       [
         'uri'        => rtrim($this->uri, "/") . "/$suburi/",
@@ -501,6 +532,14 @@ class RouteContext implements \ArrayAccess
   public $request_params = []; // The $_REQUEST, $_GET or $_POST data.
   public $path_params = [];    // Parameters specified in the URI.
   public $method;              // The HTTP method used.
+
+  // Convert this into a simple array structure.
+  public function to_array ($opts=[])
+  {
+    $array =  $this->path_params + $this->request_params;
+    $array['_context'] = $this;
+    return $array;
+  }
 
   public function offsetGet ($offset)
   {
