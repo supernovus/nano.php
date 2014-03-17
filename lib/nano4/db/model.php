@@ -48,6 +48,9 @@ abstract class Model implements \Iterator, \ArrayAccess
   const return_raw = 2; // Return a raw DB query object.
   const return_key = 3; // Return the primary key value.
 
+  // Constant for error checking.
+  const success = '00000'; // SQLSTATE code for successful operation.
+
   /**
    * Return our table name.
    */
@@ -163,12 +166,29 @@ abstract class Model implements \Iterator, \ArrayAccess
     return $this->dbname;
   }
 
+  // Override with your own handler if necessary.
+  protected function handle_db_error ($einfo, $context, $name='database')
+  {
+    error_log("A $name error occurred: " . json_encode($einfo));
+    error_log("  -- " . json_encode($context));
+  }
+
+  protected function handle_stmt_error ($einfo, $context, $name='statement')
+  {
+    return $this->handle_db_error($einfo, $context, $name);
+  }
+
   /**
    *  Create a prepared statement, and set its default fetch style.
    */
   public function query ($statement, $assoc=True)
   {
     $query = $this->db->prepare($statement);
+    $einfo = $this->db->errorInfo();
+    if ($einfo[0] !== $this::success)
+    {
+      $this->handle_db_error($einfo, ['statement'=>$statement]);
+    }
     if ($assoc)
       $query->setFetchMode(\PDO::FETCH_ASSOC);
     else
@@ -513,6 +533,11 @@ abstract class Model implements \Iterator, \ArrayAccess
 #    error_log("newRow.fielddata: ".json_encode($fielddata));
     $query = $this->query($sql);
     $query->execute($fielddata);
+    $einfo = $query->errorInfo();
+    if ($einfo[0] !== $this::success)
+    {
+      $this->handle_stmt_error($einfo, ['statement'=>$sql, 'data'=>$fielddata]);
+    }
 #    error_log("sterr: ".json_encode($query->errorInfo()));
 #    error_log("dberr: ".json_encode($this->db->errorInfo()));
 #
