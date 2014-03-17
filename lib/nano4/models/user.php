@@ -30,9 +30,10 @@ class User extends \Nano4\DB\Item
    */
   public function changePassword ($newpass, $autosave=True)
   { // We auto-generate a unique token every time we change the password.
-    $this->token = sha1(time());
-    $this->hash = \Nano4\Utils\SimpleAuth::generate_hash
-      ($this->token, $newpass);
+    $hash = $this->parent->hash_type();
+    $auth = $this->parent->get_auth();
+    $this->token = hash($hash, time());
+    $this->hash = $auth->generate_hash($this->token, $newpass);
     if ($autosave) $this->save();
   }
 

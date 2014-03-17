@@ -22,7 +22,21 @@ class Users extends \Nano4\DB\Model
   protected $token_field = 'token'; // The user token field.
   protected $hash_field  = 'hash';  // The authentication hash field.
 
+  protected $hashType    = 'sha256';   // The default hash algorithm.
+
   protected $user_cache  = [];      // A cache of known users.
+
+  public function hash_type ()
+  {
+    return $this->hashType;
+  }
+
+  public function get_auth ()
+  {
+    $hash = $this->hashType;
+    $auth = new \Nano4\Utils\SimpleAuth(['hash'=>$hash, 'store'=>False]);
+    return $auth;
+  }
 
   /**
    * Get a user.
@@ -90,11 +104,12 @@ class Users extends \Nano4\DB\Model
       return False; // The login field is required!
 
     // Generate a unique token.
-    $token = sha1(time());
+    $token = hash($this->hashType, time());
     $rowdef[$tfield] = $token;
 
     // Generate the password hash.
-    $hash = \Nano4\Utils\SimpleAuth::generate_hash($token, $password);
+    $auth = $this->get_auth();
+    $hash = $auth->generate_hash($token, $password);
     $rowdef[$hfield] = $hash;
 
     // Create the user.

@@ -24,6 +24,8 @@ class SimpleAuth
 {
   public $log = False;          // Enable logging?
 
+  protected $hashType = 'sha256'; // Default hash algorithm.
+
   // Internal fields.
   protected $userid;
   protected $authhash;
@@ -39,6 +41,11 @@ class SimpleAuth
     if (isset($opts['log']))
     { 
       $this->log = $opts['log'];
+    }
+
+    if (isset($opts['hash']))
+    {
+      $this->hashType = $opts['hash'];
     }
 
     // To disable auto-store, pass 'store' => False
@@ -82,7 +89,7 @@ class SimpleAuth
   // be able to be called as a object or class method.
   public function generate_hash ($token, $pass)
   {
-    return sha1(trim($token.$pass));
+    return hash($this->hashType, trim($token.$pass));
   }
 
   // Returns if a user is logged in or not.
@@ -94,7 +101,7 @@ class SimpleAuth
     {
       if (isset($userhash) && isset($authtoken) && isset($this->authhash))
       { 
-        $checkhash = sha1($authtoken.$userhash);
+        $checkhash = hash($this->hashType, $authtoken.$userhash);
         if (strcmp($checkhash, $this->authhash) != 0)
         {
           return False;
@@ -119,8 +126,8 @@ class SimpleAuth
       if ($this->log) error_log("User '$userid' logged in.");
       if ($paranoid)
       {
-        $authtoken = sha1(time());
-        $this->authhash = sha1($authtoken.$userhash);
+        $authtoken = hash($this->hashType, time());
+        $this->authhash = hash($this->hashType, $authtoken.$userhash);
         return $authtoken;
       }
       $this->update();
