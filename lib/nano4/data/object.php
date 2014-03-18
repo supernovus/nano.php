@@ -1,6 +1,9 @@
 <?php
 
-/* Data\Object -- Base class for all Nano4\Data classes.
+namespace Nano4\Data;
+
+/** 
+ * Data Object -- Base class for all Nano4\Data classes.
  *
  * These are "magic" objects which are meant for converting data between
  * different formats easily, with PHP arrays, JSON and XML as the default
@@ -38,8 +41,6 @@
  * detect_string_type() methods is easy, so go crazy!
  *
  */
-
-namespace Nano4\Data;
 
 abstract class Object
 {

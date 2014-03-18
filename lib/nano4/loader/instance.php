@@ -19,6 +19,7 @@ trait Instance
     $classname = $this->find_class($class);
     if (isset($classname))
     {
+      $opts['__classid'] = $class;
       return new $classname ($opts);
     }
 

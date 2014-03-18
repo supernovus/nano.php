@@ -42,6 +42,8 @@ trait Namespaces
 
   public function find_class ($classname)
   {
+    // Replace '.' with '\\' for nested module names.
+    $classname = str_replace('.', "\\", $classname);
     foreach ($this->namespace as $ns)
     {
       $class = $ns . "\\" . $classname;
@@ -81,14 +83,6 @@ trait Namespaces
       else
         $this->namespace[] = $ns;
     }
-  }
-
-  // Get the identifier of an object.
-  public function class_id ($object)
-  {
-    $classname = strtolower(get_class($object));
-    $pathspec  = explode("\\", $classname);
-    return array_pop($pathspec);
   }
 
 }

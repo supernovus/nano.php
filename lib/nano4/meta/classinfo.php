@@ -5,10 +5,17 @@ namespace Nano4\Meta;
 Trait ClassInfo
 {
   // Return the lowercase "basename" of our class.
+  // In classes supporting the class_id() method, we use it.
   public function get_classname ($object=Null)
   {
     if (is_null($object))
       $object = $this;
+
+    if (is_callable([$object, 'class_id']))
+    {
+      return $object->class_id();
+    }
+
     $classpath = explode('\\', get_class($object));
     $classname = strtolower(end($classpath));
     return $classname;

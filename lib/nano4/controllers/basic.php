@@ -25,6 +25,8 @@ use Nano4\Exception;
 
 abstract class Basic 
 {
+  use \Nano4\Meta\ClassID;  // Adds $__classid and class_id()
+
   public $models  = [];     // Any Models we have loaded.
 
   protected $data = [];     // Our data to send to the templates.
@@ -38,6 +40,73 @@ abstract class Basic
 
   // The methood to convert objects to XML.
   protected $to_xml_method  = 'to_xml';
+
+  // A list of constructors we've already called.
+  protected $called_constructors = [];
+
+  /**
+   * Provide a default __construct() method that can chain a bunch of
+   * constructors together. 
+   *
+   * The list of constructors that will be called, and in what order, is
+   * dependent on the existence of a class property called $constructors.
+   * If the property exists, and is an array, then it is a list of keys,
+   * which expect a method called __construct_{$key}_controller() is defined
+   * in your class (likely via trait composing.)
+   *
+   * If the property does not exist, then we will get a list of all methods
+   * matching __construct_{word}_controller() and will call them
+   * all in whatever order they were defined in. 
+   */
+  public function __construct ($opts=[])
+  {
+    // Populate our $__classid property.
+    if (isset($opts['__classid']))
+    {
+      $this->__classid = $opts['__classid'];
+    }
+
+    if (property_exists($this, 'constructors') && is_array($this->constructors))
+    { // Use a defined list of constructors.
+      $constructors = $this->constructors;
+      $fullname = False;
+    }
+    else
+    { // Build a list of all known constructors, and call them.
+      $constructors = preg_grep('/__construct_\w+_controller/i', 
+        get_class_methods($this));
+      $fullname = True;
+    }
+    foreach ($constructors as $constructor)
+    {
+#      error_log("Calling $constructor()");
+      $this->_call_constructor($constructor, $opts, $fullname);
+    }
+  }
+
+  // Internal function to actually call the constructors.
+  protected function _call_constructor ($constructor, $opts=[], $fullname=False)
+  {
+    if ($fullname)
+    {
+      $method = $constructor;
+    }
+    else
+    {
+      $method = "__construct_{$constructor}_controller";
+    }
+
+    if 
+    ( isset($this->called_constructors[$method]) 
+      && $this->called_constructors[$method]
+    ) return; // Skip already called constructors.
+
+    if (method_exists($this, $method))
+    {
+      $this->called_constructor[$method] = True;
+      $this->$method($opts);
+    }
+  }
 
   // Used for composed traits. Check for a property, or return a default.
   protected function get_prop ($property, $default=Null)
@@ -306,8 +375,7 @@ abstract class Basic
    */
   public function name ()
   {
-    $nano = \Nano4\get_instance();
-    return $nano->controllers->class_id($this);
+    return $this->__classid;
   }
 
   /** 

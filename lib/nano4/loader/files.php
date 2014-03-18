@@ -103,6 +103,8 @@ trait Files
 
   /**
    * Get a class id from an object instance.
+   * This is not generally recommended for use anymore, and is not
+   * guaranteed to exist in other Loader classes.
    */
   public function class_id ($object)
   {

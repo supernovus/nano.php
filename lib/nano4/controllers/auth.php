@@ -3,7 +3,7 @@
 /* 
  * Auth Controller Trait. Add to your own authentication controllers.
  * 
- *  It requires the Constructor, Translation, Messages, and Mailer traits.
+ *  It requires the Translation, Messages, and Mailer traits.
  *
  * Expects pages with names of 'default' and 'login', either using the
  * old $nano["page.$name"] or newer Router-based dispatching (preferred.)

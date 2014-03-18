@@ -1,5 +1,7 @@
 <?php
 
+namespace Nano4\DB;
+
 /**
  * A base class for database-driven models.
  *
@@ -10,10 +12,10 @@
  * query() method directly and write methods in your extended class.
  */
 
-namespace Nano4\DB;
-
 abstract class Model implements \Iterator, \ArrayAccess
 {
+  use \Nano4\Meta\ClassID;   // Adds $__classid and class_id()
+
   protected $db;             // Our database object.
 
   protected $table;          // Our database table.
@@ -68,8 +70,7 @@ abstract class Model implements \Iterator, \ArrayAccess
    */
   public function name ()
   {
-    $nano = \Nano4\get_instance();
-    return $nano->models->class_id($this);
+    return $this->__classid;
   }
 
   /**
@@ -79,6 +80,10 @@ abstract class Model implements \Iterator, \ArrayAccess
   {
     if (!isset($opts['dsn']))
       throw new Exception("Must have a database DSN");
+
+    // Initialize our classid that is passed from the module loader.
+    if (isset($opts['__classid']))
+      $this->__classid = $opts['__classid'];
 
     $this->dsn = $opts['dsn'];
 
