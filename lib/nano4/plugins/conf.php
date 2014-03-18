@@ -37,8 +37,8 @@ class Conf extends \Nano4\Data\Arrayish
     '.yaml' => 'yaml',
     '.jsn'  => 'json',
     '.yml'  => 'yaml',
-    '.d'    => 'dir',
     '.url'  => 'confs',
+    '.d'    => 'dir',
     '.txt'  => 'scalar',
   );
   // A map of filename matches to determine type.
@@ -52,7 +52,9 @@ class Conf extends \Nano4\Data\Arrayish
     'confs'  => '/\.url$/i',
     'scalar' => '/\.txt$/i',
   );
-  
+
+  protected $_file_type_include_pos = 6; // Keep the first x file type exts.
+
   public $strict_mode = True;  // If true, we die on failure.
 
   public function dir ()
@@ -87,6 +89,7 @@ class Conf extends \Nano4\Data\Arrayish
    */
   protected function load_file ($filename, $type=Null)
   {
+#    error_log("loadfile($filename)");
     if (is_null($type))
     { // Let's see if we can detect the file type.
       $type = $this->get_type($filename);
@@ -193,6 +196,18 @@ class Conf extends \Nano4\Data\Arrayish
     }
     if ($scan)
     {
+      $this->scanDir();
+    }
+  }
+
+  /**
+   * Scan our autoload directory for all known files.
+   */
+  public function scanDir ()
+  {
+    if (isset($this->autoload_dir))
+    {
+      $dir = $this->autoload_dir;
       foreach (scandir($dir) as $file)
       {
         $type = $this->get_type($file);
@@ -208,6 +223,55 @@ class Conf extends \Nano4\Data\Arrayish
   }
 
   /**
+   * A wrapper for load_file() that supports chaining configuration
+   * files using a special include statement.
+   */
+  protected function load_file_chain ($filename, $type=Null)
+  {
+    $data = $this->load_file($filename, $type);
+
+    if (is_array($data) && isset($data['@include']))
+    {
+      $infiles = $data['@include'];
+      if (!is_array($infiles))
+      {
+        $infiles = [$infiles];
+      }
+      unset($data['@include']);
+
+      foreach ($infiles as $infile)
+      {
+        $include = Null;
+        if (isset($this->autoload_dir) && strpos($infile, '.') === FALSE)
+        {
+          $exts = $this->_file_type_extensions;
+          $pos  = $this->_file_type_include_pos;
+          $exts = array_slice($exts, 0, $pos);
+          foreach ($exts as $ext => $type)
+          {
+            $tryfile = $this->autoload_dir . '/' . $infile . $ext;
+            if (file_exists($tryfile))
+            {
+              $include = $this->load_file_chain($tryfile, $type);
+              break;
+            }
+          }
+        }
+        else
+        {
+          $include = $this->load_file_chain($infile);
+        }
+
+        if (isset($include) && is_array($include))
+        {
+          $data += $include;
+        }
+      }
+    }
+    return $data;
+  }
+
+  /**
    * Load the data from an external file.
    *
    * @params string $filenname  The file to load data from.
@@ -215,7 +279,7 @@ class Conf extends \Nano4\Data\Arrayish
    */
   public function loadFile ($filename, $type=Null)
   {
-    $this->data = $this->load_file($filename, $type);
+    $this->data = $this->load_file_chain($filename, $type);
   }
 
   /**
@@ -228,7 +292,7 @@ class Conf extends \Nano4\Data\Arrayish
   public function loadInto ($id, $filename, $type=Null)
   {
 #    error_log("Loading '$filename' into '$id', as '$type'");
-    $data = $this->load_file($filename, $type);
+    $data = $this->load_file_chain($filename, $type);
 #    error_log("Loaded: ".json_encode($data));
     $this->data[$id] = $data;
   }

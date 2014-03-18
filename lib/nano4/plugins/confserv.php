@@ -24,7 +24,7 @@ class ConfServ
     {
       if (is_object($section))
       {
-        if (is_callable(array($section, 'to_array')))
+        if (is_callable([$section, 'to_array']))
         {
           return $section->to_array();
         }
@@ -43,7 +43,11 @@ class ConfServ
       $keys = Null;
       if (is_object($section))
       {
-        if (is_callable(array($section, 'array_keys')))
+        if (is_callable([$section, 'scanDir']))
+        { // Pre-load all known entities.
+          $section->scanDir();
+        }
+        if (is_callable([$section, 'array_keys']))
         {
           $keys = $section->array_keys();
         }
@@ -66,7 +70,7 @@ class ConfServ
 
   // Process a request. PHP value to encode.
   // To send a pre-encoded value, pass 'encoded'=>True as an option.
-  public function sendJSON ($data, $opts=array())
+  public function sendJSON ($data, $opts=[])
   {
     $nano = \Nano4\get_instance();
     $nano->pragmas['json no-cache'];
@@ -76,7 +80,7 @@ class ConfServ
     }
     else
     {
-      if (is_object($data) && is_callable(array($data, 'to_json')))
+      if (is_object($data) && is_callable([$data, 'to_json']))
       {
         echo $data->to_json($opts);
       }
