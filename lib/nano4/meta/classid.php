@@ -12,6 +12,7 @@ Trait ClassID
 
   public function class_id ()
   {
-    return $__classid;
+    return $this->__classid;
   }
 }
+
