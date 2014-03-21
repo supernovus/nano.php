@@ -29,11 +29,19 @@ trait Messages
       $this->lang = $nano['default_lang'];
     }
 
-    // Let's load our translation table, and page title.
     $name = $this->name();
-    $trconf = $nano->conf->translations;
-    $trns   = array($name, 'common');
-    $translations = new \Nano4\Utils\Translation($trconf, $trns, $this->lang);
+
+    if (isset($opts['text_object']))
+    {
+      $translations = $opts['text_object'];
+    }
+    else
+    {
+      // Let's load our translation table, and page title.
+      $trconf = $nano->conf->translations;
+      $trns   = array($name, 'common');
+      $translations = new \Nano4\Utils\Translation($trconf, $trns, $this->lang);  
+    }
     $this->text = $translations;
     $this->data['text'] = $translations;
 
