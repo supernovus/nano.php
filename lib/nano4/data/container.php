@@ -23,6 +23,12 @@ abstract class Container extends Arrayish
     $this->data_index = array();
   }
 
+  // Find the position of the child object.
+  public function position_of ($item)
+  {
+    return array_search($item, $this->data, true);
+  }
+
   // Add an item to our index. Override this if you need anything
   // more complex than the rules below.
   protected function add_data_index ($item, $indexname=Null)
