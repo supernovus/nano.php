@@ -44,6 +44,9 @@ abstract class Basic
   // A list of constructors we've already called.
   protected $called_constructors = [];
 
+  // Override this if you want an exception handler.
+  protected $exception_handler;
+
   /**
    * Provide a default __construct() method that can chain a bunch of
    * constructors together. 
@@ -60,6 +63,16 @@ abstract class Basic
    */
   public function __construct ($opts=[])
   {
+    // Assign an exception handler, if we specified one.
+    if (isset($this->exception_handler))
+    {
+      $except = [$this, $this->exception_handler];
+      if (is_callable($except))
+      {
+        set_exception_handler($except);
+      }
+    }
+
     // Populate our $__classid property.
     if (isset($opts['__classid']))
     {
