@@ -496,10 +496,11 @@ class Route
   public function add ($suburi, $action=Null, $rechain=False)
   {
     $ctrl = $this->controller;
+    $baseuri = rtrim($this->uri, "/");
     if (is_array($action))
     {
       $ropts = $action;
-      $ropts['uri'] = $this->uri . $suburi;
+      $ropts['uri'] = $baseuri . $suburi;
       if (!isset($ropts['controller']))
         $ropts['controller'] = $ctrl;
     }
@@ -507,7 +508,7 @@ class Route
     { // Specified the action, using our controller and path.
       $ropts =
       [
-        'uri'        => rtrim($this->uri, "/") . $suburi,
+        'uri'        => $baseuri . $suburi,
         'action'     => $action,
         'name'       => $ctrl . '_' . preg_replace('/^handle_/', '', $action),
         'controller' => $ctrl,
@@ -517,11 +518,22 @@ class Route
     { // Action will be 'handle_suburi', don't include the / in the $suburi.
       $ropts =
       [
-        'uri'        => rtrim($this->uri, "/") . "/$suburi/",
+        'uri'        => "$baseuri/$suburi/",
         'action'     => 'handle_' . $suburi,
         'name'       => $ctrl . '_' . $suburi,
         'controller' => $ctrl,
       ];
+    }
+
+    // If the third parameter is a string or array, it's allowed methods.
+    if (!is_bool($rechain))
+    {
+      if (is_string($rechain))
+        $ropts['methods'] = [$rechain];
+      elseif (is_array($rechain))
+        $ropts['methods'] = $rechain;
+      // Reset rechain back to a boolean value.
+      $rechain = False;
     }
 
     // Build the sub-route with our compiled options.
