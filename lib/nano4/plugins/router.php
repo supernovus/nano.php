@@ -35,10 +35,9 @@ class Router
       $this->auto_prefix();
     }
 
-    // Add some quick Nano wrappers.
-    $nano = \Nano4\get_instance();
     if (isset($opts['extend']) && $opts['extend'])
     { // Register some helpers into the Nano object.
+      $nano = \Nano4\get_instance();
       $nano->addMethod('dispatch',     [$this, 'route']);
       $nano->addMethod('addRoute',     [$this, 'add']);
       $nano->addMethod('addRedirect',  [$this, 'redirect']);
@@ -168,14 +167,21 @@ class Router
   /**
    * Add a redirect rule.
    */
-  public function redirect ($from_uri, $to_uri, $short=False, $is_default=False)
+  public function redirect ($from_uri, $to_uri, $opts=[])
   {
+    $short   = isset($opts['short'])   ? $opts['short']   : False;
+    $default = isset($opts['default']) ? $opts['default'] : False;
+    $isroute = isset($opts['route'])   ? $opts['route']   : False;
+
+    // Determine the appropriate target based on the 'short' option.
     $target = $short ? $to_uri : $this->base_uri . $to_uri;
+
     $this->add(
     [
-      'uri'        => $from_uri,
-      'redirect'   => $target,
-    ], $is_default);
+      'uri'               => $from_uri,
+      'redirect'          => $target,
+      'redirect_is_route' => $isroute,
+    ], $default);
   }
 
   /**
@@ -302,8 +308,16 @@ class Router
         error_log("Dispatching to {$route->name}");
 
       if ($route->redirect)
-      {
-        $nano->url->redirect($route->redirect);
+      { // Whether we redirect to a URL, or go to a known route,
+        // depends on the redirect_is_route setting.
+        if ($route->redirect_is_route)
+        {
+          $this->go($route->redirect, $route->path_params);
+        }
+        else
+        {
+          $nano->url->redirect($route->redirect);
+        }
       }
       elseif ($route->view)
       { // We're loading a view.
@@ -403,6 +417,8 @@ class Route
   public $view_status;                               // HTTP status override.
 
   public $methods = ['GET','POST','PUT','DELETE'];   // Supported methods.
+
+  public $redirect_is_route = False;                 // Redirect to a route?
 
   protected $filters = [];                           // Parameter filters.
 
