@@ -170,7 +170,7 @@ trait Auth
 
   // Activate account, handler function.
   // This shares the same backend as forgot password, but uses different
-  // messages, and does not support a 
+  // messages.
   public function handle_activate ($opts, $path=Null)
   {
     $validCode = $this->get_validation_code($opts, $path);

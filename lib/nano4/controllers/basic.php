@@ -90,16 +90,27 @@ abstract class Basic
         get_class_methods($this));
       $fullname = True;
     }
-    foreach ($constructors as $constructor)
-    {
-#      error_log("Calling $constructor()");
-      $this->_call_constructor($constructor, $opts, $fullname);
-    }
+
+    $debug = $this->get_prop('debug', False);
+
+    if ($debug)
+      error_log("Constructor list: ".json_encode($constructors));
+
+    $this->needs($constructors, $opts, $fullname);
   }
 
   // Internal function to actually call the constructors.
-  protected function _call_constructor ($constructor, $opts=[], $fullname=False)
+  protected function needs ($constructor, $opts=[], $fullname=False)
   {
+    if (is_array($constructor))
+    {
+      foreach ($constructor as $const)
+      {
+        $this->needs($const, $opts, $fullname);
+      }
+      return;
+    }
+
     if ($fullname)
     {
       $method = $constructor;
@@ -118,6 +129,10 @@ abstract class Basic
     {
       $this->called_constructor[$method] = True;
       $this->$method($opts);
+    }
+    else
+    {
+      throw new Exception("Invalid constructor '$constructor' requested.");
     }
   }
 
