@@ -4,6 +4,8 @@ namespace Nano4\Controllers;
 
 /**
  * A Controller Trait for User authentication.
+ *
+ * This neesd the ModelConf trait.
  */
 
 trait UserAuth
@@ -12,6 +14,9 @@ trait UserAuth
 
   protected function __construct_userauth_controller ($opts=[])
   {
+    // Ensure that modelconf is loaded first.
+    $this->needs('modelconf');
+
     // Some configurable settings, with appropriate defaults.
     $save_uri    = $this->get_prop('save_uri',    True);
     $need_user   = $this->get_prop('need_user',   True);
