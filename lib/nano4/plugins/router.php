@@ -333,11 +333,24 @@ class Router
         // We consider it a fatal error if the controller doesn't exist.
         $controller = $nano->controllers->load($route->controller);
 
+        if (is_callable([$controller, 'init_route']))
+        {
+          $controller->init_route($context);
+        }
+
         $action = $route->action;
         if (is_callable([$controller, $action]))
         {
           return $controller->$action($context);
         }
+        else
+        {
+          throw new \Exception("Controller action $action not found.");
+        }
+      }
+      else
+      {
+        throw new \Exception("Invalid Route definition.");
       }
     }
     else
