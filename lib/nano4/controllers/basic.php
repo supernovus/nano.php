@@ -536,29 +536,37 @@ abstract class Basic
 
   /**
    * Add a wrapper to a controller method that you can call from
-   * a view template (as a closure.)
+   * a view template (as a Callable.)
    *
    * @param String $method   The method we want to wrap into a closure.
-   * @param String $closure  (Optional) The name of the closure for the views.
+   * @param String $varname  (Optional) The name of the callable for the views.
+   * @param Bool   $closure  (Default False) If true, use a closure.
    *
-   * If $closure is not specified, it will be the same as the $method.
+   * If $varname is not specified, it will be the same as the $method.
    *
-   * As an example of both, a call of $this->addWrapper('url'); will create
-   * a closure called $url, that when called, will make a call to $this->url()
+   * As an example, a call of $this->addWrapper('url'); will create
+   * a callable called $url, that when called, will make a call to $this->url()
    * with the specified parameters.
    */
-  protected function addWrapper ($method, $varname=Null)
+  protected function addWrapper ($method, $varname=Null, $closure=False)
   {
     if (is_null($varname))
       $varname = $method;
-    $that = $this; // A wrapper to ourself.
-    $closure = function () use ($that, $method)
-    {
-      $args = func_get_args();
-      $meth = [$that, $method];
-      return call_user_func_array($meth, $args);
-    };
-    $this->data[$method] = $closure;
+    if ($closure)
+    { // A closure may be desired in some cases.
+      $that = $this; // A wrapper to ourself.
+      $closure = function () use ($that, $method)
+      {
+        $args = func_get_args();
+        $meth = [$that, $method];
+        return call_user_func_array($meth, $args);
+      };
+      $this->data[$varname] = $closure;
+    }
+    else
+    { // Callables are simpler than closures in most cases.
+      $this->data[$varname] = [$this, $method];
+    }
   }
 
   /**
