@@ -312,7 +312,7 @@ class Router
         // depends on the redirect_is_route setting.
         if ($route->redirect_is_route)
         {
-          $this->go($route->redirect, $route->path_params);
+          $this->go($route->redirect, $context->path_params);
         }
         else
         {
@@ -362,15 +362,16 @@ class Router
   /**
    * Build a URI for a named route.
    */
-  public function build ($routeName, $params=[], $short=False)
+  public function build ($routeName, $params=[], $opts=[])
   {
     if (!isset($this->named[$routeName]))
     {
       throw new 
         \Exception("No named route '$routeName' in call to Router::build()");
     }
-    $route_uri = $this->named[$routeName]->build($params);
-    if ($short)
+    unset($opts['fulluri']); // Keep our sanity.
+    $route_uri = $this->named[$routeName]->build($params, $opts);
+    if (isset($opts['short']) && $opts['short'])
       return $route_uri;
     else
       return $this->base_uri . $route_uri;
@@ -379,9 +380,9 @@ class Router
   /**
    * Redirect the browser to a known route, with the appropriate parameters.
    */
-  public function go ($routeName, $params=[], $opts=[])
+  public function go ($routeName, $params=[], $ropts=[], $bopts=[])
   {
-    $uri  = $this->build($routeName, $params);
+    $uri  = $this->build($routeName, $params, $bopts);
     $nano = \Nano4\get_instance();
     $nano->url->redirect($uri, $opts);
   }
@@ -492,7 +493,7 @@ class Route
 
   }
 
-  public function build ($params=[])
+  public function build ($params=[], $opts=[])
   {
     $uri = $this->uri;
 
@@ -511,12 +512,24 @@ class Route
 
     // Okay, a sanity check. If there are still placeholders, we have
     // a problem, and cannot continue.
+    // Pass ['strict'=>False] to make this non-fatal.
+    $strict = isset($opts['strict']) ? $opts['strict'] : True;
     if (preg_match_all("/:([\w-]+)/", $uri, $not_found))
     {
       $not_found = $not_found[1];
-      throw new 
-        \Exception("Route::build() is missing: " . join(', ', $not_found));
+      $not_found = join(', ', $not_found);
+      if ($strict)
+      {
+        throw new \Exception("Route::build() is missing: $not_found");
+      }
+      else
+      {
+        return Null;
+      }
     }
+
+    if (isset($opts['fulluri']) && $opts['fulluri'])
+      $uri = $this->parent->base_uri . $uri;
 
     return $uri;
   }
