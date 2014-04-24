@@ -30,9 +30,10 @@ class Mailer
 
   public function __construct ($fields, $opts=array())
   {
-    if (!is_array($fields))
-      throw new \Nano4\Exception('NanoMailer requires a field list.');
-    $this->fields = $fields;
+    // Send False or Null to disable the use of fields.
+    if (is_array($fields))
+      $this->fields = $fields;
+
     if (isset($opts['template']))
       $this->template = $opts['template'];
 
@@ -97,52 +98,79 @@ class Mailer
     else
       $template = Null; // We're not using a template.
 
-    // Populate the fields for the e-mail message.
-    $fields = array();
-    foreach ($this->fields as $field=>$required)
+    if (is_array($data))
     {
-      if (isset($data[$field]) && $data[$field] != '')
-        $fields[$field] = $data[$field];
-      elseif ($required)
-        $this->missing[$field] = true;
-    }
-
-    // We can only continue if all required fields are present.
-    if (count($this->missing))
-    { // We have missing values.
-      if ($this->log_errors)
+      // Populate the fields for the e-mail message.
+      if (isset($this->fields))
       {
-        error_log("Message data: ".json_encode($message));
-        error_log("Mailer missing: ".json_encode($this->missing));
-      }
-      return false;
-    }
+        $fields = array();
+        foreach ($this->fields as $field=>$required)
+        {
+          if (isset($data[$field]) && $data[$field] != '')
+            $fields[$field] = $data[$field];
+          elseif ($required)
+            $this->missing[$field] = true;
+        }
 
-    // Are we using templates or not?
-    // Templates are highly recommended.
-    if (isset($template))
-    { // We're using templates (recommended.)
-      $nano = \Nano4\get_instance();
-      $loader = $this->views;
-      #error_log("template: '$template', loader: '$loader'");
-      if (isset($nano->lib[$loader]))
-      { // We're using a view loader.
-        $message = $nano->lib[$loader]->load($template, $fields);
+        // We can only continue if all required fields are present.
+        if (count($this->missing))
+        { // We have missing values.
+          if ($this->log_errors)
+          {
+            error_log("Message data: ".json_encode($message));
+            error_log("Mailer missing: ".json_encode($this->missing));
+          }
+          return false;
+        }
       }
       else
-      { // View library wasn't found. Assuming a full PHP include file path.
-        $message = \Nano4\get_php_content($template, $fields);
+      {
+        $fields = $data;
       }
+    
+      // Are we using templates or not?
+      // Templates are highly recommended.
+      if (isset($template))
+      { // We're using templates (recommended.)
+        $nano = \Nano4\get_instance();
+        $loader = $this->views;
+        #error_log("template: '$template', loader: '$loader'");
+        if (isset($nano->lib[$loader]))
+        { // We're using a view loader.
+          $message = $nano->lib[$loader]->load($template, $fields);
+        }
+        else
+        { // View library wasn't found. Assuming a full PHP include file path.
+          $message = \Nano4\get_php_content($template, $fields);
+        }
+      }
+      else
+      { // We're not using a template. Build the message manually.
+        $message = "---\n";
+        foreach ($fields as $field=>$value)
+        {
+          $message .= " $field: $value\n";
+        }
+        $message .= "---\n";
+      }
+    }
+    elseif (is_string($data))
+    {
+      $message = $data;
+    }
+    elseif (isset($template))
+    {
+      $message = $template;
     }
     else
-    { // We're not using a template. Build the message manually.
-      $message = "---\n";
-      foreach ($fields as $field=>$value)
+    {
+      if ($this->log_errors)
       {
-        $message .= " $field: $value\n";
+        error_log("Invalid message in send()");
+        return false;
       }
-      $message .= "---\n";
     }
+
     $this->message->setBody($message);
     $sent = $this->mailer->send($this->message, $this->failures);
     if ($this->log_errors && !$sent)
