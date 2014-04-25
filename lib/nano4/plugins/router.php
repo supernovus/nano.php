@@ -384,7 +384,7 @@ class Router
   {
     $uri  = $this->build($routeName, $params, $bopts);
     $nano = \Nano4\get_instance();
-    $nano->url->redirect($uri, $opts);
+    $nano->url->redirect($uri, $ropts);
   }
 
   /**
