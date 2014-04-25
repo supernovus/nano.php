@@ -3,9 +3,7 @@
 namespace Nano4\Utils\HTML;
 
 /**
- * The original classic menu generator.
- *
- * It's still available for use, but the new Router-based menu is better.
+ * A menu generator that integrates with the Router plugin.
  */
 
 class RouterMenu
@@ -169,7 +167,7 @@ class RouterMenu
           $url   = $def['url'];
           $mroute = Null;
         }
-        elseif (is_string($key))
+        elseif (is_string($key) && substr($key, 0, 1) != '#')
         {
           $mroute = $key;
         }
