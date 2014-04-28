@@ -19,6 +19,8 @@ class Router
 
   public $log = False;
 
+  public $default_filter = "([\w\-\~\.]+)"; // Used by default.
+
   public function known_routes ()
   {
     return array_keys($this->named);
@@ -452,7 +454,7 @@ class Route
     {
       return $this->filters[$matches[1]];
     }
-    return "([\w-]+)"; // The default filter.
+    return $this->parent->default_filter; // The default filter.
   }
 
   public function match ($uri, $method)
