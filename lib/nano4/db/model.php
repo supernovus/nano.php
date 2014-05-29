@@ -32,8 +32,8 @@ abstract class Model implements \Iterator, \ArrayAccess
   protected $dsn;            // The DSN we were initialized with.
   protected $dbname;         // The database name/identifier.
 
-  private $dbuser;           // Username to log in with.
-  private $dbpass;           // Password to log in with.
+  protected $dbuser;           // Username to log in with.
+  protected $dbpass;           // Password to log in with.
 
   public $parent;            // The object which spawned us.
 
@@ -123,7 +123,7 @@ abstract class Model implements \Iterator, \ArrayAccess
     {
       unset($properties[$ignored]);
     }
-    return $properties;
+    return array_keys($properties);
   }
 
   public function __wakeup ()
@@ -132,7 +132,7 @@ abstract class Model implements \Iterator, \ArrayAccess
   }
 
   // Internal function, used by __construct and __wakeup.
-  private function dbconnect ()
+  protected function dbconnect ()
   {
     if (isset($this->dbuser, $this->dbpass))
     {
