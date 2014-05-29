@@ -32,6 +32,9 @@ abstract class Model implements \Iterator, \ArrayAccess
   protected $dsn;            // The DSN we were initialized with.
   protected $dbname;         // The database name/identifier.
 
+  private $dbuser;           // Username to log in with.
+  private $dbpass;           // Password to log in with.
+
   public $parent;            // The object which spawned us.
 
   public $known_fields;      // If set, it's a list of fields we know about.
@@ -45,6 +48,8 @@ abstract class Model implements \Iterator, \ArrayAccess
   public $default_sort_order;
   public $default_page_count = 10;
 
+  protected $serialize_ignore = ['db', 'resultset'];
+
   // Constants used in the newRow() method.
   const return_row = 1; // Return a proper Row object.
   const return_raw = 2; // Return a raw DB query object.
@@ -52,26 +57,6 @@ abstract class Model implements \Iterator, \ArrayAccess
 
   // Constant for error checking.
   const success = '00000'; // SQLSTATE code for successful operation.
-
-  /**
-   * Return our table name.
-   */
-  public function get_table ()
-  {
-    $table = $this->table;
-    return $table;
-  }
-
-  /**
-   * Return the name of our class.
-   *
-   * This depends on the use of the Nano4 Models loader.
-   * If you are not using the models loader, override this.
-   */
-  public function name ()
-  {
-    return $this->__classid;
-  }
 
   /**
    * Build a new Model object.
@@ -88,9 +73,12 @@ abstract class Model implements \Iterator, \ArrayAccess
     $this->dsn = $opts['dsn'];
 
     if (isset($opts['user']) && isset($opts['pass']))
-      $this->db = new \PDO($opts['dsn'], $opts['user'], $opts['pass']);
-    else
-      $this->db = new \PDO($opts['dsn']);
+    {
+      $this->dbuser = $opts['user'];
+      $this->dbpass = $opts['pass'];
+    }
+
+    $this->dbconnect();
 
     if (isset($opts['table']))
       $this->table = $opts['table'];
@@ -126,6 +114,54 @@ abstract class Model implements \Iterator, \ArrayAccess
 
     if (isset($opts['parent']))
       $this->parent = $opts['parent'];
+  }
+
+  public function __sleep ()
+  {
+    $properties = get_object_vars($this);
+    foreach ($this->serialize_ignore as $ignored)
+    {
+      unset($properties[$ignored]);
+    }
+    return $properties;
+  }
+
+  public function __wakeup ()
+  {
+    $this->dbconnect();
+  }
+
+  // Internal function, used by __construct and __wakeup.
+  private function dbconnect ()
+  {
+    if (isset($this->dbuser, $this->dbpass))
+    {
+      $this->db = new \PDO($this->dsn, $this->dbuser, $this->dbpass);
+    }
+    else
+    {
+      $this->db = new \PDO($this->dsn);
+    }
+  }
+
+  /**
+   * Return our table name.
+   */
+  public function get_table ()
+  {
+    $table = $this->table;
+    return $table;
+  }
+
+  /**
+   * Return the name of our class.
+   *
+   * This depends on the use of the Nano4 Models loader.
+   * If you are not using the models loader, override this.
+   */
+  public function name ()
+  {
+    return $this->__classid;
   }
 
   // Build a default set of sort_orders based on sort_items.
