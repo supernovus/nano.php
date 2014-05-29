@@ -21,6 +21,8 @@ class Router
 
   public $default_filter = "([\w\-\~\.]+)"; // Used by default.
 
+  public $current; // The most recently matched route context.
+
   public function known_routes ()
   {
     return array_keys($this->named);
@@ -304,7 +306,9 @@ class Router
     $nano = \Nano4\get_instance();
     $context = $this->match($uri, $method);
     if (isset($context))
-    {
+    { // We found a match.
+      $this->current = $context;
+
       $route = $context->route;
       if ($this->log && $route->name)
         error_log("Dispatching to {$route->name}");
