@@ -16,7 +16,7 @@ trait Content
       return $output;
     }
     else
-      throw new \Nano4\Exception("Attempt to load invalid PHP file: $file");
+      throw new \Nano4\Exception("Attempt to load invalid PHP file: '$file' (from: '$class')");
   }
 }
 
