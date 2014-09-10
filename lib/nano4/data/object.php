@@ -50,6 +50,8 @@ abstract class Object
   protected $data       = [];    // The actual data we represent.
   protected $newconst   = False; // If true, we enable the new constructor.
   protected $constprops = [];    // Constructor property items.
+  protected $save_opts  = False; // Do we want to save our constructor opts?
+  protected $data_opts;          // The saved opts, if the above is true.
 
   /**
    * The public constructor. The default version simply forwards to the
@@ -112,6 +114,12 @@ abstract class Object
     { // The data_init can set up pre-requisites to loading our data.
       // It CANNOT reference our data, as that has not been loaded yet.
       $this->data_init($opts);
+    }
+
+    // If we want the options saved for later, do it now.
+    if ($this->save_opts)
+    {
+      $this->data_opts = $opts;
     }
 
     // How we proceed depends on if we have initial data.
