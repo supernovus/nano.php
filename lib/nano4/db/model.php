@@ -42,6 +42,9 @@ abstract class Model implements \Iterator, \ArrayAccess
 
   protected $get_fields;     // Set to fields to get if none are specified.
 
+  protected $default_null = false; // The old behavior is to use 0 as the default value.
+                                   // Set this to true for the new behavior.
+
   // The following are used by the pager() function to generate ORDER BY and LIMIT statements.
   public $sort_orders = array();
   public $sort_items  = array();
@@ -265,7 +268,7 @@ abstract class Model implements \Iterator, \ArrayAccess
    * If the known_fields class member is set, it will be used to ensure
    * all of the known fields are passed to the child class with some form
    * of default value (if not specified in the known_fields array, the
-   * default value is 0.)
+   * default value depends on the $this->default_null setting.)
    */
   public function newChild ($data=array())
   {
@@ -276,7 +279,10 @@ abstract class Model implements \Iterator, \ArrayAccess
         if (is_numeric($key))
         {
           $field   = $val;
-          $default = 0;
+          if ($this->default_null)
+            $default = null;
+          else
+            $default = 0;
         }
         else
         {
@@ -428,7 +434,7 @@ abstract class Model implements \Iterator, \ArrayAccess
             $subc++;
           }
         }
-        else
+        elseif (isset($val))
         {
           $stmt[] = "$key = :$key";
           $data[$key] = $val;

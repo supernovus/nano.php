@@ -9,7 +9,6 @@ namespace Nano4\Controllers;
 
 trait Resources
 {
-
   /**
    * Resources represent external files, such as scripts, stylesheets, etc.
    * They are managed through a generic system that allows for easy future
@@ -23,8 +22,9 @@ trait Resources
    *   exts:      An array of extensions to look for resource files.
    *   groups:    An array of arrays, each being named groups.
    *              It is recommended to prefix groups with an identifier
-   *              such as '#'.  We define a group called #common which
-   *              represents a small set of plugins from the Nano.js project.
+   *              such as '#'.
+   *              We include '#common' and '#webapp' as example groups,
+   *              they depend upon the Nano.js library set.
    *   added:     An empty array, will be populated by use_resource();
    *
    *  A group for one resource type MAY in fact depend on a resource of another
@@ -41,15 +41,22 @@ trait Resources
       'path' => ['scripts', 'scripts/nano'],
       'exts' => ['.dist.js', '.cc.js', '.min.js', '.js'],
       'groups' =>
-      [
+      [ 
         '#common' =>
-        [
+        [ // The base scripts we expect everywhere.
           'jquery', 
           'json3', 
           'json.jq', 
           'disabled.jq',
           'exists.jq',
-        ]
+        ],
+        '#webapp' =>
+        [ // The use of Nano.js WebApp will be more common now.
+          '#common',
+          'riot',
+          'coreutils',
+          'webapp',
+        ],
       ],
       'added' => [], 
     ],
