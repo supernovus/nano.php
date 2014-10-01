@@ -428,6 +428,15 @@ class Router
     return isset($this->named[$routeName]);
   }
 
+  /**
+   * Get a named route.
+   */
+  public function get_route ($routeName)
+  {
+    if (isset($this->named[$routeName]))
+      return $this->named[$routeName];
+  }
+
 }
 
 /**
