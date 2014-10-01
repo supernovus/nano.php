@@ -8,6 +8,8 @@ use Nano4\Exception;
  * 
  * Matches routes based on rules.
  * Inspired by Webtoo (w/Router::Simple) and PHP-Router.
+ *
+ * TODO: more logging/debugging.
  */
 class Router
 {
@@ -17,7 +19,8 @@ class Router
 
   public $base_uri = '';
 
-  public $log = False;
+  public $log   = False;   // Basic logging, tracks routing.
+  public $debug = 0;       // Advanced logging levels for debugging.
 
   public $default_filter = "([\w\-\~\.]+)"; // Used by default.
 
@@ -316,6 +319,8 @@ class Router
       if ($route->redirect)
       { // Whether we redirect to a URL, or go to a known route,
         // depends on the redirect_is_route setting.
+        if ($this->log && $this->debug > 0)
+          error_log(" :redirect => ".$route->redirect);
         if ($route->redirect_is_route)
         {
           $this->go($route->redirect, $context->path_params);
@@ -327,6 +332,8 @@ class Router
       }
       elseif ($route->view)
       { // We're loading a view.
+        if ($this->log && $this->debug > 0)
+          error_log(" :view => ".$route->view);
         if (isset($route->view_status))
         {
           http_response_code($route->view_status);
@@ -336,6 +343,8 @@ class Router
       }
       elseif ($route->controller)
       {
+        if ($this->log && $this->debug > 0)
+          error_log(" :controller => ".$route->controller);
         // We consider it a fatal error if the controller doesn't exist.
         $controller = $nano->controllers->load($route->controller);
 
@@ -347,6 +356,8 @@ class Router
         $action = $route->action;
         if (is_callable([$controller, $action]))
         {
+          if ($this->log && $this->debug > 0)
+            error_log(" :action => $action");
           return $controller->$action($context);
         }
         else
@@ -370,11 +381,21 @@ class Router
    */
   public function build ($routeName, $params=[], $opts=[])
   {
-    if (!isset($this->named[$routeName]))
+    if ($this->log && $this->debug > 1)
     {
+      $call = "Router::build($routeName";
+      if ($this->debug > 2) 
+        $call .= ", " .
+          json_encode($params) . ", " .
+          json_encode($opts);
+      $call .= ")";
+      error_log($call);
+    }
+
+    if (!isset($this->named[$routeName]))
       throw new 
         \Exception("No named route '$routeName' in call to Router::build()");
-    }
+
     unset($opts['fulluri']); // Keep our sanity.
     $route_uri = $this->named[$routeName]->build($params, $opts);
     if (isset($opts['short']) && $opts['short'])
@@ -388,6 +409,12 @@ class Router
    */
   public function go ($routeName, $params=[], $ropts=[], $bopts=[])
   {
+    if ($this->log && $this->debug > 2)
+      error_log("Router::go($routeName, " .
+        json_encode($params) . ', ' .
+        json_encode($ropts)  . ', ' .
+        json_encode($bopts)  . ')'
+      );
     $uri  = $this->build($routeName, $params, $bopts);
     $nano = \Nano4\get_instance();
     $nano->url->redirect($uri, $ropts);
