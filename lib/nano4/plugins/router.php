@@ -472,7 +472,7 @@ class Route
   public $view;                                      // A view to load.
   public $view_status;                               // HTTP status override.
 
-  public $methods = ['GET','POST','PUT','DELETE'];   // Supported methods.
+  public $methods = ['GET','POST'];                  // Supported methods.
 
   public $redirect_is_route = False;                 // Redirect to a route?
 
