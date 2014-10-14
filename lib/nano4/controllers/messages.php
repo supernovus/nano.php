@@ -88,8 +88,14 @@ trait Messages
     return $this->text;
   }
 
+  // An alias for message()
+  public function msg ($name, $opts=[])
+  {
+    return $this->message($name, $opts);
+  }
+
   // Add a message to the stack.
-  public function message ($name, $opts=array())
+  public function message ($name, $opts=[])
   {
     // Get some default types.
     if (isset($opts['type']))
@@ -226,10 +232,16 @@ trait Messages
   }
 
   // Add a warning to the stack.
-  public function warning ($name, $opts=array())
+  public function warning ($name, $opts=[])
   {
     $opts['type']  = 'warning';
     $this->message($name, $opts);
+  }
+
+  // An alias for warning()
+  public function warn ($name, $opts=[])
+  {
+    return $this->warning($name, $opts);
   }
 
   // Check to see if we have any of a certain class of status  messages.
