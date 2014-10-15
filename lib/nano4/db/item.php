@@ -235,7 +235,7 @@ class Item implements \ArrayAccess
       $sql .= " WHERE $pk = :$pk";
       $query = $this->parent->query($sql);
       $query->execute($data);
-      $this->modified_data = array();
+      $this->modified_data = [];
       return True;
     }
     else
@@ -253,7 +253,11 @@ class Item implements \ArrayAccess
       if (isset($this->new_query_fields))
         $opts['columns'] = $this->new_query_fields;
 
+      // Insert the row and get the new primary key.
       $newpk = $this->parent->newRow($this->data, $opts);
+
+      // Clear the modified data.
+      $this->modified_data = [];
 
       if ($setpk && isset($this->data[$pk])) return True; // We're done.
       elseif ($newpk)
