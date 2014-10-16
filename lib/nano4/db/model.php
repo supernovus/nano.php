@@ -469,6 +469,8 @@ abstract class Model implements \Iterator, \ArrayAccess
   {
     $cols = $this->get_cols($cols);
     $sql = "SELECT $cols FROM {$this->table} WHERE $where LIMIT 1";
+#    error_log("SQL> $sql");
+#    error_log(" data> ".json_encode($data));
     $query = $this->query($sql);
     $query->execute($data);
     $row = $query->fetch();
@@ -483,7 +485,6 @@ abstract class Model implements \Iterator, \ArrayAccess
    */
   public function getRowById ($id, $ashash=False, $cols='*')
   {
-    $cols = $this->get_cols($cols);
     return $this->getRowByField($this->primary_key, $id, $ashash, $cols);
   }
 
