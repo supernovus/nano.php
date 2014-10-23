@@ -103,6 +103,11 @@ class RouterMenu
     // Okay, let's do this.
     foreach ($menu as $key => $def)
     {
+      if (is_string($def))
+      { // Assume it's the name.
+        $def = ['name'=>$def];
+      }
+
       // Let's see if there are any filters that apply.
       $filtered = False;
       foreach ($show_rules as $rkey => $rule)
