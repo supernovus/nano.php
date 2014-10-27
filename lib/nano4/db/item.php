@@ -57,7 +57,7 @@ class Item implements \ArrayAccess
    * If neither exists, and the field is not the primary key,
    * an exception will be thrown.
    */
-  protected function db_field ($name)
+  protected function db_field ($name, $strict=True)
   {
     if (array_key_exists($name, $this->data))
       return $name;
@@ -68,7 +68,10 @@ class Item implements \ArrayAccess
     elseif ($this->parent->is_known($name))
       return $name;
     else
-      throw new Exception("Unknown field '$name'");
+      if ($strict)
+        throw new Exception("Unknown field '$name'");
+      else
+        return Null;
   }
 
   /** 
@@ -151,8 +154,11 @@ class Item implements \ArrayAccess
    */
   public function __isset ($name)
   {
-    $name = $this->db_field($name);
-    return (isset($this->data[$name]) && $this->data[$name] != '');
+    $name = $this->db_field($name, False);
+    if (isset($name))
+      return (isset($this->data[$name]) && $this->data[$name] != '');
+    else
+      return False;
   }
 
   /** 
