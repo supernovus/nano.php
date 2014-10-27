@@ -109,6 +109,30 @@ trait Messages
 
     $class = $opts['class'];
 
+    if (is_array($name))
+    { // Complex structure, we must do further processing.
+      if (isset($name['key']))
+      { // Associative array format.
+        if (isset($name['args']))
+        {
+          $opts['reps'] = $name['args'];
+        }
+        elseif (isset($name['vars']))
+        {
+          $opts['vars'] = $name['vars'];
+        }
+        $name = $name['key'];
+      }
+      elseif (isset($name[0]))
+      {
+        if (count($name) > 1)
+        {
+          $opts['reps'] = array_slice($name, 1);
+        }
+        $name = $name[0];
+      }
+    }
+
     if (!is_numeric(strpos(':', $name)))
     {
       $prefix = $opts['prefix'];
@@ -119,6 +143,11 @@ trait Messages
     }
 
     $text = $this->text->getStr($prefix.$name, $opts);
+
+    if (isset($opts['prefix']))
+    {
+      $text = str_replace($opts['prefix'], '', $text);
+    }
 
     $message = array('name'=>$name, 'class'=>$class, 'text'=>$text);
 
