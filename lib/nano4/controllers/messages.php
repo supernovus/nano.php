@@ -5,6 +5,9 @@ namespace Nano4\Controllers;
 /**
  * A Trait that handles translatable text strings, status messages,
  * and adds the HTML template handler for Views (also with translatable text.)
+ *
+ * If you're going to use the add_status_json() method, you'll need the
+ * JSON trait loaded first.
  */
 
 trait Messages
@@ -291,6 +294,15 @@ trait Messages
   public function has_errors ()
   {
     return $this->has_status('error');
+  }
+
+  /**
+   * Add a 'status_messages' JSON element.
+   * Pass it a list of messages to include in the JSON.
+   */
+  public function add_status_json ($messages)
+  {
+    $this->add_json('status_messages', $this->text->strArray($messages));
   }
 
 }
