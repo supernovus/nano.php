@@ -159,6 +159,20 @@ class File
     return $contents;
   }
 
+  public function getZip ()
+  {
+    $zip = new \ZipArchive;
+    $res = $zip->open($this->file);
+    if ($res === TRUE)
+    {
+      return $zip;
+    }
+    else
+    {
+      return $res;
+    }
+  }
+
   /**
    * Convert a size in bytes to a friendly string.
    *
