@@ -61,12 +61,15 @@ trait Messages
 
     // Okay, first look for the 'title' key. If it's set, typically in the
     // translation table for this namespace, we'll use it.
-    $pagetitle = $translations->getStr('title');
-    if ($pagetitle == 'title')
-    { // If we didn't find the page title, use a default value.
-      $pagetitle = ucfirst($name);
+    if (!isset($this->data['title']))
+    {
+      $pagetitle = $translations->getStr('title');
+      if ($pagetitle == 'title')
+      { // If we didn't find the page title, use a default value.
+        $pagetitle = ucfirst($name);
+      }
+      $this->data['title'] = $pagetitle;
     }
-    $this->data['title'] = $pagetitle;
 
     // Process any messages that may be in the session.
     if (isset($nano->sess->messages))

@@ -173,6 +173,19 @@ class File
     }
   }
 
+  public function getZipDir ($prefix='zipfile_')
+  {
+    $zipfile  = $this->getZip();
+    $tempfile = tempnam("/tmp", $prefix);
+    if (file_exists($tempfile)) unlink($tempfile);
+    mkdir($tempfile);
+    if (is_dir($tempfile))
+    {
+      $zip->extractTo($tempfile);
+      return $tempfile;
+    }
+  }
+
   /**
    * Convert a size in bytes to a friendly string.
    *
