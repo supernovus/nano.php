@@ -76,11 +76,19 @@ trait Messages
     {
       $this->data['messages'] = $nano->sess->messages;
       unset($nano->sess->messages);
-      $this->data['has_status'] = array();
+      $this->data['has_status']     = [];
+      $status_keys = [];
       foreach ($this->data['messages'] as $msg)
       {
         $this->data['has_status'][$msg['class']] = True;
+        $key = $msg['key'];
+        if (isset($status_keys[$key]))
+          $status_keys[$key]++;
+        else
+          $status_keys[$key] = 1;
       }
+#      error_log("status keys: '$status_keys'");
+      $this->data['has_status_key'] = $status_keys;
     }
 
     // And a wrapper to our has_errors() method.
@@ -155,7 +163,9 @@ trait Messages
       $text = str_replace($opts['prefix'], '', $text);
     }
 
-    $message = array('name'=>$name, 'class'=>$class, 'text'=>$text);
+    $key = preg_replace('/\s+/', '_', $name);
+
+    $message = ['key'=>$key, 'name'=>$name, 'class'=>$class, 'text'=>$text];
 
     // Handle 
     if (isset($opts['actions']))
@@ -219,6 +229,16 @@ trait Messages
         $this->data['has_status'] = array();
       }
       $this->data['has_status'][$message['class']] = True;
+      $key = $message['key'];
+      if (isset($this->data['has_status_key']))
+        $status_keys = $this->data['has_status_key'];
+      else
+        $status_keys = [];
+      if (isset($status_keys[$key]))
+        $status_keys[$key]++;
+      else
+        $status_keys[$key] = 1;
+      $this->data['has_status_key'] = $status_keys;
     }
   }
 
