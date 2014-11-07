@@ -451,11 +451,7 @@ abstract class Basic
   /**
    * Go to a route.
    *
-   * This will use the Router if it is set up.
-   *
-   * In the case where the route does not exist, we can still
-   * use go('pagename') without any parameters. In this case we will
-   * expect the older "page.{name}" Nano variable to exist.
+   * This will throw an Exception if the route does not exist.
    */
   public function go ($page, $params=[], $opts=[])
   {
@@ -465,11 +461,6 @@ abstract class Basic
     {
       $nano->router->go($page, $params, $opts);
     }
-    elseif (count($params) == 0)
-    {
-      $url = $nano["page.$page"];
-      $this->redirect($url, $opts);
-    }
     else
     {
       throw new Exception("invalid target for Controller::go()");
@@ -478,8 +469,6 @@ abstract class Basic
 
   /**
    * Get a route URI.
-   *
-   * As with go() this currently has compatibility with the older page
    * variables, and once again, can only be used with no parameters.
    */
   public function get_uri ($page, $params=[])
@@ -488,10 +477,6 @@ abstract class Basic
     if ($nano->router->has($page))
     {
       return $nano->router->build($page, $params);
-    }
-    elseif (count($params) == 0)
-    {
-      return $nano["page.$page"];
     }
     else
     {

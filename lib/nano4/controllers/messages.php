@@ -76,7 +76,7 @@ trait Messages
     {
       $this->data['messages'] = $nano->sess->messages;
       unset($nano->sess->messages);
-      $this->data['has_status']     = [];
+      $this->data['has_status'] = [];
       $status_keys = [];
       foreach ($this->data['messages'] as $msg)
       {
@@ -239,6 +239,19 @@ trait Messages
       else
         $status_keys[$key] = 1;
       $this->data['has_status_key'] = $status_keys;
+    }
+  }
+
+  /**
+   * Store any current messages in the session, so they can be retreived
+   * on a redirect.
+   */
+  public function store_messages ()
+  {
+    if (isset($this->data['messages']) && is_array($this->data['messages']))
+    {
+      $nano = \Nano4\get_instance();
+      $nano->sess->messages = $this->data['messages'];
     }
   }
 
