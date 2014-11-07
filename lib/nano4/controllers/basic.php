@@ -33,7 +33,6 @@ abstract class Basic
   protected $screen;        // Set if needed, otherwise uses $this->name().
 
   protected $layout;        // The default layout to use.
-  protected $default_url;   // Where redirect() goes if no URL is specified.
 
   // The method to convert objects to JSON.
   protected $to_json_method = 'to_json';
@@ -433,18 +432,12 @@ abstract class Basic
   /**
    * Redirect to a URL.
    *
-   * @param String $url    The URL to redirect to (optional, see below.)
+   * @param String $url    The URL to redirect to.
    * @param Opts   $opts   Options to pass to Nano4\Plugins\URL::redirect().
    *
-   * If the $url parameter is not defined, we will use the $this->default_url
-   * property instead. If neither are defined, this will fail.
    */
-  public function redirect ($url=Null, $opts=array())
+  public function redirect ($url, $opts=array())
   {
-    if (is_null($url))
-    {
-      $url = isset($this->default_url) ? $this->default_url : '/';
-    }
     return \Nano4\Plugins\URL::redirect($url, $opts);
   }
 
@@ -463,7 +456,7 @@ abstract class Basic
     }
     else
     {
-      throw new Exception("invalid target for Controller::go()");
+      throw new Exception("invalid target '$page' for Controller::go()");
     }
   }
 
@@ -480,7 +473,7 @@ abstract class Basic
     }
     else
     {
-      throw new Exception("invalid target for Controller::get_uri()");
+      throw new Exception("invalid target '$page' for Controller::get_uri()");
     }
   }
 
