@@ -636,10 +636,9 @@ abstract class Model implements \Iterator, \ArrayAccess
   /**
    * Row count.
    */
-  public function rowcount ($where=Null)
+  public function rowcount ($where=Null, $data=[])
   {
     $sql = "SELECT count(id) FROM {$this->table}";
-    $data = array();
     if (is_array($where) && count($where) > 0)
     {
       $sql .= ' WHERE ';
@@ -662,7 +661,11 @@ abstract class Model implements \Iterator, \ArrayAccess
   {
     if (!is_numeric($rowcount))
     {
-      $rowcount = $this->rowcount($rowcount);
+      if (isset($opts['data']))
+        $data = $opts['data'];
+      else
+        $data = [];
+      $rowcount = $this->rowcount($rowcount, $data);
     }
 
     if (isset($opts['count']) && $opts['count'] > 0)
