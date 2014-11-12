@@ -292,10 +292,24 @@ trait Messages
     $this->redirect_msg($name, $url, $opts);
   }
 
+  // Use this when you want to redirect to another page, and show the error.
+  public function redirect_warn ($name, $url=Null, $opts=array())
+  {
+    $opts['type']  = 'warning';
+    $this->redirect_msg($name, $url, $opts);
+  }
+
   // Go to another page, showing an error.
   public function go_error ($msg, $page, $params=[], $gopts=[], $mopts=[])
   {
     $mopts['type'] = 'error';
+    $this->go_msg($msg, $page, $params, $gopts, $mopts);
+  }
+
+  // Go to another page, showing a warning.
+  public function go_warn ($msg, $page, $params=[], $gopts=[], $mopts=[])
+  {
+    $mopts['type'] = 'warning';
     $this->go_msg($msg, $page, $params, $gopts, $mopts);
   }
 
