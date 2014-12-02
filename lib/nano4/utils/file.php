@@ -136,6 +136,11 @@ class File
     return False;
   }
 
+  public function update_size ()
+  {
+    $this->size = filesize($this->file);
+  }
+
   public function getString ()
   {
     return file_get_contents($this->file);
@@ -152,7 +157,12 @@ class File
     {
       $flags = $flags | LOCK_EX;
     }
-    return file_put_contents($this->file, $data, $flags);
+    $count = file_put_contents($this->file, $data, $flags);
+    if ($count !== False)
+    {
+      $this->update_size();
+    }
+    return $count;
   }
 
   public function getArray ()
@@ -199,6 +209,10 @@ class File
     $handle = $this->getHandle('w', $bin);
     $count = fwrite($handle, $data);
     fclose($handle);
+    if ($count !== False)
+    {
+      $this->update_size();
+    }
     return $count;
   }
 
