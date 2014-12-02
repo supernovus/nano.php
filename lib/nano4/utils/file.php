@@ -103,13 +103,13 @@ class File
     return Null;
   }
 
-  public function saveTo ($folder)
+  public function saveTo ($folder, $move=false, $update=true)
   { 
     $target = $folder . '/' . $this->name;
-    return $this->saveAs($target);
+    return $this->saveAs($target, $move, $update);
   }
 
-  public function saveAs ($target)
+  public function saveAs ($target, $move=true, $update=true)
   {
     $target_dir = dirname($target);
     if (!is_dir($target_dir))
@@ -119,11 +119,24 @@ class File
     }
     if (copy($this->file, $target))
     {
-      unlink($this->file);    // Delete the old one.
-      $this->file = $target;  // Change our file pointer.
+      if ($move)
+      {
+        unlink($this->file);    // Delete the old one.
+      }
+      if ($update)
+      {
+        $this->file = $target;           // Change our file pointer.
+        $this->name = basename($target); // Change our file name.
+      }
       return $target;         // And return the new name.
     }
     return False;
+  }
+
+  public function copyTo ($target)
+  {
+    $copy = $this->saveAs($target, false, false);
+     return $copy == $target;
   }
 
   public function rename ($newname)
