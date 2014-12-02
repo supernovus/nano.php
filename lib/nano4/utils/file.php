@@ -141,22 +141,65 @@ class File
     return file_get_contents($this->file);
   }
 
+  public function putString ($data, $opts=[])
+  {
+    $flags = 0;
+    if (isset($opts['append']) && $opts['append'])
+    {
+      $flags = FILE_APPEND;
+    }
+    if (isset($opts['lock']) && $opts['lock'])
+    {
+      $flags = $flags | LOCK_EX;
+    }
+    return file_put_contents($this->file, $data, $flags);
+  }
+
   public function getArray ()
   {
     return file($this->file);
   }
 
-  public function getHandle ($mode='r')
+  public function putArray ($data, $opts=[])
   {
+    return $this->putString($data, $opts);
+  }
+
+  public function getHandle ($mode='rb', $addBin=null)
+  {
+    if (isset($addBin) && $addBin) $mode .= 'b';
     return fopen($this->file, $mode);
   }
 
-  public function getContents ($mode='rb')
+  public function getReader ($bin=true)
   {
-    $handle   = $this->getHandle($mode);
+    return $this->getHandle('r', $bin);
+  }
+
+  public function getWriter ($bin=true)
+  {
+    return $this->getHandle('w', $bin);
+  }
+
+  public function getLogger ($bin=true)
+  {
+    return $this->getHandle('a', $bin);
+  }
+
+  public function getContents ($bin=true)
+  {
+    $handle   = $this->getHandle('r', $bin);
     $contents = fread($handle, $this->size);
     fclose($handle);
     return $contents;
+  }
+
+  public function putContents ($data, $bin=true)
+  {
+    $handle = $this->getHandle('w', $bin);
+    $count = fwrite($handle, $data);
+    fclose($handle);
+    return $count;
   }
 
   public function getZip ()
