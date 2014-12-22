@@ -20,13 +20,16 @@ class File
    */
   public function __construct ($file=Null)
   {
-    if (isset($file) && file_exists($file))
+    if (isset($file))
     {
       $this->file = $file;
       $this->name = basename($file);
-      $this->size = filesize($file);
-      $finfo = new finfo(FILEINFO_MIME);
-      $this->type = $finfo->file($file);
+      if (file_exists($file))
+      {
+        $this->size = filesize($file);
+        $finfo = new finfo(FILEINFO_MIME);
+        $this->type = $finfo->file($file);
+      }
     }
   }
 
