@@ -495,6 +495,7 @@ abstract class Model implements \Iterator, \ArrayAccess
   {
     $cols = $this->get_cols($cols);
     $query = "SELECT $cols FROM {$this->table} $stmt";
+#    error_log($query);
     return $this->execute($query, $data);
   }
 

@@ -380,25 +380,33 @@ class HTML
   }
 
   /**
+   * Generate a hidden input field.
+   */
+  public function hidden ($name, $value, $opts=[])
+  {
+    $input = new \SimpleXMLElement('<input/>');
+    $input->addAttribute('type',   'hidden');
+    $input->addAttribute('id',     $name);
+    $input->addAttribute('name',   $name);
+    $input->addAttribute('value',  $value);
+    return $this->return_value($input, $opts);
+  }
+
+  /**
    * Generate a hidden input field representing a JSON object.
    *
    * @param string $name    The name/id of the field.
    * @param mixed  $struct  Value to be passed through json_encode().
    * @param array  $opts    Optional, passed to return_value().
    */
-  public function json ($name, $struct, $opts=array())
+  public function json ($name, $struct, $opts=[])
   {
     if (is_object($struct) && is_callable([$struct, 'to_array']))
     {
       $struct = $struct->to_array($opts);
     }
     $json = json_encode($struct);
-    $input = new \SimpleXMLElement('<input/>');
-    $input->addAttribute('type',   'hidden');
-    $input->addAttribute('id',     $name);
-    $input->addAttribute('name',   $name);
-    $input->addAttribute('value',  $json);
-    return $this->return_value($input, $opts);
+    return $this->hidden($name, $json, $opts);
   }
 
   /**
