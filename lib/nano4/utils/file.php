@@ -254,7 +254,7 @@ class File
     mkdir($tempfile);
     if (is_dir($tempfile))
     {
-      $zip->extractTo($tempfile);
+      $zipfile->extractTo($tempfile);
       return $tempfile;
     }
   }
