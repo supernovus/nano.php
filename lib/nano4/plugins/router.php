@@ -244,7 +244,13 @@ class Router
 
       if (isset($routeinfo))
       {
-        if ($route->strict)
+        if ($method == 'PUT')
+        { // PUT is handled different by PHP, thanks guys.
+          $body = file_get_contents("php://input");
+#          error_log("parsing: $body");
+          parse_str($body, $request);
+        }
+        elseif ($route->strict)
         {
           if ($method == 'GET' && isset($_GET))
             $request = $_GET;
