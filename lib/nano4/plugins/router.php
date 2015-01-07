@@ -244,11 +244,20 @@ class Router
 
       if (isset($routeinfo))
       {
-        if ($method == 'PUT')
+        $ct = $_SERVER['CONTENT_TYPE'];
+        $form1 = "application/x-www-form-urlencoded";
+        $form2 = "multipart/form-data";
+        if ($method == 'PUT' && ($ct == $form1 || $ct == $form2))
         { // PUT is handled different by PHP, thanks guys.
           $body = file_get_contents("php://input");
-#          error_log("parsing: $body");
-          parse_str($body, $request);
+          if ($ct == $form1)
+          {
+            parse_str($body, $request);
+          }
+          else
+          {
+            throw new \Exception("multipart/form-data PUT not implemented");
+          }
         }
         elseif ($route->strict)
         {
