@@ -264,14 +264,23 @@ class URL
     header("Content-Length: $filesize");
     ob_clean();
     flush();
+
     if (isset($opts['content']))
     {
       echo $opts['content'];
     }
     else
     {
+      // Read the file into the output.
       readfile($file);
+
+      // Remove the file if requested.
+      if (isset($opts['delete']) && $opts['delete'])
+      {
+        unlink($file);
+      }
     }
+
     // Now leaving PHP-land.
     exit;
   }
