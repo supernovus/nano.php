@@ -54,7 +54,6 @@ trait Resources
         [ // The use of Nano.js WebApp will be more common now.
           '#common',
           'riot.full',
-          'riot.control',
           'coreutils',
           'webapp',
         ],
