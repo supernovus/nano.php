@@ -42,7 +42,7 @@ namespace Nano4\Data;
  *
  */
 
-abstract class Object
+abstract class Object implements \JsonSerializable
 {
   use \Nano4\Meta\ClassInfo;
 
@@ -299,6 +299,14 @@ abstract class Object
   public function to_array ($opts=Null)
   {
     return $this->data;
+  }
+
+  // The JsonSerializable interface allows us to pass Data Objects
+  // directly to json_encode(). This takes no options, so any advanced
+  // usage should probably call to_array() or to_json() directly.
+  public function jsonSerialize ()
+  {
+    return $this->to_array();
   }
 
   // Output as a JSON string. Again, pretty cheap.

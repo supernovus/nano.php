@@ -39,7 +39,7 @@ trait Resources
     [
       'name' => 'scripts',
       'path' => ['scripts', 'scripts/nano'],
-      'exts' => ['.dist.js', '.cc.js', '.min.js', '.js'],
+      'exts' => ['.dist.js', '.ug.js', '.cc.js', '.min.js', '.js'],
       'groups' =>
       [ 
         '#common' =>
@@ -53,7 +53,8 @@ trait Resources
         '#webapp' =>
         [ // The use of Nano.js WebApp will be more common now.
           '#common',
-          'riot',
+          'riot.full',
+          'riot.control',
           'coreutils',
           'webapp',
         ],
