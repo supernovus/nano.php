@@ -62,5 +62,63 @@ class XML
     return False;
   }
 
+  /**
+   * Rename an element.
+   */
+  public static function renameElement ($oldNode, $newName, $opts=[])
+  {
+    if ($oldNode instanceof \SimpleXMLElement)
+    {
+      $oldNode = dom_import_simplexml($oldNode);
+      $returnSimple = true;
+    }
+    elseif ($oldNode instanceof DOMNode)
+    {
+      $returnSimple = false;
+    }
+    else
+    {
+      return;
+    }
+
+    if (isset($opts['clone']) && $opts['clone'])
+    {
+      $oldNode = $oldNode->cloneNode(true);
+    }
+
+    if (isset($opts['ns']))
+    {
+      $newNS = $opts['ns'];
+      $newNode = $oldNode->ownerDocument->createElementNS($newNS, $newName);
+    }
+    else
+    {
+      $newNode = $oldNode->ownerDocument->createElement($newName);
+    }
+
+    foreach ($oldNode->attributes as $attr)
+    {
+      $newNode->appendChild($attr->cloneNode());
+    }
+    foreach ($oldNode->childNodes as $child)
+    {
+      $newNode->appendChild($child->cloneNode(true));
+    }
+
+    if (!isset($opts['replace']) || $opts['replace'])
+    {
+      $oldNode->parentNode->replaceChild($newNode, $oldNode);
+    }
+
+    if ($returnSimple)
+    {
+      return simplexml_import_dom($newNode);
+    }
+    else
+    {
+      return $newNode;
+    }
+  }
+
 }
 
