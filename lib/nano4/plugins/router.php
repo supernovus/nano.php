@@ -244,7 +244,8 @@ class Router
 
       if (isset($routeinfo))
       {
-        $ct = $_SERVER['CONTENT_TYPE'];
+        $ct = trim(explode(';', $_SERVER['CONTENT_TYPE'])[0]);
+#        error_log("ct: $ct");
         $form1 = "application/x-www-form-urlencoded";
         $form2 = "multipart/form-data";
         if ($method == 'PUT' && ($ct == $form1 || $ct == $form2))
