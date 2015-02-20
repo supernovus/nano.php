@@ -508,12 +508,14 @@ abstract class Model implements \Iterator, \ArrayAccess
     {
       $stmt  = "WHERE ";
       $stmt .= $this->buildWhere($fields, $data);
-      if (isset($append))
-        $stmt .= " $append";
     }
     else
     {
       $stmt = '';
+    }
+    if (isset($append))
+    {
+      $stmt .= " $append";
     }
     return $this->listRows($stmt, $data, $cols);
   }
