@@ -604,7 +604,11 @@ abstract class Model implements \Iterator, \ArrayAccess
       $return_type = $opts['return'];
       if (isset($opts['columns']) && is_array($opts['columns']))
       {
-        $fields = $opts['columns'];
+        $fields = [];
+        foreach ($opts['columns'] as $colname)
+        {
+          $fields[$colname] = $fielddata[$colname];
+        }
       }
       else
       {
