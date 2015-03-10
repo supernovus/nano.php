@@ -84,8 +84,17 @@ class Item implements \ArrayAccess
   {
     $name = $this->db_field($field);
 
-    if ($name == $this->primary_key && $this->auto_generated_pk)
-      throw new Exception('Cannot overwrite primary key.');
+    if ($name == $this->primary_key)
+    {
+      if ($this->auto_generated_pk)
+      {
+        throw new Exception('Cannot overwrite primary key.');
+      }
+      elseif (!isset($this->data[$name]))
+      {
+        $this->data[$name] = true; // a defined initial value.
+      }
+    }
 
     $this->modified_data[$name] = $this->data[$name];
     $meth = "_set_$field";
