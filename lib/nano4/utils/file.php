@@ -157,9 +157,33 @@ class File
     $this->size = filesize($this->file);
   }
 
-  public function getString ()
+  public function getString ($forceUTF8=false)
   {
-    return file_get_contents($this->file);
+    $string = file_get_contents($this->file);
+    if ($forceUTF8)
+    {
+      $bom = substr($string, 0, 2);
+      if ($bom === chr(0xff).chr(0xfe) || $bom === chr(0xfe).chr(0xff))
+      { // UTF-16 Byte Order Mark found.
+        $encoding = 'UTF-16';
+      }
+      else
+      {
+        $encoding = mb_detect_encoding($string, 'UTF-8, UTF-7, ASCII, EUC-JP,SJIS, eucJP-win, SJIS-win, JIS, ISO-2022-JP, ISO-8859-1', true);
+      }
+      if ($encoding)
+      {
+        if ($encoding != 'UTF-8')
+        {
+          $string = mb_convert_encoding($string, 'UTF-8', $encoding);
+        }
+      }
+      else
+      {
+        throw new \Exception("Unsupported document encoding found.");
+      }
+    }
+    return $string;
   }
 
   public function putString ($data, $opts=[])
@@ -179,6 +203,76 @@ class File
       $this->update_size();
     }
     return $count;
+  }
+
+  /**
+   * Parse a Delimiter Seperated Values file (defaults to Tab.)
+   */
+  public function getDelimited ($opts=[])
+  {
+    $delimiter = isset($opts['delimiter']) ? $opts['delimiter'] : "\t";
+    $useregex  = isset($opts['regex'])     ? $opts['regex']     : false;
+    $trimcols  = isset($opts['trim'])      ? $opts['trim']      : false;
+    $assoc     = isset($opts['assoc'])     ? $opts['assoc']     : false;
+    $forceutf8 = isset($opts['utf8'])      ? $opts['utf8']      : true;
+
+    if ($useregex && is_string($useregex))
+    {
+      $delimiter = $useregex;
+      $useregex  = true;
+    }
+
+    if ($assoc) $trimcols = true; // assoc mode forces trim.
+
+    $string  = $this->getString($forceutf8);
+    $lines   = explode("\n", $string);
+    $rows    = [];
+
+    $header = null;
+
+    foreach ($lines as $line)
+    {
+      if ($useregex)
+      {
+        $columns = preg_split($delimiter, $line);
+      }
+      else
+      {
+        $columns = explode($delimiter, $line);
+      }
+      if ($trimcols)
+      {
+        foreach ($columns as &$column)
+        {
+          $column = trim($column);
+          $column = trim($column, '"');
+        }
+      }
+      if ($assoc)
+      {
+        if (is_null($header))
+        {
+          $header = $columns;
+        }
+        else
+        {
+          $colhash = [];
+          foreach ($header as $pos => $key)
+          {
+            if (isset($columns[$pos]))
+            {
+              $colhash[$key] = $columns[$pos];
+            }
+          }
+          $rows[] = $colhash;
+        }
+      }
+      else
+      {
+        $rows[] = $columns;
+      }
+    }
+    return $rows;
   }
 
   public function getArray ()
