@@ -29,6 +29,13 @@ abstract class Container extends Arrayish
     return array_search($item, $this->data, true);
   }
 
+  // Get the item at position x
+  public function at_position ($offset)
+  {
+    if (isset($this->data[$offset]))
+      return $this->data[$offset];
+  }
+
   // Add an item to our index. Override this if you need anything
   // more complex than the rules below.
   protected function add_data_index ($item, $indexname=Null)
