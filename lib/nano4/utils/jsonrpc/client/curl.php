@@ -1,0 +1,47 @@
+<?php
+
+namespace Nano4\Utils\JSONRPC\Client;
+
+/**
+ * Curl transport.
+ */
+
+class Curl implements Transport
+{
+  protected $client;
+ 
+  public $url;
+  public $curl;
+
+  public function __construct (\Nano4\Utils\JSONRPC\Client $client, Array $opts)
+  {
+    $this->client = $client;
+    if (isset($opts['url']))
+    {
+      $this->url = $opts['url'];
+    }
+    $curlopts = isset($opts['curl']) ? $opts['curl'] : [];
+    $this->curl = new \Nano4\Utils\Curl($curlopts);
+    $this->curl->content_type('application/json');
+  }
+
+  public function send_request ($request)
+  {
+    if (!isset($this->url))
+    {
+      throw new \Exception("JSON-RPC: No url specified for HTTP transport.");
+    }
+
+    $response = $this->curl->post($this->url, $request, true);
+
+    if (is_array($response))
+    {
+      $msg = json_encode($response);
+      throw new \Exception("JSON-RPC: Curl returned error: $msg");
+    }
+    else
+    {
+      return $response;
+    }
+  }
+}

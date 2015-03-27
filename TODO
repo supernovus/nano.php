@@ -1,3 +1,4 @@
-* Rewrite Dispatch plugin to be modular and extendable.
+* Write JSONRPC\Client\Socket library.
+
 * Add proper PHPDoc documentation to all class files.
 
