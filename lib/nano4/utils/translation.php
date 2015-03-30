@@ -28,8 +28,12 @@ class Translation implements \ArrayAccess
 {
   /**
    * @var string  The default language to use.
+   *
+   * If set to true, we use Accept-Language header.
+   * If none can be found, we fallback to 'en'.
    */
   public $default_lang;
+
   /**
    * @var array   The namespaces to look in.
    */
@@ -42,9 +46,9 @@ class Translation implements \ArrayAccess
    *
    * @param array  $data    An associative array representing the translations.
    * @param array  $ns      Optional. Default namespaces to look in.
-   * @param string $lang    Optional. Language to use. Default: 'en'.
+   * @param string $lang    Optional. Language to use. Default: true
    */
-  public function __construct ($data, $ns=array(), $lang='en')
+  public function __construct ($data, $ns=[], $lang=true)
   {
     $this->languages    = $data;
     $this->default_ns   = $ns;
@@ -62,7 +66,7 @@ class Translation implements \ArrayAccess
       }
       else
       {
-        $nses = array($opts['setns']);
+        $nses = [$opts['setns']];
       }
     }
     else
@@ -98,33 +102,47 @@ class Translation implements \ArrayAccess
       }
     }
 
+    $lang = null;
     if (isset($opts['lang']))
     {
       $lang = $opts['lang'];
     }
-    else
+    elseif (is_string($this->default_lang))
     {
       $lang = $this->default_lang;
     }
+    elseif (is_bool($this->default_lang) && $this->default_lang)
+    {
+      $langs = Language::accept();
+      $lang  = 'en'; // Fallback that we always define.
+      foreach ($langs as $langkey => $weight)
+      {
+        if (isset($this->languages[$langkey]))
+        {
+          $lang = $langkey;
+          break;
+        }
+      }
+    }
 
-    if (!isset($this->languages[$lang]))
+    if (!isset($lang) || !isset($this->languages[$lang]))
     {
       throw new LangException("Invalid language: '$lang'");
     }
 
     $language = $this->languages[$lang];
 
-    return array('namespaces' => $nses, 'language' => $language);
+    return ['namespaces' => $nses, 'language' => $language];
   }
 
   // Lookup a translation string.
-  public function getStr ($key, $opts=array())
+  public function getStr ($key, $opts=[])
   {
     $settings = $this->get_opts($opts);
     $nses = $settings['namespaces'];
     $language = $settings['language'];
 
-    $matches = array();
+    $matches = [];
     if (preg_match('/^(\w+):/', $key, $matches))
     {
       $prefix = $matches[1];
@@ -173,7 +191,7 @@ class Translation implements \ArrayAccess
       {
         if (!is_array($return))
         {
-          $return = array('text'=>$return);
+          $return = ['text'=>$return];
         }
         $return['ns'] = $ns;
         if (isset($opts['reps']))
@@ -220,9 +238,9 @@ class Translation implements \ArrayAccess
 
   // Generate a translation table from a flat array of keys.
   // With an optional prefix. It also supports default values.
-  public function strArray ($array, $prefix='')
+  public function strArray ($array, $prefix='', $opts=[])
   {
-    $assoc = array();
+    $assoc = [];
     foreach ($array as $index => $value)
     {
       if (is_numeric($index))
@@ -235,7 +253,7 @@ class Translation implements \ArrayAccess
         $key     = $index;
         $default = $value;
       }
-      $val = $this->getStr($prefix.$key);
+      $val = $this->getStr($prefix.$key, $opts);
       if ($val == $prefix.$key)
       {
         $val = $default;
@@ -256,25 +274,27 @@ class Translation implements \ArrayAccess
    * will be put between the namespace and the inner prefix, so specify
    * it in its entirety with closing colon (e.g. "mysection:")
    */
-  public function strStruct ($array, $sep='.', $ns='')
+  public function strStruct ($array, $sep='.', $ns='', $opts=[])
   {
     $result = array();
     foreach ($array as $prefix => $def)
     {
-      $result[$prefix] = $this->strStruct_getDef($def, $prefix, $sep, $ns);
+      $result[$prefix] = 
+        $this->strStruct_getDef($def, $prefix, $sep, $ns, $opts);
     }
     return $result;
   }
 
   // Private helper method for strStruct().
-  private function strStruct_getDef ($def, $prefix, $sep, $ns)
+  private function strStruct_getDef ($def, $prefix, $sep, $ns, $opts)
   {
     $result = array();
     foreach ($def as $index => $value)
     {
       if (is_array($value))
       {
-        $result[$index] = $this->strStruct_getDef($value, $prefix, $sep, $ns);
+        $result[$index] = 
+          $this->strStruct_getDef($value, $prefix, $sep, $ns, $opts);
         continue;
       }
       elseif (is_numeric($index))
@@ -288,7 +308,7 @@ class Translation implements \ArrayAccess
         $default = $value;
       }
       $id  = $ns.$prefix.$sep.$key;
-      $val = $this->getStr($id);
+      $val = $this->getStr($id, $opts);
       if ($val == $id)
       {
         $val = $default;
@@ -299,7 +319,7 @@ class Translation implements \ArrayAccess
   }
 
   // Reverse lookup of a string. If found, it returns the key.
-  public function lookupStr ($string, $opts=array())
+  public function lookupStr ($string, $opts=[])
   {
     $settings = $this->get_opts($opts);
     $nses = $settings['namespaces'];
@@ -315,10 +335,10 @@ class Translation implements \ArrayAccess
           {
             if (isset($opts['complex']) && $opts['complex'])
             {
-              $value = array(
+              $value = [
                 'ns'  => $ns,
                 'key' => $key,
-              );
+              ];
               return $value;
             }
             else 
@@ -354,11 +374,12 @@ class Translation implements \ArrayAccess
     return False;
   }
 
-  // ArrayAccess Interface. Does not support lookups or replacements.
+  // ArrayAccess Interface.
   
   public function offsetExists ($offset) 
-  { 
-    return True;  // Sorry, this is not supported.
+  { // Simple, but non-optimized way of determining if the key exists.
+    $newoffset = $this->getStr($offset);
+    return $newoffset == $offset ? false : true;
   }
   public function offsetUnset ($offset)
   {
