@@ -51,8 +51,11 @@ abstract class Container extends Arrayish
     elseif (is_object($item) && is_callable(array($item, 'data_identifier')))
     {
       $id = $item->data_identifier();
-      $this->data_index[$id] = $item;
-      return True;
+      if (isset($id) && $id !== False)
+      {
+        $this->data_index[$id] = $item;
+        return True;
+      }
     }
     // Similarly, if we are an array, and have a key of 'id', use it.
     elseif (is_array($item) && isset($item['id']))
