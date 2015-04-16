@@ -207,71 +207,14 @@ class File
 
   /**
    * Parse a Delimiter Seperated Values file (defaults to Tab.)
+   *
+   * See CSV::parse() for a list of valid options.
    */
   public function getDelimited ($opts=[])
   {
-    $delimiter = isset($opts['delimiter']) ? $opts['delimiter'] : "\t";
-    $useregex  = isset($opts['regex'])     ? $opts['regex']     : false;
-    $trimcols  = isset($opts['trim'])      ? $opts['trim']      : false;
-    $assoc     = isset($opts['assoc'])     ? $opts['assoc']     : false;
-    $forceutf8 = isset($opts['utf8'])      ? $opts['utf8']      : true;
-
-    if ($useregex && is_string($useregex))
-    {
-      $delimiter = $useregex;
-      $useregex  = true;
-    }
-
-    if ($assoc) $trimcols = true; // assoc mode forces trim.
-
-    $string  = $this->getString($forceutf8);
-    $lines   = explode("\n", $string);
-    $rows    = [];
-
-    $header = null;
-
-    foreach ($lines as $line)
-    {
-      if ($useregex)
-      {
-        $columns = preg_split($delimiter, $line);
-      }
-      else
-      {
-        $columns = explode($delimiter, $line);
-      }
-      if ($trimcols)
-      {
-        foreach ($columns as &$column)
-        {
-          $column = trim($column);
-          $column = trim($column, '"');
-        }
-      }
-      if ($assoc)
-      {
-        if (is_null($header))
-        {
-          $header = $columns;
-        }
-        else
-        {
-          $colhash = [];
-          foreach ($header as $pos => $key)
-          {
-            if (isset($columns[$pos]))
-            {
-              $colhash[$key] = $columns[$pos];
-            }
-          }
-          $rows[] = $colhash;
-        }
-      }
-      else
-      {
-        $rows[] = $columns;
-      }
-    }
+    $forceutf8 = isset($opts['utf8']) ? $opts['utf8'] : true;
+    $string = $this->getString($forceutf8);
+    $rows = CSV::parse($string, $opts);
     return $rows;
   }
 
