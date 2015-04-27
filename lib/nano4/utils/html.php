@@ -562,6 +562,115 @@ class HTML
     return $content;
   }
 
+  /**
+   * Extract plain text from HTML.
+   *
+   * @param String $text      The input HTML text.
+   * @param Array  $filters   An array of strip filters to apply, in order.
+   *                          Default: ['R','E']
+   *
+   * Filters:
+   *
+   *   'T'         Pass through strip_tags()
+   *   'E'         Pass through htmlspecialchars_decode()
+   *   'EE'        Pass through html_entity_decode()
+   *   'R'         Use a custom regex to strip HTML tags (including <script/>)
+   *   'RR'        Extend the regex to strip even more.
+   *
+   * Any of the multiple letter tags are higher level extensions of the single
+   * letter version, and thus you shouldn't ever have more than one in an
+   * array, so ['E','EE'] or ['R','RR'] are redundant.
+   */
+  public static function strip ($text, $filters=['R','E'])
+  {
+    // Contains our various strip filter functions.
+    $filter_functions =
+    [
+      'T' => function ($in, $lvl)
+      {
+        return strip_tags($in);
+      },
+      'E' => function ($in, $lvl)
+      {
+        if ($lvl > 1)
+        {
+          return html_entity_decode($in, ENT_QUOTES | ENT_HTML5);
+        }
+        else
+        {
+          return htmlspecialchars_decode($in, ENT_HTML5);
+        }
+      },
+      'R' => function ($in, $lvl)
+      {
+        $search = 
+        [
+          "'<script[^>]*?>.*?</script>'si",     // Strip out javascript
+          "'<[/!]*?[^<>]*?>'si",                // Strip out HTML tags
+          "'([\r\n])[\s]+'",                    // Strip out white space
+        ];
+
+        if ($lvl > 1)
+        {
+          $search = array_merge($search,
+          [
+            "'&(quot|#34);'i",                  // Replace HTML entities
+            "'&(amp|#38);'i",
+            "'&(lt|#60);'i",
+            "'&(gt|#62);'i",
+            "'&(nbsp|#160);'i",
+#            "'&(iexcl|#161);'i",
+#            "'&(cent|#162);'i",
+#            "'&(pound|#163);'i",
+#            "'&(copy|#169);'i",
+#            "'&#(\d+);'e",                        // Evaluate as PHP
+          ]);
+        }
+
+        $replace = 
+        [
+          "",
+          "",
+          "\1",
+        ];
+
+        if ($lvl > 1)
+        {
+          $replace = array_merge($replace,
+          [
+            "\"",
+            "&",
+            "<",
+            ">",
+            " ",
+#            chr(161),
+#            chr(162),
+#            chr(163),
+#            chr(169),
+#            "chr(\1)",
+          ]);
+        }
+
+#        error_log(json_encode(['l'=>$lvl, 's'=>$search, 'r'=>$replace]));
+
+        return preg_replace($search, $replace, $in);
+      },
+    ];
+
+    foreach ($filters as $filter)
+    {
+      $lvl  = strlen($filter);
+      $ftag = strtoupper(substr($filter, 0, 1));
+#      error_log(json_encode(['lvl'=>$lvl, 'ftag'=>$ftag]));
+      if (isset($filter_functions[$ftag]))
+      {
+        $text = $filter_functions[$ftag]($text, $lvl);
+      }
+    }
+
+    return $text;
+  }
+
   // Another way to call get().
   public function __call ($method, $params)
   {
