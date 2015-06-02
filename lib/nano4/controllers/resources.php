@@ -39,7 +39,7 @@ trait Resources
     [
       'name' => 'scripts',
       'path' => ['scripts', 'scripts/nano', 'scripts/ext'],
-      'exts' => ['.dist.js', '.ug.js', '.cc.js', '.min.js', '.js'],
+      'exts' => ['.min.js', '.js'],
       'groups' =>
       [ 
         '#common' =>
@@ -57,6 +57,15 @@ trait Resources
           'riot.render',
           'coreutils',
           'webapp',
+        ],
+        '#base64' =>
+        [ // Base64 encoding and decoding.
+          'crypto/components/core-min',
+          'crypto/components/enc-base64-min',
+        ],
+        '#ace' =>
+        [ // The Ace editor, it uses an embedded module loader for components.
+          'ace/src-min-noconflict/ace'
         ],
       ],
       'added' => [], 
