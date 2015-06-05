@@ -34,9 +34,17 @@ class Simple
   public $server_id;
 
   /**
+   * The database configuration, if 'keep_config' is true.
+   * It's a protected property, so only this class can use it.
+   */
+  protected $db_conf;
+
+  /**
    * Build our DB\Simple object.
    *
-   * @param Mixed $conf  The database configuration.
+   * @param Mixed $conf          The database configuration.
+   * @param Bool  $keep_config   Save the database configuration.
+   *                             Default: false.
    *
    * The $conf may be either a JSON string, a JSON filename, or an Array.
    * The Array must contain at least a 'dsn' member. If the database uses
@@ -46,8 +54,11 @@ class Simple
    *
    * The database name will be extracted from the DSN either as the
    * 'dbname' property, or as the SQLite filename.
+   *
+   * If $keep_config is true, then the configuration is stored in the
+   * protected $db_conf property.
    */
-  public function __construct ($conf)
+  public function __construct ($conf, $keep_config=false)
   {
     if (is_string($conf))
     {
@@ -73,10 +84,15 @@ class Simple
         $this->name = $matches[1];
       elseif (preg_match('/sqlite:(\w+)/', $conf['dsn'], $matches))
         $this->name = $matches[1];
+
+      if ($keep_config)
+      {
+        $this->db_conf = $conf;
+      }
     }
     else
     {
-      throw new \Exception("invalid database configuration");
+      throw new \Exception(__CLASS__.": invalid database configuration");
     }    
   }
 
@@ -134,6 +150,10 @@ class Simple
       {
         $data = $opts['data'];
         $sql .= $opts['where'];
+      }
+      else
+      {
+        throw new \Exception(__CLASS__.": invalid WHERE clause in select()");
       }
     }
 
@@ -232,7 +252,7 @@ class Simple
     }
     else
     {
-      throw new \Exception("DB\Simple::update() Invalid WHERE clause."); 
+      throw new \Exception(__CLASS__.": invalid WHERE clause in update()"); 
     }
   
     $sql = "UPDATE $table SET $set WHERE $where";
