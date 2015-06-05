@@ -236,7 +236,7 @@ class Schema
         $table->update();
       }
     }
-    return $tables;
+    return $this->tables;
   }
 
   /**
