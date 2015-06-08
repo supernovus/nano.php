@@ -145,6 +145,7 @@ abstract class Model implements \Iterator, \ArrayAccess
     {
       $this->db = new \PDO($this->dsn);
     }
+    $this->db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
   }
 
   /**
