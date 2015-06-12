@@ -72,6 +72,7 @@ trait Resources
           '#common',
           '#ace', 
           '#base64',
+          'coreutils',
           'editor',
         ],
       ],
