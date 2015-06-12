@@ -67,6 +67,13 @@ trait Resources
         [ // The Ace editor, it uses an embedded module loader for components.
           'ace/src-min-noconflict/ace'
         ],
+        '#editor' => 
+        [ // The Nano.Editor component.
+          '#common',
+          '#ace', 
+          '#base64',
+          'editor',
+        ],
       ],
       'added' => [], 
     ],
