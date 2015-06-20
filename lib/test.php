@@ -47,7 +47,7 @@ function ok ($stmt, $desc=Null)
 
 function is ($got, $want, $desc=Null)
 {
-  $test = ($got == $want);
+  $test = ($got === $want);
   __test($desc, $test);
   if (!$test)
   {

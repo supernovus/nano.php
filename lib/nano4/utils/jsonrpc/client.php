@@ -2,13 +2,15 @@
 
 namespace Nano4\Utils\JSONRPC;
 
+use Nano4\Utils\JSONRPC\Client\Transport;
+
 define('JSONRPC_ID_RAND', 0);  // Use rand() to build id.
 define('JSONRPC_ID_TIME', 1);  // Use time() to build id.
 define('JSONRPC_ID_UUID', 2);  // Use UUID::v4() to build id.
 
 function EXCEPT ($message)
 {
-  throw new \Exception("JSON-RPC: $message");
+  throw new \Exception("# JSON-RPC: $message");
 }
 
 function DEBUG ($message)
@@ -17,7 +19,7 @@ function DEBUG ($message)
   {
     $message = json_encode($message);
   }
-  error_log("JSON-RPC: $message");
+  error_log("# JSON-RPC: $message");
 }
 
 /**
@@ -81,10 +83,20 @@ class Client
         $this->$opt = $opts[$opt];
       }
     }
+
     // Handle our transport.
     $trans = isset($opts['transport']) ? $opts['transport'] : 'http';
-    $trans = "\\Nano4\\Utils\\JSONRPC\\Client\\$trans";
-    $this->transport = new $trans($this, $opts);
+    if (is_string($trans))
+    {
+      if (strpos($trans, "\\") === false)
+        $trans = "\\Nano4\\Utils\\JSONRPC\\Client\\$trans";
+      $opts['jsonrpc_client'] = $this;
+      $this->transport = new $trans($opts);
+    }
+    elseif (is_object($trans) && $trans instanceof Transport)
+    {
+      $this->transport = $trans;
+    }
   }
 
   /**

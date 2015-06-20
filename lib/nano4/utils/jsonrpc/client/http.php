@@ -12,9 +12,12 @@ class HTTP implements Transport
  
   public $url;
 
-  public function __construct (\Nano4\Utils\JSONRPC\Client $client, Array $opts)
+  public function __construct (Array $opts)
   {
-    $this->client = $client;
+    if (isset($opts['jsonrpc_client']))
+    {
+      $this->client = $opts['jsonrpc_client'];
+    }
     if (isset($opts['url']))
     {
       $this->url = $opts['url'];

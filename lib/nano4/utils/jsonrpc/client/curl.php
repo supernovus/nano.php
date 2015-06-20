@@ -9,13 +9,16 @@ namespace Nano4\Utils\JSONRPC\Client;
 class Curl implements Transport
 {
   protected $client;
- 
+
   public $url;
   public $curl;
 
-  public function __construct (\Nano4\Utils\JSONRPC\Client $client, Array $opts)
+  public function __construct (Array $opts)
   {
-    $this->client = $client;
+    if (isset($opts['jsonrpc_client']))
+    {
+      $this->client = $opts['jsonrpc_client'];
+    }
     if (isset($opts['url']))
     {
       $this->url = $opts['url'];
