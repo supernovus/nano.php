@@ -7,6 +7,7 @@ use Nano4\Utils\JSONRPC\Client\Transport;
 define('JSONRPC_ID_RAND', 0);  // Use rand() to build id.
 define('JSONRPC_ID_TIME', 1);  // Use time() to build id.
 define('JSONRPC_ID_UUID', 2);  // Use UUID::v4() to build id.
+define('JSONRPC_ID_UNIQ', 3);  // Use uniqid() to build id.
 
 function EXCEPT ($message)
 {
@@ -125,7 +126,7 @@ class Client
       $callback = array_shift($params);
     }
 
-    if ($this->version == 2 && in_array($method, $this->named_parameters))
+    if ($this->version == 2 && in_array($method, $this->named_params))
     {
       if (is_array($params[0]))
       {
@@ -163,7 +164,11 @@ class Client
       }
       elseif ($this->idtype == JSONRPC_ID_TIME)
       {
-        $id = time();
+        $id = str_replace('.', '', microtime(true));
+      }
+      elseif ($this->idtype == JSONRPC_ID_UNIQ)
+      {
+        $id = uniqid();
       }
       elseif ($this->idtype == JSONRPC_ID_UUID)
       {
@@ -216,7 +221,7 @@ class Client
       }
     }
     $request_json = json_encode($requests);
-    $response_text = $this->transport->send_request($request);
+    $response_text = $this->transport->send_request($request_json);
     $this->debug && DEBUG(["response_text"=>$response_text]);
     if (trim($response_text) == '') return; // Empty response.
     $response_json = json_decode($response_text, true);
@@ -347,16 +352,24 @@ class ClientResponse
         }
         else
         { // JSON-RPC 1.0 has no defined error format, so we guess.
+          if (is_array($response['error']) && isset($response['error']['code']))
+          { // Using error objects in version 1.0.
+            $this->code = $response['error']['code'];
+            if (isset($response['error']['message']))
+              $this->message = $response['error']['message'];
+            if (isset($response['error']['data']))
+              $this->error_data = $response['error']['data'];
+          }
           if (is_int($response['error']))
-          {
+          { // A status code.
             $this->code = $response['error'];
           }
           elseif (is_string($response['error']))
-          {
+          { // An error message.
             $this->message = $response['error'];
           }
           else
-          {
+          { // Something else.
             $this->error_data = $response['error'];
           }
         }

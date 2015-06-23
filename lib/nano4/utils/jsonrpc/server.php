@@ -133,7 +133,7 @@ trait Server
         }
         else
         {
-          $notifiation = true;
+          $notification = true;
         }
   
       }
@@ -315,7 +315,7 @@ class ServerResponse implements \JsonSerializable
     if ($this->version >= 2)
     {
       $ver2 = true;
-      $return['jsonrpc'] = $this->version;
+      $return['jsonrpc'] = sprintf("%.1f", $this->version);
     }
 
     if (isset($this->result))

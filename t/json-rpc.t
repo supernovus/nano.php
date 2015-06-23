@@ -10,7 +10,7 @@ require_once 'lib/test.php';
 use Nano4\Utils\JSONRPC;
 use function Nano4\Utils\JSONRPC\get_named_param; // In JSONRPC\Server
 
-plan(18);
+plan(36);
 
 $DEBUG = false;
 
@@ -96,6 +96,8 @@ class TestServer implements JSONRPC\Client\Transport
   {
     $data = $this->get_session_data($sid);
     $data['finished'] = microtime(true);
+    $sid = get_named_param($sid, 'sid', $sid);
+    unset($this->sessions[$sid]);
     return $data;
   }
 
@@ -197,5 +199,82 @@ $finished = $response->result['finished'];
 
 ok(($finished > $started), 'finished is greater than started');
 
-// TODO: test version 2.0 calls and named parameters.
+// Test JSON-RPC 2.0, starting with named parameters.
+$client->version = 2;
+$client->named_params = ['get_session_data','set_session_data'];
+
+$response = $client->start_session();
+
+if ($DEBUG)
+  jerr($response);
+
+ok($response->success, "2.0 start_session() returned ok");
+
+$sid = $response->result['sid'];
+
+$client->keepalive($sid); // ka = 1
+
+$response = $client->set_session_data(['sid'=>$sid,'key'=>'goodbye','value'=>'universe']);
+
+ok($response->success, "2.0 set_session_data(named_params) returned ok");
+
+$response = $client->get_session_data(['sid'=>$sid, 'key'=>'goodbye']);
+
+ok($response->success, "2.0 get_session_data(named_params) returned ok");
+
+is($response->result, 'universe', "2.0 get_session_data(named_params) returned proper data");
+
+// Now to test 2.0 batch mode.
+$client->named_params = [];
+$client->batch = true;
+
+$cb1 = function ($res)
+{
+  ok($res->success, "batch callback 1 returned ok");
+  is($res->result, 'bar', 'batch callback 1 returned proper data');
+};
+
+$cb2 = function ($res)
+{
+  ok($res->success, "batch callback 2 returned ok");
+  ok(isset($res->result, $res->result['finished']), "back callback 2 returned proper data");
+  $finished = $res->result['finished'];
+  $started  = $res->result['started'];
+  ok(($finished > $started), "batch callback 2 finished is greater than started");
+};
+
+$client->keepalive($sid); // ka = 2
+$client->set_session_data($sid, 'foo', 'bar');  // response 1
+$client->keepalive($sid); // ka = 3
+$client->get_session_data($cb1, $sid, 'foo');   // response 2
+$client->get_session_data($sid, 'bar');         // response 3
+$client->keepalive($sid); // ka = 4
+$client->get_session_data($sid, 'keepalive');   // response 4
+$client->end_session($cb2, $sid);               // response 5
+
+$responses = $client->send();
+
+$response = array_shift($responses); // response 1
+
+ok($response->success, "batch response 1 returned ok");
+
+$response = array_shift($responses); // response 2
+
+ok($response->success, "batch response 2 returned ok");
+is($response->result, 'bar', 'batch response 2 returned proper data');
+
+$response = array_shift($responses); // response 3
+
+ok(!$response->success, "batch response 3 returned not ok");
+is($response->code, 1001, "batch response 3 returned proper error code");
+is($response->message, 'Invalid key', "batch response 3 returned proper message");
+
+$response = array_shift($responses); // response 4
+
+ok($response->success, "batch response 4 returned ok");
+is ($response->result, 4, "batch response 4 returned proper data");
+
+$response = array_shift($responses); // response 5
+
+ok($response->success, "batch response 5 returned ok");
 
