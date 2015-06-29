@@ -243,8 +243,8 @@ class Simple
     $set   = join(",", map_fields(array_keys($cdata)));
     if (is_array($where))
     {
-      $where = join(" AND ", map_fields(array_keys($where)));
       $data = $where + $cdata;
+      $where = join(" AND ", map_fields(array_keys($where)));
     }
     elseif (is_string($where) && isset($wdata))
     {
