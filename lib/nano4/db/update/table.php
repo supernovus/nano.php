@@ -266,8 +266,9 @@ class Table
         }
         else
         { // Use a default upgrade script filename.
-          $sql_file = $this->updateDir . '/' . $this->current 
-                    . '-' . $ver . '.sql';
+          $ver1 = self::versionString($this->current);
+          $ver2 = self::versionString($ver);
+          $sql_file = $this->updateDir . '/' . $ver1 . '-' . $ver2 . '.sql';
         }
       }
       if (!file_exists($sql_file))
@@ -305,5 +306,23 @@ class Table
     $this->update_ok = true;
     return true;
   }
+
+  public static function versionString ($num)
+  {
+    if (fmod(floatval($num), 1) == 0)
+      return (string)$num . '.0';
+    return (string)$num;
+  }
+
+  public function currentVersion ()
+  {
+    return self::versionString($this->current);
+  }
+
+  public function latestVersion ()
+  {
+    return self::versionString($this->latest);
+  }
+
 }
 
