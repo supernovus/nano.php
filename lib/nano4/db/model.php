@@ -644,9 +644,9 @@ abstract class Model implements \Iterator, \ArrayAccess
   /**
    * Row count.
    */
-  public function rowcount ($where=Null, $data=[])
+  public function rowcount ($where=Null, $data=[], $colname='*')
   {
-    $sql = "SELECT count(id) FROM {$this->table}";
+    $sql = "SELECT count($colname) FROM {$this->table}";
     if (is_array($where) && count($where) > 0)
     {
       $sql .= ' WHERE ';
