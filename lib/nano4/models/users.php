@@ -43,10 +43,12 @@ class Users extends \Nano4\DB\Model
    *
    * @param Mixed $identifier    Either the numeric primary key,
    *                             or a stringy login field (default 'email')
-   * 
+   *
+   * @param Str $column          (optional) An explicit database column.
+   *
    * @return Mixed               Either a User row object, or Null.
    */
-  public function getUser($identifier)
+  public function getUser($identifier, $column=null)
   {
     // First, check to see if it's cached.
     if (isset($this->user_cache[$identifier]))
@@ -55,7 +57,12 @@ class Users extends \Nano4\DB\Model
     }
 
     // Look up the user in the database.
-    if (is_numeric($identifier))
+    if (isset($column))
+    {
+      return $this->user_cache[$identifier]
+           = $this->getRowByField($column, $identifier);
+    }
+    elseif (is_numeric($identifier))
     { // Look up by userId.
       return $this->user_cache[$identifier] 
            = $this->getRowById($identifier);

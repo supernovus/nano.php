@@ -69,7 +69,7 @@ class Item implements \ArrayAccess
       return $name;
     else
       if ($strict)
-        throw new Exception("Unknown field '$name'");
+        throw new Exception("Unknown field '$name' in ".json_encode($this->data));
       else
         return Null;
   }

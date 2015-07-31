@@ -45,6 +45,10 @@ abstract class Model implements \Iterator, \ArrayAccess
   protected $default_null = false; // The old behavior is to use 0 as the default value.
                                    // Set this to true for the new behavior.
 
+  // In the next major release, which will break backwards compatibility, 
+  // default_null will be replaced, and null will be used by default for
+  // column values. The older 0 value is no longer directly supported.
+
   // The following are used by the pager() function to generate ORDER BY and LIMIT statements.
   public $sort_orders = array();
   public $sort_items  = array();
