@@ -13,6 +13,13 @@ class AccessLog extends \Nano4\DB\Model
   protected $childclass  = '\Nano4\Models\AccessRecord';
   protected $resultclass = '\Nano4\DB\ResultSet';
 
+  public $known_fields =
+  [
+    'success' => false, 'message' => null, 'context' => null, 
+    'headers' => null, 'userdata' => null, 'timestamp' => 0,
+    'version' => 3.0,
+  ];
+  
   protected $filters =
   [
     'request' => ['pass', 'newpass', 'confpass'], // Common password fields.
@@ -186,13 +193,6 @@ class AccessLog extends \Nano4\DB\Model
 
 class AccessRecord extends \Nano4\DB\Item
 {
-  public $known_fields =
-  [
-    'success' => false, 'message' => null, 'context' => null, 
-    'headers' => null, 'userdata' => null, 'timestamp' => 0,
-    'version' => 3.0,
-  ];
-
   protected function get_field ($field)
   {
     return isset($this->data[$field]) 
