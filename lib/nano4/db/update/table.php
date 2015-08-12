@@ -278,7 +278,7 @@ class Table
       if (isset($pre_run) && file_exists($this->updateDir.'/'.$pre_run[0]))
       {
         $class = $this->updateDir.'/'.$pre_run[0];
-        require "$class";
+        require_once "$class";
         $func = "\\UpdateSchema\\".$pre_run[1];
         if (is_callable($func))
         {
@@ -292,7 +292,7 @@ class Table
       if (isset($post_run) && file_exists($this->updateDir.'/'.$post_run[0]))
       {
         $class = $this->updateDir.'/'.$post_run[0];
-        require "$class";
+        require_once "$class";
         $func = "\\UpdateSchema\\".$post_run[1];
         if (is_callable($func))
         {
