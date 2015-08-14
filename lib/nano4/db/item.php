@@ -274,6 +274,8 @@ class Item implements \ArrayAccess
       // Clear the modified data.
       $this->modified_data = [];
 
+#      error_log("save got new '$pk' value '$newpk'");
+
       if ($setpk && isset($this->data[$pk])) return True; // We're done.
       elseif ($newpk)
       {

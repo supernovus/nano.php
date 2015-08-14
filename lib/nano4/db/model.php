@@ -630,6 +630,8 @@ abstract class Model implements \Iterator, \ArrayAccess
       }
       elseif ($return_type == $this::return_key)
       {
+#        error_log("fields: ".json_encode($fields));
+#        error_log("pk: $pk");
         $rawrow = $this->getRowByFields($fields, True, $pk);
 #        error_log("rawrow: ".json_encode($rawrow));
         if (isset($rawrow) && isset($rawrow[$pk]))
