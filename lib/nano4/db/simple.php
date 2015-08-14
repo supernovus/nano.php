@@ -14,6 +14,20 @@ function map_fields ($fields)
 }
 
 /**
+ * A comparitor for NULL values.
+ */
+function map_nulls ($fields, $not=false)
+{
+  $is = "NULL";
+  if ($not)
+    $is = "NOT $is";
+  return array_map(function ($field) use ($is)
+  {
+    return "$field IS $is";
+  }, $fields);
+}
+
+/**
  * A simple, lightweight DB class.
  */
 class Simple
@@ -142,9 +156,27 @@ class Simple
       $sql .= " WHERE ";
       if (is_array($opts['where']))
       {
-        $where = map_fields(array_keys($opts['where']));
-        $data  = $opts['where'];
-        $sql  .= join(" AND ", $where);
+        $nulls = array_keys($opts['where'], null, true);
+        $data = $opts['where'];
+        foreach ($nulls as $null)
+        {
+          unset($data[$null]);
+        }
+        $keys  = array_keys($data);
+        $haskeys = false;
+        if (count($keys) > 0)
+        {
+          $haskeys = true;
+          $where = map_fields($keys);
+          $sql  .= join(" AND ", $where);
+        }
+        if (count($nulls) > 0)
+        {
+          if ($haskeys)
+            $sql .= ' AND ';
+          $where = map_nulls($nulls);
+          $sql  .= join(" AND ", $where);
+        }
       }
       elseif (is_string($opts['where']) && isset($opts['data']))
       {
@@ -183,6 +215,9 @@ class Simple
     {
       $fetch_mode = \PDO::FETCH_ASSOC;
     }
+
+#    error_log("SQL: $sql");
+#    error_log("Data: ".json_encode($data));
 
     $stmt = $this->db->prepare($sql);
     if (isset($fetch_mode) && ! is_bool($fetch_mode))
