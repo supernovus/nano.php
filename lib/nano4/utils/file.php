@@ -114,14 +114,22 @@ class File
 
   public function saveAs ($target, $move=true, $update=true)
   {
+#    error_log("saveAs($target,".json_encode($move).",".json_encode($update).")");
+#    error_log("file: ".$this->file);
+    if (!file_exists($this->file))
+    {
+      return false;
+    }
     $target_dir = dirname($target);
     if (!is_dir($target_dir))
     {
+#      error_log("directory '$target_dir' does not exist?");
       mkdir($target_dir, 0755, true);
       chmod($target_dir, 0755);
     }
     if (copy($this->file, $target))
     {
+#      error_log("copied");
       if ($move)
       {
         unlink($this->file);    // Delete the old one.
@@ -133,6 +141,10 @@ class File
       }
       return $target;         // And return the new name.
     }
+#    else
+#    {
+#      error_log("couldn't copy: " . `ls -l {$this->file}`);
+#    }
     return False;
   }
 
