@@ -192,6 +192,12 @@ abstract class Basic
     // The screen may use the $parent object to modify our data.
     $page = $nano->screens->load($screen, $this->data);
 
+    // Now for post-page, pre-layout stuff.
+    if (is_callable([$this, 'post_render_page']))
+    {
+      $this->post_render_page($opts);
+    }
+
     if ($layout)
     { // Please ensure your layout has a view_content variable.
       $this->data['view_content'] = $page;
