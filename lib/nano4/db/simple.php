@@ -28,6 +28,18 @@ function map_nulls ($fields, $not=false)
 }
 
 /**
+ * Display a statement error
+ */
+function db_error_log ($object)
+{
+  $code = $object->errorCode();
+  if ($code != '00000' && $code != '')
+  {
+    error_log("DB error: ".json_encode($object->errorInfo()));
+  }
+}
+
+/**
  * A simple, lightweight DB class.
  */
 class Simple
@@ -226,6 +238,8 @@ class Simple
     }
     $stmt->execute($data);
 
+    db_error_log($stmt);
+
     if (isset($opts['single']) && $opts['single'])
     {
       return $stmt->fetch();
@@ -254,8 +268,14 @@ class Simple
 
     $sql = "INSERT INTO $table ($flist) VALUES ($dlist)";
 
+#    error_log("INSERT SQL: $sql");
+#    error_log("INSERT data: ".json_encode($data));
+
     $stmt = $this->db->prepare($sql);
     $stmt->execute($data);
+
+    db_error_log($stmt);
+
     return $stmt;
   }
 
@@ -294,6 +314,9 @@ class Simple
   
     $stmt = $this->db->prepare($sql);
     $stmt->execute($data);
+
+    db_error_log($stmt);
+
     return $stmt;
   }
 
