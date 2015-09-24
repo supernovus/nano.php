@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<phpdoc>
+  <parser>
+    <target>build/phpdoc</target>
+    <encoding>utf8</encoding>
+    <markers>
+      <item>TODO</item>
+      <item>FIXME</item>
+    </markers>
+    <extensions>
+      <extension>php</extension>
+    </extensions>
+  </parser>
+  <transformer>
+    <target>doc/api/php</target>
+  </transformer>
+  <logging>
+    <level>warn</level>
+    <paths>
+      <default>{APP_ROOT}/build/log/{DATE}.log</default>
+      <errors>{APP_ROOT}/build/log/{DATE}.errors.log</errors>
+    </paths>
+  </logging>
+  <files>
+    <file>lib/css.php</file>
+    <file>lib/test.php</file>
+    <directory>lib/nano4</directory>
+  </files>
+</phpdoc>
