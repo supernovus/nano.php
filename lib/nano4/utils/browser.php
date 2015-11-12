@@ -10,7 +10,7 @@ class Browser
 {
   public static function is_ie ()
   {
-    if (preg_match('/MSIE/i', $_SERVER['HTTP_USER_AGENT']))
+    if (isset($_SERVER['HTTP_USER_AGENT']) && preg_match('/MSIE/i', $_SERVER['HTTP_USER_AGENT']))
     {
       return True;
     }
@@ -24,6 +24,8 @@ class Browser
    */
   public static function get_ie_ver ()
   {
+    if (!isset($_SERVER['HTTP_USER_AGENT'])) return False;
+
     preg_match('/MSIE (.*?);/', $_SERVER['HTTP_USER_AGENT'], $matches);
     if (count($matches) < 2)
     {

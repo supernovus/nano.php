@@ -55,7 +55,7 @@ class Conf extends \Nano4\Data\Arrayish
 
   protected $_file_type_include_pos = 6; // Keep the first x file type exts.
 
-  public $strict_mode = True;  // If true, we die on failure.
+  public $strict_mode = false;  // If true, we die on failure.
 
   public function dir ()
   {
