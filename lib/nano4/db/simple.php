@@ -320,4 +320,34 @@ class Simple
     return $stmt;
   }
 
+  /**
+   * Delete an existing row.
+   *
+   * @param string $table  The table to delete from.
+   * @param Mixed  $where  The WHERE statement.
+   * @param Array  $wdata  The WHERE placeholder data (same as update.)
+   *
+   */
+  public function delete ($table, $where, $wdata=null)
+  {
+    if (is_array($where))
+    {
+      $wdata = $where;
+      $where = join(" AND ", map_fields(array_keys($where)));
+    }
+    elseif (!is_string($where))
+    {
+      throw new \Exception(__CLASS__.": invalid WHERE clause in delete()");
+    }
+
+    $sql = "DELETE FROM $table WHERE $where";
+
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute($wdata);
+
+    db_error_log($stmt);
+
+    return $stmt;
+  }
+
 }
