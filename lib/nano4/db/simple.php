@@ -28,18 +28,6 @@ function map_nulls ($fields, $not=false)
 }
 
 /**
- * Display a statement error
- */
-function db_error_log ($object)
-{
-  $code = $object->errorCode();
-  if ($code != '00000' && $code != '')
-  {
-    error_log("DB error: ".json_encode($object->errorInfo()));
-  }
-}
-
-/**
  * Get a query property from an object.
  */
 function get_query_property($object, $prop)
@@ -82,6 +70,11 @@ class Simple
   protected $db_conf;
 
   /**
+   * The SQL STATE code for success.
+   */
+  const success = '00000'; 
+
+  /**
    * Build our DB\Simple object.
    *
    * @param Mixed $conf          The database configuration.
@@ -113,11 +106,8 @@ class Simple
 
     if (is_array($conf) && isset($conf['dsn']))
     {
-      if (isset($conf['user']) && isset($conf['pass']))
-        $this->db = new \PDO($conf['dsn'], $conf['user'], $conf['pass']);
-      else
-        $this->db = new \PDO($conf['dsn']);
-
+      $this->dbconnect($conf);
+      
       if (isset($conf['sid']))
         $this->server_id = $conf['sid'];
 
@@ -136,6 +126,47 @@ class Simple
     {
       throw new \Exception(__CLASS__.": invalid database configuration");
     }    
+  }
+
+  /**
+   * Connect to the database.
+   */
+  protected function dbconnect ($conf)
+  {
+    if (isset($conf['user']) && isset($conf['pass']))
+      $this->db = new \PDO($conf['dsn'], $conf['user'], $conf['pass']);
+    else
+      $this->db = new \PDO($conf['dsn']);
+  }
+
+  /**
+   * Handle a DBO level error. Override as necessary.
+   */
+  protected function handle_db_error ($einfo, $context, $name='database')
+  {
+    error_log("A $name error occurred: " . json_encode($einfo));
+    error_log("  -- " . json_encode($context));
+  }
+
+  /**
+   * Handle a statement level error. Override as necessary.
+   */
+  protected function handle_stmt_error ($einfo, $context, $name='statement')
+  {
+    return $this->handle_db_error($einfo, $context, $name);
+  }
+
+  /**
+   * Create a prepared query.
+   */
+  public function query ($statement)
+  {
+    $query = $this->db->prepare($statement);
+    $einfo = $this->db->errorInfo();
+    if ($einfo[0] !== $this::success)
+    {
+      $this->handle_db_error($einfo, ['statement'=>$statement]);
+    }
   }
 
   /**
@@ -342,6 +373,10 @@ class Simple
     if (isset($opts['fetch']))
     {
       $fetch_mode = $opts['fetch'];
+      if (is_bool($fetch_mode) && !$fetch_mode)
+      { // Set to false to use 'flat' mode.
+        $fetch_mode = \PDO::FETCH_NUM;
+      }
     }
     else
     {
@@ -357,8 +392,11 @@ class Simple
       $stmt->setFetchMode($fetch_mode);
     }
     $stmt->execute($data);
-
-    db_error_log($stmt);
+    $einfo = $stmt->errorInfo();
+    if ($einfo[0] != $this::success)
+    {
+      $this->handle_stmt_error($einfo, ['statement'=>$sql,'data'=>$data]);
+    }
 
     if (isset($opts['single']) && $opts['single'])
     {
@@ -412,10 +450,13 @@ class Simple
 #    error_log("INSERT SQL: $sql");
 #    error_log("INSERT data: ".json_encode($data));
 
-    $stmt = $this->db->prepare($sql);
+    $stmt = $this->query($sql);
     $stmt->execute($data);
-
-    db_error_log($stmt);
+    $einfo = $stmt->errorInfo();
+    if ($einfo[0] != $this::success)
+    {
+      $this->handle_stmt_error($einfo, ['statement'=>$sql,'data'=>$data]);
+    }
 
     return $stmt;
   }
@@ -491,10 +532,13 @@ class Simple
   
     $sql = "UPDATE $table SET $set WHERE $where";
   
-    $stmt = $this->db->prepare($sql);
+    $stmt = $this->query($sql);
     $stmt->execute($data);
-
-    db_error_log($stmt);
+    $einfo = $stmt->errorInfo();
+    if ($einfo[0] != $this::success)
+    {
+      $this->handle_stmt_error($einfo, ['statement'=>$sql,'data'=>$data]);
+    }
 
     return $stmt;
   }
@@ -534,12 +578,28 @@ class Simple
 
     $sql = "DELETE FROM $table WHERE $where";
 
-    $stmt = $this->db->prepare($sql);
+    $stmt = $this->query($sql);
     $stmt->execute($wdata);
-
-    db_error_log($stmt);
+    $einfo = $stmt->errorInfo();
+    if ($einfo[0] != $this::success)
+    {
+      $this->handle_stmt_error($einfo, ['statement'=>$sql,'data'=>$wdata]);
+    }
 
     return $stmt;
+  }
+
+  /**
+   * Row count.
+   */
+  public function rowcount ($where=Null, $data=[], $colname='*')
+  {
+    $want = ['cols'=>"count($colname)", 'fetch'=>false];
+    if (isset($where))
+      $want['where'] = $where;
+    $stmt = $this->select($want);
+    $row = $stmt->fetch();
+    return $row[0];
   }
 
 }
