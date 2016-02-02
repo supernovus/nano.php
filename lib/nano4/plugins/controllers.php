@@ -18,8 +18,11 @@ class Controllers extends Instance
     $nano->screens = 'views';
     if ($defaults)
     {
-      $nano->layouts->addDir("views/layouts");
-      $nano->screens->addDir("views/screens");
+      $viewroot = $nano['viewroot'];
+      if (!isset($viewroot))
+        $viewroot = 'views';
+      $nano->layouts->addDir("$viewroot/layouts");
+      $nano->screens->addDir("$viewroot/screens");
     }
   }
 }
