@@ -17,7 +17,6 @@ class AccessLog extends \Nano4\DB\Model
   [
     'success' => false, 'message' => null, 'context' => null, 
     'headers' => null, 'userdata' => null, 'timestamp' => 0,
-    'version' => '1.0',
   ];
   
   protected $filters =
