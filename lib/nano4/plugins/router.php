@@ -53,6 +53,7 @@ class Router
       $nano->addMethod('addRedirect',  [$this, 'redirect']);
       $nano->addMethod('addPage',      [$this, 'display']);
       $nano->addMethod('setDefault',   [$this, 'setDefault']);
+      $nano->addMethod('loadRoutes',   [$this, 'load']);
     }
   }
 
