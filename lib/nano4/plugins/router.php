@@ -171,7 +171,11 @@ class Router
         }
         else
         { // Single def.
-          call_user_func_array([$parent, 'add'], $route);
+          $return = call_user_func_array([$parent, 'add'], $route);
+          if ($return && $parent instanceof Route && $return !== $parent)
+          {
+            $parent = $return;
+          }
         }
       }
     }

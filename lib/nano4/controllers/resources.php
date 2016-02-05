@@ -51,12 +51,20 @@ trait Resources
           'exists.jq',
         ],
         '#webapp' =>
-        [ // The use of Nano.js WebApp will be more common now.
+        [ // The Webapp library with Riot.js
           '#common',
           'riot-core',
           'riot.render',
           'coreutils',
+          'modelapi',
           'webapp',
+        ],
+        '#webcore' =>
+        [ // A simplified web app model core.
+          '#common',
+          'coreutils',
+          'observable',
+          'modelapi',
         ],
         '#base64' =>
         [ // Base64 encoding and decoding.
