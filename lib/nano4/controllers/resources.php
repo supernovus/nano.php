@@ -46,6 +46,7 @@ trait Resources
         [ // The base scripts we expect everywhere.
           'jquery', 
           'json3', 
+          'coreutils',
           'json.jq', 
           'disabled.jq',
           'exists.jq',
@@ -55,14 +56,12 @@ trait Resources
           '#common',
           'riot-core',
           'riot.render',
-          'coreutils',
           'modelapi',
           'webapp',
         ],
         '#webcore' =>
         [ // A simplified web app model core.
           '#common',
-          'coreutils',
           'observable',
           'modelapi',
         ],
@@ -80,7 +79,6 @@ trait Resources
           '#common',
           '#ace', 
           '#base64',
-          'coreutils',
           'editor',
         ],
       ],
