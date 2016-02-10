@@ -46,17 +46,24 @@ trait Resources
         [ // The base scripts we expect everywhere.
           'jquery', 
           'json3', 
+          'coreutils',
           'json.jq', 
           'disabled.jq',
           'exists.jq',
         ],
         '#webapp' =>
-        [ // The use of Nano.js WebApp will be more common now.
+        [ // The Webapp library with Riot.js
           '#common',
           'riot-core',
           'riot.render',
-          'coreutils',
+          'modelapi',
           'webapp',
+        ],
+        '#webcore' =>
+        [ // A simplified web app model core.
+          '#common',
+          'observable',
+          'modelapi',
         ],
         '#base64' =>
         [ // Base64 encoding and decoding.
@@ -72,7 +79,6 @@ trait Resources
           '#common',
           '#ace', 
           '#base64',
-          'coreutils',
           'editor',
         ],
       ],

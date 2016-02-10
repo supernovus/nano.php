@@ -26,9 +26,12 @@ class Router
 
   public $current; // The most recently matched route context.
 
-  public function known_routes ()
+  public function known_routes ($showAll=false)
   {
-    return array_keys($this->named);
+    if ($showAll)
+      return $this->routes;
+    else
+      return array_keys($this->named);
   }
 
   public function __construct ($opts=[])
@@ -50,6 +53,7 @@ class Router
       $nano->addMethod('addRedirect',  [$this, 'redirect']);
       $nano->addMethod('addPage',      [$this, 'display']);
       $nano->addMethod('setDefault',   [$this, 'setDefault']);
+      $nano->addMethod('loadRoutes',   [$this, 'load']);
     }
   }
 
@@ -142,6 +146,38 @@ class Router
     else
     {
       throw new \Exception("Unrecognized route sent to Router::add()");
+    }
+  }
+
+  public function load (Array $routes, $parent=null)
+  {
+/*    $msg = 'load('.json_encode($routes);
+    if (isset($parent))
+      $msg .= ', $parent';
+    $msg .= ')';
+    error_log($msg); */
+
+    if (!isset($parent))
+      $parent = $this;
+    foreach ($routes as $route)
+    {
+      if (is_array($route) && isset($route[0]))
+      {
+        if (is_array($route[0]) && isset($route[0][0]))
+        { // Nested route.
+          $topdef = array_shift($route);
+          $toproute = call_user_func_array([$parent,'add'], $topdef);
+          $this->load($route, $toproute);
+        }
+        else
+        { // Single def.
+          $return = call_user_func_array([$parent, 'add'], $route);
+          if ($return && $parent instanceof Route && $return !== $parent)
+          {
+            $parent = $return;
+          }
+        }
+      }
     }
   }
 
