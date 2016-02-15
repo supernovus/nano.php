@@ -5,11 +5,11 @@ namespace Nano4\DB;
 class WhereArray
 {
   public $where;
-  public $data;
+  public $whereData;
 
   public function __construct ($array, $join='AND')
   {
-    $this->where = $this->buildWhere($array, $this->data, $join);
+    $this->where = $this->buildWhere($array, $this->whereData, $join);
   }
 
   /**

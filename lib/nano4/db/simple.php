@@ -197,6 +197,7 @@ class Simple
    *             the row data rather than the statement object.
    *
    *  'fetch'    Change the PDO Fetch Mode. Default: PDO::FETCH_ASSOC.
+   *             Use 'true' for FETCH_BOTM or 'false' for FETCH_NUM.
    *
    * The 'where', 'cols', 'order', and 'limit' parameters can be Objects
    * with either properties of the same name within them, or a get_$prop()
@@ -217,11 +218,18 @@ class Simple
     {
       $query = $opts;
       $opts = [];
-      $pval = get_query_property('where');
-      if (isset($pval) && is_array($pval) && count($pval) == 2)
+      $pval = get_query_property($query, 'where');
+      if (isset($pval) && is_array($pval) && count($pval) == 2 && isset($pval[0]) && isset($pval[1]))
       {
         $opts['where'] = $pval[0];
         $opts['data']  = $pval[1];
+      }
+      elseif (isset($pval) && is_string($pval))
+      {
+        $opts['where'] = $pval;
+        $pval = get_query_property($query, 'whereData');
+        if (isset($pval))
+          $opts['data'] = $pval;
       }
       foreach (['cols','order','limit','offset','single','fetch'] as $prop)
       {
@@ -291,10 +299,17 @@ class Simple
       elseif (is_object($opts['where']))
       {
         $pval = get_query_property($opts['where'], 'where');
-        if (isset($pval) && is_array($pval) && count($pval) == 2)
+        if (isset($pval) && is_array($pval) && count($pval) == 2 && isset($pval[0]) && isset($pval[1]))
         {
           $sql .= $pval[0];
           $data = $pval[1];
+        }
+        elseif (isset($pval) && is_string($pval))
+        {
+          $sql .= $pval;
+          $pval = get_query_property($opts['where'], 'whereData');
+          if (isset($pval))
+            $data = $pval;
         }
         else
         {
@@ -370,12 +385,20 @@ class Simple
       }
     }
 
+    if (isset($opts['append']) && is_array($opts['append']))
+    {
+      $sql .= ' ' . $opts['append'];
+    }
+
     if (isset($opts['fetch']))
     {
       $fetch_mode = $opts['fetch'];
-      if (is_bool($fetch_mode) && !$fetch_mode)
-      { // Set to false to use 'flat' mode.
-        $fetch_mode = \PDO::FETCH_NUM;
+      if (is_bool($fetch_mode))
+      { // Set to true to use 'both' mode, or false to use 'flat' mode.
+        if ($fetch_mode)
+          $fetch_mode = \PDO::FETCH_BOTH;
+        else
+          $fetch_mode = \PDO::FETCH_NUM;
       }
     }
     else
@@ -423,7 +446,7 @@ class Simple
       $dlist = get_query_property($data, 'values');
       if (!isset($flist, $dlist))
       {
-        $pval = get_query_property($data, 'data');
+        $pval = get_query_property($data, 'columnData');
         if (isset($pval))
         {
           $data = $pval;
@@ -481,16 +504,23 @@ class Simple
     {
       $query = $where;
       $pval = get_query_property($query, 'where');
-      if (isset($pval))
+      if (isset($pval) && is_array($pval) && count($pval) == 2 && isset($pval[0]) && isset($pval[1]))
       {
         $where = $pval[0];
         $wdata = $pval[1];
+      }
+      elseif (isset($pval) && is_string($pval))
+      {
+        $where = $pval;
+        $pval = get_query_property($query, 'whereData');
+        if (isset($pval))
+          $wdata = $pval;
       }
       else
       {
         throw new \Exception(__CLASS__.": invalid WHERE object in update()");
       }
-      $pval = get_query_property($query, 'data');
+      $pval = get_query_property($query, 'columnData');
       if (isset($pval))
       {
         $cdata = $pval;
@@ -498,20 +528,16 @@ class Simple
     }
     if (is_object($cdata))
     {
-      $pval = get_query_property($cdata, 'data');
+      $pval = get_query_property($cdata, 'columnData');
       if (isset($pval))
       {
         $cdata = $pval;
-      }
-      else
-      {
-        throw new \Exception(__CLASS__.": invalid data object in update()");
       }
     }
 
     if (!is_array($cdata))
     {
-      throw new \Exception(__CLASS__.": invalid cdata passed to update()");
+      throw new \Exception(__CLASS__.": invalid column data passed to update()");
     }
 
     $set = join(",", map_fields(array_keys($cdata)));
@@ -592,8 +618,23 @@ class Simple
   /**
    * Row count.
    */
-  public function rowcount ($where=Null, $data=[], $colname='*')
+  public function rowcount ($where=null, $data=[], $colname='*')
   {
+    if (is_array($where))
+    {
+      if (isset($where['cols']))
+        $colname = $where['cols'];
+    }
+    elseif (is_object($where))
+    {
+      $pval = get_query_property($where, 'cols');
+      if (isset($pval))
+        $colname = $pval;
+    }
+    elseif (is_string($where))
+    {
+      $where = ['where'=>$where, 'data'=>$data];
+    }
     $want = ['cols'=>"count($colname)", 'fetch'=>false];
     if (isset($where))
       $want['where'] = $where;

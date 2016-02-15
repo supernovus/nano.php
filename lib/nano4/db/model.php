@@ -128,11 +128,11 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
    * If the hash is not set, or is false it returns null.
    * If our childclass is false, we return the unchanged row.
    */
-  public function wrapRow ($rowhash)
+  public function wrapRow ($rowhash, $opts=[])
   { 
     if ($rowhash)
     {
-      $object = $this->newChild($rowhash);
+      $object = $this->newChild($rowhash, $opts);
       if (isset($object))
         return $object;
       else
@@ -174,7 +174,12 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
         }
       }
     }
-    $class = $this->childclass;
+
+    if (isset($opts['childclass']))
+      $class = $opts['childclass'];
+    else
+      $class = $this->childclass;
+
     if ($class)
     {
       $class = $this->childclass;
@@ -223,39 +228,52 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
    * If it cannot find the resultclass, it instead executes the statement
    * and returns the PDOResult object.
    */
-  public function wrapResults ($results, $data=array(), $class=Null)
+  public function getResults ($query, $opts=[])
   {
-    if (!isset($class))
+    if (isset($query['resultclass']))
+      $class = $query['resultclass'];
+    elseif (isset($opts['resultclass']))
+      $class = $query['resultclass'];
+    else
       $class = $this->resultclass;
 
-    if (!$class)
+    if ($class && (!isset($opts['rawResults']) || !$opts['rawResults']))
     {
-      $query = $this->query($statement);
-      $query->execute($data);
-      return $query; // The raw query object.
+      $opts['parent'] = $this;
+      $opts['pk'] = $this->primary_key;
+      $opts['query'] = $query;
+      return new $class($opts);
     }
-
-    $object = new $class($statement, $data, $this, $this->primary_key);
-    return $object;
+    return $this->selectQuery($query, $opts);
   }
 
   /**
    * Select data.
    */
-  public function select ($query)
+  public function select ($query=[], $opts=[])
   {
+    if (isset($query['childclass']))
+      $opts['childclass'] = $query['childclass'];
     if (!isset($query['single']) || !$query['single']))
     {
-      return $this->wrapResults($query);
+      return $this->getResults($query, $opts);
     }
+    return $this->selectQuery($query, $opts);
+  }
+
+  /**
+   * The underlying select wrapper.
+   */
+  public function selectQuery ($query=[], $opts=[])
+  {
     $result = parent::select($this->table, $query);
-    if (isset($query['asHash'] && $query['asHash']))
+    if ((isset($opts['rawDocument']) && $opts['rawDocument']) || (isset($query['rawDocument'] && $query['rawDocument'])))
     {
       return $result;
     }
     else
     {
-      return $this->wrapRow($result);
+      return $this->wrapRow($result, $opts);
     }
   }
 
@@ -267,7 +285,7 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
     $want = 
     [
       'where'  => [$this->primary_key => $id], 
-      'asHash' => $ashash, 
+      'rawDocument' => $ashash, 
       'single' => true,
     ];
     if (isset($cols))

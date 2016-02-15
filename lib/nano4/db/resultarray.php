@@ -18,14 +18,45 @@ class ResultArray implements \ArrayAccess, \Countable, \Iterator
   protected $results;
   protected $primary_key = 'id';
 
-  public function __construct ($sql, $bind, $parent, $pk=Null)
+  // Compatibility with old constructor.
+  public function __construct ($opts, $bind=null, $parent=null, $pk=null)
   {
-    $this->parent = $parent;
-    $query = $this->parent->query($sql);
-    $query->execute($bind);
-    $this->results = $query->fetchAll();
+    if (is_array($opts) && isset($opts['parent']))
+      $this->parent = $opts['parent'];
+    elseif (isset($parent))
+      $this->parent = $parent;
+    else
+      throw new \Exception("No 'parent' specified in ResultArray constructor.");
+
+    if (is_array($opts) && isset($opts['query']))
+    {
+      $query = $opts['query'];
+      $sopts = $opts;
+    }
+    elseif (is_string($opts))
+    {
+      $sopts = [];
+      $query =
+      [
+        'where' => $opts,
+        'data'  => $bind,
+      ];
+    }
+    else
+    {
+      $sopts = [];
+      $query = [];
+    }
+
+    if (isset($opts['pk']))
+      $this->primary_ley = $opts['pk'];
     if (isset($pk))
       $this->primary_key = $pk;
+
+    $sopts['rawDocument'] = true;
+
+    $stmt = $this->parent->selectQuery($query, $sopts);
+    $this->results = $stmt->fetchAll();
   }
 
   // Iterator interface.

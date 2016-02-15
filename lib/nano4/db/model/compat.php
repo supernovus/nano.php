@@ -4,6 +4,10 @@ namespace Nano4\DB\Model;
 
 /**
  * Compatibility wrapper for the old DB\Model methods.
+ *
+ * We will eventually deprecate this, in which case we will add
+ * warning messages that will be displayed in the error logs, so we can
+ * track down any code using these old methods easier.
  */
 trait Compat
 {
@@ -15,7 +19,7 @@ trait Compat
     $where = "$field = :value";
     $data  = [':value'=>$value];
     $what  = 
-      ['where'=>$where, 'data'=>$data, 'single'=>true, 'asHash'=>$ashash];
+      ['where'=>$where, 'data'=>$data, 'single'=>true, 'rawDocument'=>$ashash];
     if (isset($cols))
       $what['cols'] = $cols;
     return $this->select($what);
@@ -30,7 +34,7 @@ trait Compat
    */
   public function getRowByFields ($fields, $ashash=False, $cols=null)
   {
-    $what = ['where'=>$fields, 'asHash'=>$ashash, 'single'=>true];
+    $what = ['where'=>$fields, 'rawDocument'=>$ashash, 'single'=>true];
     if (isset($cols))
       $what['cols'] = $cols;
     return $this->select($what);
@@ -41,7 +45,7 @@ trait Compat
    */
   public function getRowWhere ($where, $data=[], $ashash=False, $cols=null)
   {
-    $what = ['where'=>$where, 'data'=>$data, 'asHash'=>$ashash, 'single'=>true];
+    $what = ['where'=>$where, 'data'=>$data, 'rawDocument'=>$ashash, 'single'=>true];
     if (isset($cols))
       $what['cols'] = $cols;
     return $this->select($what);
@@ -52,33 +56,25 @@ trait Compat
    */
   public function listRows ($stmt, $data, $cols=Null)
   {
-    // TODO: finish this.
-    $cols = $this->get_cols($cols);
-    $query = "SELECT $cols FROM {$this->table} $stmt";
-#    error_log($query);
-    return $this->execute($query, $data);
+    $what = ['where'=>$stmt, 'data'=>$data];
+    if (isset($cols))
+      $what['cols'] = $cols;
+    return $this->select($what);
   }
 
   /**
    * Return a result set using a map of fields.
    */
-  public function listByFields ($fields, $cols=Null, $append=Null, $data=[])
+  public function listByFields ($fields, $cols=Null, $append=Null, $data=null)
   {
-    // TODO: finish this.
-    if (isset($fields))
-    {
-      $stmt  = "WHERE ";
-      $stmt .= $this->buildWhere($fields, $data);
-    }
-    else
-    {
-      $stmt = '';
-    }
+    $what = ['where'=>$fields];
+    if (isset($data))
+      $what['data'] = $data;
+    if (isset($cols))
+      $what['cols'] = $cols;
     if (isset($append))
-    {
-      $stmt .= " $append";
-    }
-    return $this->listRows($stmt, $data, $cols);
+      $what['append'] = $append;
+    return $this->select($what);
   }
 
 }

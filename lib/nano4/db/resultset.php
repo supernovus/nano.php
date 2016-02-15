@@ -7,31 +7,59 @@
 
 namespace Nano4\DB;
 
-class ResultSet implements \Iterator
+class ResultSet implements \Iterator, \Countable
 {
   protected $query;       // The SQL query we represent.
-  protected $bind;        // The bound data for the execute() statement.
   protected $parent;      // The DBModel which called us.
+
+  protected $class_opts;  // Our constructor options.
 
   protected $results;     // The PDOResult object representing our results.
   protected $current;     // The current item.
 
   protected $primary_key = 'id'; // The primary key used by our table.
 
-  public function __construct ($query, $bind, $parent, $primary_key=Null)
+  // Compatibility with the old constructor.
+  public function __construct ($opts, $bind=null, $parent=null, $pk=null)
   {
-    $this->query       = $query;
-    $this->bind        = $bind;
-    $this->parent      = $parent;
-    if (isset($primary_key))
+    if (is_array($opts) && isset($opts['parent']))
+      $this->parent = $opts['parent'];
+    elseif (isset($parent))
+      $this->parent = $parent;
+    else
+      throw new \Exception("No 'parent' specified in ResultSet constructor.");
+
+    if (is_array($opts) && isset($opts['query']))
+    {
+      $this->class_opts = $opts;
+      $this->query = $opts['query'];
+    }
+    elseif (is_string($opts))
+    {
+      $this->class_opts = [];
+      $this->query =
+      [
+        'where' => $opts,
+        'data'  => $bind,
+      ];
+    }
+    else
+    {
+      $this->class_opts = [];
+      $this->query = [];
+    }
+
+    if (isset($opts['pk']))
+      $this->primary_key = $opts['pk'];
+    elseif (isset($pk))
       $this->primary_key = $primary_key;
   }
 
   public function rewind ()
   {
-    $query = $this->parent->query($this->query);
-    $query->execute($this->bind);
-    $this->results = $query;
+    $opts = $this->class_opts;
+    $opts['rawDocument'] = true;
+    $this->results = $this->parent->selectQuery($this->query, $opts);
     $this->next();
   }
 
@@ -72,6 +100,11 @@ class ResultSet implements \Iterator
       $map[$item[$keyattr]] = $item[$valattr];
     }
     return $map;
+  }
+
+  public function count ()
+  {
+    return $this->parent->rowcount($this->query);
   }
 
 }
