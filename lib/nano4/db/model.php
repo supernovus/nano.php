@@ -152,7 +152,7 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
    * of default value (if not specified in the known_fields array, the
    * default value depends on the $this->default_null setting.)
    */
-  public function newChild ($data=array())
+  public function newChild ($data=[], $opts=[])
   {
     if (isset($this->known_fields) && is_array($this->known_fields))
     {

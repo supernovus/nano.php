@@ -234,7 +234,7 @@ class Item implements \ArrayAccess
    * insert a new record into the database, and in the case of auto-generated
    * primary keys, update our primary key field to point to the new record.
    */
-  public function save ()
+  public function save ($opts=[])
   {
     $pk = $this->primary_key;
     if (isset($this->data[$pk]) && !isset($this->modified_data[$pk]))
