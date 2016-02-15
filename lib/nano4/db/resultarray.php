@@ -53,7 +53,7 @@ class ResultArray implements \ArrayAccess, \Countable, \Iterator
     if (isset($pk))
       $this->primary_key = $pk;
 
-    $sopts['rawDocument'] = true;
+    $sopts['rawRow'] = true;
 
     $stmt = $this->parent->selectQuery($query, $sopts);
     $this->results = $stmt->fetchAll();

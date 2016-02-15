@@ -14,7 +14,7 @@ class Item implements \ArrayAccess
 {
   public $parent;              // The DBModel object that created us.
   protected $data;             // The hash data returned from a query.
-  protected $table;            // The database table to update with save().
+  protected $table;            // The database table we belong to.
   protected $modified_data;    // Fields we have modified.
   protected $save_value;       // Used in batch operations.
   public $auto_save = False;   // Do we want to auto-save changes?
@@ -40,15 +40,35 @@ class Item implements \ArrayAccess
   // used when finding the id of a newly created row.
   public $new_query_fields;
 
-  // Can't get much easier than this.
-  public function __construct ($data, $parent, $table, $primary_key=Null)
+  // Build a new object.
+  public function __construct ($opts, $parent=null, $table=null, $pk=null)
   { 
-    $this->data        = $data;
-    $this->parent      = $parent;
-    $this->table       = $table;
-    if (isset($primary_key))
-      $this->primary_key = $primary_key;
-    $this->modified_data = array();
+    if (isset($opts, $opts['parent']) && !isset($parent))
+    { // Using new-style constructor.
+      $this->parent = $opts['parent'];
+      if (isset($opts['data']))
+        $this->data = $opts['data'];
+      else
+        $this->data = [];
+      if (isset($opts['table']))
+        $this->table = $opts['table'];
+      if (isset($opts['pk']))
+        $this->primary_key = $opts['pk'];
+    }
+    elseif (isset($opts, $parent))
+    { // Using old-style constructor.
+      $this->data   = $opts;
+      $this->parent = $parent;
+      if (isset($table))
+        $this->table = $table;
+      if (isset($pk))
+        $this->primary_key = $pk;
+    }
+    else
+    {
+      throw new \Exception("Invalid constructor for DB\Item");
+    }
+    $this->modified_data = [];
   }
 
   /** 
@@ -236,35 +256,30 @@ class Item implements \ArrayAccess
    */
   public function save ($opts=[])
   {
-    $pk = $this->primary_key;
+    if (isset($opts['pk']))
+      $pk = $opts['pk'];
+    else
+      $pk = $this->primary_key;
     if (isset($this->data[$pk]) && !isset($this->modified_data[$pk]))
     { // Update an existing row.
       if (count($this->modified_data)==0) return;
-      $sql = "UPDATE {$this->table} SET ";
-      $data = array($pk=>$this->data[$pk]);
       $fields = array_keys($this->modified_data);
+      $cdata  = [];
       $fc = count($fields);
       for ($i=0; $i< $fc; $i++)
       {
         $field = $fields[$i];
         if ($field == $pk) continue; // Sanity check.
-        $data[$field] = $this->data[$field];
-        $sql .= "$field = :$field";
-        if ($i != $fc -1)
-        {
-          $sql .= ', ';
-        }
+        $cdata[$field] = $this->data[$field];
       }
-      $sql .= " WHERE $pk = :$pk";
-      $query = $this->parent->query($sql);
-      $query->execute($data);
-      $this->modified_data = [];
+      $where = [$pk => $this->data[$pk]];
+      $this->parent->update($where, $cdata);
       return True;
     }
     else
     { // Insert a new row.
       $model = $this->parent;
-      $opts = array('return'=>$model::return_key);
+      $opts = ['return'=>$model::return_key];
       if ($this->auto_generated_pk)
         $setpk = False;
       else
@@ -274,10 +289,10 @@ class Item implements \ArrayAccess
         $opts['allowpk'] = True;
 
       if (isset($this->new_query_fields))
-        $opts['columns'] = $this->new_query_fields;
+        $opts['cols'] = $this->new_query_fields;
 
       // Insert the row and get the new primary key.
-      $newpk = $this->parent->newRow($this->data, $opts);
+      $newpk = $this->parent->insert($this->data, $opts);
 
       // Clear the modified data.
       $this->modified_data = [];
@@ -300,10 +315,8 @@ class Item implements \ArrayAccess
   public function delete ()
   {
     $pk = $this->primary_key;
-    $sql = "DELETE FROM {$this->table} WHERE $pk = :$pk";
-    $query = $this->parent->query($sql);
-    $data = array ($pk => $this->data[$pk]);
-    $query->execute($data);
+    $where = [$pk => $this->data[$pk]];
+    return $this->parent->delete($where);
   }
 
   /** 

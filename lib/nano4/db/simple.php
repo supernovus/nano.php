@@ -206,6 +206,8 @@ class Simple
    * Alternatively, the entire $opts structure can be such an Object, and all
    * options will be derived from the object properties or methods.
    *
+   * @return mixed    Either a PDOStatement or a single Row in native format.
+   *
    */
   public function select ($table, $opts=[])
   {
@@ -434,10 +436,11 @@ class Simple
   /**
    * Create a new row.
    *
-   * @param String $table  The table to insert the data into.
-   * @param Array  $data   An associative array of data we're inserting.
+   * @param string $table   The table to insert the data into.
+   * @param array  $data    An associative array of data we're inserting.
+   * @return array          [$pdo_stmt, $data]
    */
-  public function insert ($table, $data)
+  public function insert ($table, $data, $return=0)
   {
     $flist = $dlist = null;
     if (is_object($data))
@@ -481,7 +484,7 @@ class Simple
       $this->handle_stmt_error($einfo, ['statement'=>$sql,'data'=>$data]);
     }
 
-    return $stmt;
+    return [$stmt, $data, $einfo];
   }
 
   /**
@@ -491,6 +494,7 @@ class Simple
    * @param Mixed  $where  The WHERE statement.
    * @param Array  $cdata  The columns we are updating.
    * @param Array  $wdata  The WHERE placeholder data (see below.)
+   * @return array         [$pdo_stmt, $cdata, $wdata, $errorInfo]
    *
    * If $where is an Array, then it's a standalone WHERE clause, and
    * the $wdata parameter is not needed (and will be ignored.)
@@ -566,7 +570,7 @@ class Simple
       $this->handle_stmt_error($einfo, ['statement'=>$sql,'data'=>$data]);
     }
 
-    return $stmt;
+    return [$stmt, $cdata, $wdata, $einfo];
   }
 
   /**
@@ -575,7 +579,7 @@ class Simple
    * @param string $table  The table to delete from.
    * @param Mixed  $where  The WHERE statement.
    * @param Array  $wdata  The WHERE placeholder data (same as update.)
-   *
+   * @return PDOStatement  The PDO Statement object.
    */
   public function delete ($table, $where, $wdata=null)
   {

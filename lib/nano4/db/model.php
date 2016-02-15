@@ -22,8 +22,8 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
   protected $resultclass;    // Class name for iterable result set. 
                              // Must extend the \Nano4\DB\ResultSet class.
 
-  protected $primary_key;    // The primary key on the database table.
-                             // Defaults to 'id' if not specified.
+  protected $primary_key = 'id'; // The primary key on the database table.
+                                 // Defaults to 'id' if not specified.
 
   protected $resultset;      // Used if you use the iterator interface.
 
@@ -64,10 +64,6 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
       $this->resultclass = $opts['resultclass'];
     if (isset($opts['primary_key']))
       $this->primary_key = $opts['primary_key'];
-    elseif (!isset($this->primary_key))
-      $this->primary_key = 'id';
-
-    $pk = $this->primary_key;
 
     if (isset($opts['parent']))
       $this->parent = $opts['parent'];
@@ -130,6 +126,8 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
    */
   public function wrapRow ($rowhash, $opts=[])
   { 
+    if (isset($opts['rawRow']) && $opts['rawRow'])
+      return $rowhash;
     if ($rowhash)
     {
       $object = $this->newChild($rowhash, $opts);
@@ -182,8 +180,12 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
 
     if ($class)
     {
+      $opts['parent'] = $this;
+      $opts['data']   = $data;
+      $opts['pk']     = $this->primary_key;
+      $opts['table']  = $this->table;
       $class = $this->childclass;
-      $object = new $class($data, $this, $this->table, $this->primary_key);
+      $object = new $class($opts);
       return $object;
     }
   }
@@ -252,9 +254,23 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
    */
   public function select ($query=[], $opts=[])
   {
-    if (isset($query['childclass']))
-      $opts['childclass'] = $query['childclass'];
-    if (!isset($query['single']) || !$query['single']))
+    if (is_array($query))
+    {
+      if (isset($query['childclass']))
+        $opts['childclass'] = $query['childclass'];
+      if (isset($query['rawResults']))
+        $opts['rawResults'] = $query['rawResults'];
+    }
+    elseif (is_object($query))
+    {
+      $pval = get_query_property($query, 'childclass');
+      if (isset($pval))
+        $opts['childclass'] = $pval;
+      $pval = get_query_property($query, 'rawResults');
+      if (isset($pval))
+        $opts['rawResults'] = $pval;
+    }
+    if (!isset($query['single']) || !$query['single'])
     {
       return $this->getResults($query, $opts);
     }
@@ -267,7 +283,26 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
   public function selectQuery ($query=[], $opts=[])
   {
     $result = parent::select($this->table, $query);
-    if ((isset($opts['rawDocument']) && $opts['rawDocument']) || (isset($query['rawDocument'] && $query['rawDocument'])))
+    $raw = false;
+    if (isset($opts['rawRow']) && $opts['rawRow'])
+      $raw = true;
+    elseif (is_array($query) && isset($query['rawRow']) && $query['rawRow'])
+      $raw = true;
+    elseif (is_object($query))
+    {
+      $pval = get_query_property($query, 'rawRow');
+      if ($pval)
+      {
+        $raw = true;
+      }
+      else
+      {
+        $pval = get_query_property($query, 'raw');
+        if ($pval)
+          $raw = true;
+      }
+    }
+    if ($raw)
     {
       return $result;
     }
@@ -285,7 +320,7 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
     $want = 
     [
       'where'  => [$this->primary_key => $id], 
-      'rawDocument' => $ashash, 
+      'rawRow' => $ashash, 
       'single' => true,
     ];
     if (isset($cols))
@@ -312,64 +347,16 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
    * the primary key field. As the output of an insert is not consistent
    * we just return the query object, if you're at all interested.
    */
-  public function newRow ($row, $opts=array())
+  public function insert ($row, $opts=[])
   { // Check for options.
-    // TODO: port this
-    if (isset($opts['table']))
-      $table = $opts['table'];
-    else
-      $table = $this->table;
-    if (isset($opts['allowpk']))
-      $allowpk = $opts['allowpk'];
-    else
-      $allowpk = False;
-    if (isset($opts['pk']))
-      $pk = $opts['pk'];
-    else
-      $pk = $this->primary_key;
-
-    // Now let's do this.
-    $sql = "INSERT INTO $table ";
-    $fieldnames = '(';
-    $fieldvals  = '(';
-    $fielddata  = array();
-    $keys = array_keys($row);
-    $kc   = count($row);
-    for ($i=0; $i < $kc; $i++)
-    {
-      $key = $keys[$i];
-      if ($key == $pk && !$allowpk) continue; // Skip primary key.
-      $fieldnames .= $key;
-      $fieldvals  .= ':'.$key;
-      $fielddata[$key] = $row[$key];
-      if ($i != $kc - 1)
-      {
-        $fieldnames .= ', ';
-        $fieldvals  .= ', ';
-      }
-    }
-    $fieldnames .= ')';
-    $fieldvals  .= ')';
-    $sql .= "$fieldnames VALUES $fieldvals";
-#    error_log("newRow. sql = \"$sql\" and fields = ".json_encode($fielddata));
-#    error_log("newRow.fielddata: ".json_encode($fielddata));
-    $query = $this->query($sql);
-    $query->execute($fielddata);
-    $einfo = $query->errorInfo();
-    if ($einfo[0] !== $this::success)
-    {
-      $this->handle_stmt_error($einfo, ['statement'=>$sql, 'data'=>$fielddata]);
-    }
-#    error_log("sterr: ".json_encode($query->errorInfo()));
-#    error_log("dberr: ".json_encode($this->db->errorInfo()));
-#
+    list($stmt,$fielddata) = parent::insert($this->table, $row);
     if (isset($opts['return']))
     {
       $return_type = $opts['return'];
-      if (isset($opts['columns']) && is_array($opts['columns']))
+      if (isset($opts['cols']) && is_array($opts['cols']))
       {
         $fields = [];
-        foreach ($opts['columns'] as $colname)
+        foreach ($opts['cols'] as $colname)
         {
           $fields[$colname] = $fielddata[$colname];
         }
@@ -378,20 +365,24 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
       {
         $fields = $fielddata;
       }
+      $what = ['where'=>$fields, 'single'=>true];
       if ($return_type == $this::return_row)
       {
 #        error_log("Return Row object: ".json_encode($fields));
-        return $this->getRowByFields($fields);
+        return $this->select($what);
       }
       elseif ($return_type == $this::return_raw)
       {
-        return $this->getRowByFields($fields, True); 
+        $what['rawRow'] = true;
+        return $this->select($what); 
       }
       elseif ($return_type == $this::return_key)
       {
 #        error_log("fields: ".json_encode($fields));
 #        error_log("pk: $pk");
-        $rawrow = $this->getRowByFields($fields, True, $pk);
+        $what['rawRow'] = true;
+        $what['cols']   = $this->primary_key;
+        $rawrow = $this->select($what);
 #        error_log("rawrow: ".json_encode($rawrow));
         if (isset($rawrow) && isset($rawrow[$pk]))
         {
@@ -403,7 +394,23 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
         }
       }
     }
-    return $query;
+    return $stmt;
+  }
+
+  /**
+   * Update row(s).
+   */
+  public function update ($where, $cdata=null, $wdata=null)
+  {
+    return parent::update($this->table, $where, $cdata, $wdata);
+  }
+
+  /**
+   * Delete row(s).
+   */
+  public function delete ($where, $wdata=null)
+  {
+    return parent::delete($this->table, $where, $wdata);
   }
 
   // Iterator interface to use a DBModel in a foreach loop.

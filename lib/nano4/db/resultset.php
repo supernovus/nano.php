@@ -58,7 +58,7 @@ class ResultSet implements \Iterator, \Countable
   public function rewind ()
   {
     $opts = $this->class_opts;
-    $opts['rawDocument'] = true;
+    $opts['rawRow'] = true;
     $this->results = $this->parent->selectQuery($this->query, $opts);
     $this->next();
   }
