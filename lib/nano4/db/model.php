@@ -3,16 +3,9 @@
 namespace Nano4\DB;
 
 /**
- * A base class for database-driven models.
- *
- * It wraps around the PDO library, and provides some very simplistic
- * ORM capabilities. You don't have to use them, but if you want them
- * they are there. The built-in ORM represents a single table. 
- * For more advanced methods such a multi-table support, you can use the
- * query() method directly and write methods in your extended class.
+ * An object oriented database model library.
  */
-
-abstract class Model extends Simple implements \Iterator, \ArrayAccess
+abstract class Model implements \Iterator, \ArrayAccess
 {
   use \Nano4\Meta\ClassID;   // Adds $__classid and class_id()
 
@@ -25,6 +18,8 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
   protected $primary_key = 'id'; // The primary key on the database table.
                                  // Defaults to 'id' if not specified.
 
+  protected $db;             // A DB\Simple object.
+
   protected $resultset;      // Used if you use the iterator interface.
 
   public $parent;            // The object which spawned us.
@@ -36,7 +31,7 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
 
   public $default_value = null; // Fields will be set to this by default.
 
-  protected $serialize_ignore = ['db', 'resultset'];
+  protected $serialize_ignore = ['resultset']; // Ignore when serializing.
 
   // Constants used in the newRow() method.
   const return_row = 1; // Return a proper Row object.
@@ -48,11 +43,19 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
    */
   public function __construct ($opts=array())
   {
-    parent::__construct($opts, true);
+    // First, build our Simple DB object.
+    // It will throw an exception of there are missing parameters.
+    $this->db = new Simple($opts, true);
 
     // Initialize our classid that is passed from the module loader.
     if (isset($opts['__classid']))
       $this->__classid = $opts['__classid'];
+
+    // Add our parent class, usually the current Controller.
+    if (isset($opts['parent']))
+      $this->parent = $opts['parent'];
+
+    // Check for a bunch of other options.
 
     if (isset($opts['table']))
       $this->table = $opts['table'];
@@ -65,8 +68,6 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
     if (isset($opts['primary_key']))
       $this->primary_key = $opts['primary_key'];
 
-    if (isset($opts['parent']))
-      $this->parent = $opts['parent'];
   }
 
   public function __sleep ()
@@ -76,19 +77,13 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
     {
       unset($properties[$ignored]);
     }
+    unset($this->db->db); // Delete the PDO object.
     return array_keys($properties);
   }
 
   public function __wakeup ()
   {
-    $this->dbconnect($this->db_conf);
-  }
-
-  // Internal function, used by __construct and __wakeup.
-  protected function dbconnect ($conf)
-  {
-    parent::dbconnect($conf);
-    $this->db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+    $this->db->reconnect();
   }
 
   /**
@@ -96,7 +91,7 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
    */
   public function get_table ()
   {
-    return $this->table;
+    return $this->db->table;
   }
 
   /**
@@ -115,7 +110,7 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
    */
   public function database_name ()
   {
-    return $this->name;
+    return $this->db->name;
   }
 
   /** 
@@ -282,7 +277,7 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
    */
   public function selectQuery ($query=[], $opts=[])
   {
-    $result = parent::select($this->table, $query);
+    $result = $this->db->select($this->table, $query);
     $raw = false;
     if (isset($opts['rawRow']) && $opts['rawRow'])
       $raw = true;
@@ -349,7 +344,7 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
    */
   public function insert ($row, $opts=[])
   { // Check for options.
-    list($stmt,$fielddata) = parent::insert($this->table, $row);
+    list($stmt,$fielddata) = $this->db->insert($this->table, $row);
     if (isset($opts['return']))
     {
       $return_type = $opts['return'];
@@ -403,7 +398,7 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
    */
   public function update ($where, $cdata=null, $wdata=null)
   {
-    return parent::update($this->table, $where, $cdata, $wdata);
+    return $this->db->update($this->table, $where, $cdata, $wdata);
   }
 
   /**
@@ -411,7 +406,15 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
    */
   public function delete ($where, $wdata=null)
   {
-    return parent::delete($this->table, $where, $wdata);
+    return $this->db->delete($this->table, $where, $wdata);
+  }
+
+  /**
+   * Generate a prepared statement.
+   */
+  public function query ($statement)
+  {
+    return $this->db->query($statement);
   }
 
   // Iterator interface to use a DBModel in a foreach loop.

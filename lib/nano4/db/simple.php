@@ -137,6 +137,31 @@ class Simple
       $this->db = new \PDO($conf['dsn'], $conf['user'], $conf['pass']);
     else
       $this->db = new \PDO($conf['dsn']);
+
+    if (isset($conf['silent']) && $conf['silent'])
+      $this->db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_SILENT);
+    elseif (isset($conf['exception']) && $conf['exception'])
+      $this->db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+    elseif (isset($conf['warning']) && $conf['warning'])
+      $this->db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_WARNING);
+
+    if (isset($conf['lowercase']) && $conf['lowercase'])
+      $this->db->setAttribute(\PDO::ATTR_CASE, \PDO::CASE_LOWER);
+    elseif (isset($conf['uppercase']) && $conf['uppercase'])
+      $this->db->setAttribute(\PDO::ATTR_CASE, \PDO::CASE_UPPER);
+    elseif (isset($conf['natural']) && $conf['natural'])
+      $this->db->setAttribute(\PDO::ATTR_CASE, \PDO::CASE_NATURAL);
+  }
+
+  /**
+   * Reconnect to the database, requires db_conf 
+   */
+  public function reconnect ()
+  {
+    if (isset($this->db_conf))
+      $this->dbconnect($this->db_conf);
+    else
+      throw new \Exception("cannot reconnect() without saved db_conf");
   }
 
   /**
