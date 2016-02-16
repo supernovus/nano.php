@@ -33,7 +33,7 @@ trait Pages
     }
 
     // If no default sort order has been specified, we do it now.
-    if (!isset($this->get_default_sort_order()))
+    if (!$this->get_default_sort_order())
     {
       $sort_orders = array_keys($this->get_sort_orders());
       $this->set_default_sort_order($sort_orders[0]);

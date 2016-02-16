@@ -378,10 +378,11 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
       }
       elseif ($return_type == $this::return_key)
       {
+        $pk = $this->primary_key;
 #        error_log("fields: ".json_encode($fields));
 #        error_log("pk: $pk");
         $what['rawRow'] = true;
-        $what['cols']   = $this->primary_key;
+        $what['cols']   = $pk;
         $rawrow = $this->select($what);
 #        error_log("rawrow: ".json_encode($rawrow));
         if (isset($rawrow) && isset($rawrow[$pk]))
@@ -461,9 +462,8 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
 
   public function offsetUnset ($offset)
   {
-    $sql = "DELETE FROM {$this->table} WHERE id = :id";
-    $query = $this->query($sql);
-    $query->execute(array(':id'=>$offset));
+    $pk = $this->primary_key;
+    return $this->delete([$pk=>$offset]);
   }
 
   public function offsetSet ($offset, $value)

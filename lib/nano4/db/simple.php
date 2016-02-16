@@ -167,6 +167,7 @@ class Simple
     {
       $this->handle_db_error($einfo, ['statement'=>$statement]);
     }
+    return $query;
   }
 
   /**
@@ -248,7 +249,7 @@ class Simple
     {
       if (is_array($opts['cols']))
       {
-        $cols = json(',', $cols);
+        $cols = join(',', $opts['cols']);
       }
       elseif (is_string($opts['cols']))
       {
@@ -262,13 +263,14 @@ class Simple
       }
     }
 
-    $sql = "SELECT $cols FROM $table";
+    $sql = "SELECT $cols FROM $table ";
     
     $data = null;
 
     if (isset($opts['where']))
     {
-      $sql .= " WHERE ";
+      if (!is_string($opts['where']) || strpos($opts['where'],'WHERE')===false)
+        $sql .= "WHERE ";
       if (is_array($opts['where']))
       {
         $nulls = array_keys($opts['where'], null, true);
@@ -440,7 +442,7 @@ class Simple
    * @param array  $data    An associative array of data we're inserting.
    * @return array          [$pdo_stmt, $data]
    */
-  public function insert ($table, $data, $return=0)
+  public function insert ($table, $data)
   {
     $flist = $dlist = null;
     if (is_object($data))
@@ -639,7 +641,13 @@ class Simple
     {
       $where = ['where'=>$where, 'data'=>$data];
     }
-    $want = ['cols'=>"count($colname)", 'fetch'=>false];
+    $want = 
+    [
+      'cols'=>"count($colname)", 
+      'fetch'=>false, 
+      'rawRow'=>true,
+      'rawResults'=>true,
+    ];
     if (isset($where))
       $want['where'] = $where;
     $stmt = $this->select($want);

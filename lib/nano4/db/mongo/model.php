@@ -1,6 +1,7 @@
 <?php
 
 namespace Nano4\DB\Mongo;
+use \MongoDB\BSON\ObjectID;
 
 /**
  * MongoDB base class for object models.
@@ -17,9 +18,15 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
   protected $childclass;
   protected $resultclass;
 
+  protected $primary_key = '_id';
+
   // By default we save the build opts in the Model class.
   // Override in subclasses, or by using a model config: "saveOpts":false
   protected $save_build_opts = true;
+
+  protected $resultset;
+
+  protected $serialize_ignore = ['server','db','data','resultset'];
 
   public function __construct ($opts=[])
   {
@@ -39,8 +46,27 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
     {
       $this->resultclass = $opts['resultclass'];
     }
+    if (isset($opts['primary_key']))
+    {
+      $this->primary_key = $opts['primary_key'];
+    }
 
     parent::__construct($opts);
+  }
+
+  public function __sleep ()
+  {
+    $properties = get_object_vars($this);
+    foreach ($this->serialize_ignore as $ignored)
+    {
+      unset($properties[$ignored]);
+    }
+    return array_keys($properties);
+  }
+
+  public function __wakeup ()
+  {
+    $this->get_collection();
   }
 
   public function wrapRow ($data, $opts=[])
@@ -116,4 +142,112 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
     return $this->wrapRow($result, $classopts);
   }
 
+  public function getDocById ($id, $findopts=[], $classopts=[])
+  {
+    if (is_string($id))
+    {
+      $id = new ObjectID($id);
+    }
+    if (!($id instanceof ObjectID))
+    {
+      throw new \Exception("invalid id passed to getDocById");
+    }
+    $pk = $this->primary_key;
+    return $this->findOne([$pk => $id], $findopts, $classopts);
+  }
+
+  public function save ($doc)
+  {
+    $pk = $this->primary_key;
+    if (isset($doc[$pk]))
+    {
+      if (is_string($doc[$pk]))
+      {
+        $doc[$pk] = new ObjectID($doc[$pk]);
+      }
+      elseif (is_array($doc[$pk]) && isset($doc[$pk]['$id']))
+      {
+        $doc[$pk] = new ObjectID($doc[$pk]['$id']);
+      }
+      $find = [$pk => $doc[$pk]];
+      $res = $this->data->replaceOne($find, $doc);
+      $isnew = 0;
+    }
+    else
+    {
+      $res = $this->data->insertOne($doc);
+      $isnew = 1;
+    }
+    return [$isnew, $status, $doc];
+  }
+
+  public function deleteId ($id)
+  {
+    $pk = $this->primary_key;
+    if (is_string($id))
+    {
+      $id = new ObjectId($id);
+    }
+    return $this->data->deleteOne([$pk => $id]);
+  }
+
+  // Iterator interface
+
+  public function rewind ()
+  {
+    $this->resultset = $this->find();
+    return $this->resultset->rewind();
+  }
+
+  public function current ()
+  {
+    $this->resultset->current();
+  }
+
+  public function next ()
+  {
+    $this->resultset->next();
+  }
+
+  public function key ()
+  {
+    $this->resultset->key();
+  }
+
+  public function valid ()
+  {
+    $this->resultset->valid();
+  }
+
+  // ArrayAccess interface.
+
+  public function offsetGet ($offset)
+  {
+    return $this->getDocById($offset);
+  }
+
+  public function offsetExists ($offset)
+  {
+    $doc = $this->getDocById($offset);
+    if ($doc)
+      return true;
+    return false;
+  }
+
+  public function offsetSet ($offset, $doc)
+  {
+    $pk = $this->primary_key;
+    $id = new ObjectID($offset);
+    $doc->$pk = $id;
+    if (is_callable([$doc, 'save']))
+      $doc->save();
+    else
+      $this->save($doc);
+  }
+
+  public function offsetUnset ($offset)
+  {
+    return $this->deleteId($offset);
+  }
 }
+
