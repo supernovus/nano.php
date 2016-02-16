@@ -649,7 +649,7 @@ class Simple
   /**
    * Row count.
    */
-  public function rowcount ($where=null, $data=[], $colname='*')
+  public function rowcount ($table, $where=null, $data=[], $colname='*')
   {
     if (is_array($where))
     {
@@ -666,16 +666,10 @@ class Simple
     {
       $where = ['where'=>$where, 'data'=>$data];
     }
-    $want = 
-    [
-      'cols'=>"count($colname)", 
-      'fetch'=>false, 
-      'rawRow'=>true,
-      'rawResults'=>true,
-    ];
+    $want = ['cols'=>"count($colname)", 'fetch'=>false];
     if (isset($where))
       $want['where'] = $where;
-    $stmt = $this->select($want);
+    $stmt = $this->select($table, $want);
     $row = $stmt->fetch();
     return $row[0];
   }

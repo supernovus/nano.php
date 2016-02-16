@@ -417,6 +417,14 @@ abstract class Model implements \Iterator, \ArrayAccess
     return $this->db->query($statement);
   }
 
+  /**
+   * Return a row count
+   */
+  public function rowcount ($where=null, $data=[], $colname='*')
+  {
+    return $this->db->rowcount($this->table, $where, $data, $colname);
+  }
+
   // Iterator interface to use a DBModel in a foreach loop.
   // If you attempt to use this with resultclass set to false,
   // things will break, badly. Just don't do it.
