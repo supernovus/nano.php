@@ -15,6 +15,8 @@ namespace Nano4\Models;
 
 class Users extends \Nano4\DB\Model
 {
+  use \Nano4\DB\Model\Compat;
+
   protected $childclass  = '\Nano4\Models\User';
   protected $resultclass = '\Nano4\DB\ResultSet';
 

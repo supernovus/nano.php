@@ -22,6 +22,8 @@ namespace Nano4\Models;
 
 class User extends \Nano4\DB\Item
 {
+  use \Nano4\DB\Model\Compat;
+
   /**
    * Change our password.
    *
