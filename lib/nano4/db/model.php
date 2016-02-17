@@ -97,7 +97,7 @@ abstract class Model implements \Iterator, \ArrayAccess
    */
   public function get_table ()
   {
-    return $this->db->table;
+    return $this->table;
   }
 
   /**
