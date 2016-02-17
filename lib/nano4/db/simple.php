@@ -92,21 +92,31 @@ class Simple
    *
    * If $keep_config is true, then the configuration is stored in the
    * protected $db_conf property.
+   *
+   * You can specify a 'saveConf' or 'saveOpts' configuration parameter which
+   * overrides the $keep_config option.
+   *
+   * You can also specify a 'noConnect' option, which if true, will prevent
+   * the initial database connection. When not connected to a database, 
    */
   public function __construct ($conf, $keep_config=false)
   {
+    if (isset($conf['saveConf']))
+      $keep_config = $conf['saveConf'];
+    elseif (isset($conf['saveOpts']))
+      $keep_config = $conf['saveOpts'];
+
+    $noConnect = isset($conf['noConnect']) ? $conf['noConnect'] : false;
+
     if (is_string($conf))
     {
-      if (strpos($conf, '{') === False)
-      { // No { symbol, we assume it's a filename.
-        $conf = file_get_contents($conf);
-      }
-      $conf = json_decode($conf, true);
+      $conf = $this->load_conf($conf);
     }
 
     if (is_array($conf) && isset($conf['dsn']))
     {
-      $this->dbconnect($conf);
+      if (!$noConnect)
+        $this->dbconnect($conf);
       
       if (isset($conf['sid']))
         $this->server_id = $conf['sid'];
@@ -126,6 +136,19 @@ class Simple
     {
       throw new \Exception(__CLASS__.": invalid database configuration");
     }    
+  }
+
+  /**
+   * Load a configuration file or string into an array.
+   */
+  public static function load_conf ($conf)
+  {
+    if (strpos($conf, '{') === False)
+    { // No { symbol, we assume it's a filename.
+      $conf = file_get_contents($conf);
+    }
+    $conf = json_decode($conf, true);
+    return $conf;
   }
 
   /**
@@ -399,7 +422,7 @@ class Simple
           $opts['offset'] = $pval;
         }
       }
-      if (is_string($opts['limit']))
+      if (is_string($opts['limit']) || is_numeric($opts['limit']))
       {
         $sql .= " LIMIT " . $opts['limit'];
         if (isset($opts['offset']))
@@ -437,6 +460,9 @@ class Simple
 
 #    error_log("SQL: $sql");
 #    error_log("Data: ".json_encode($data));
+
+    if (!isset($this->db))
+      return [$sql, $data];
 
     $stmt = $this->db->prepare($sql);
     if (isset($fetch_mode) && ! is_bool($fetch_mode))
@@ -502,6 +528,9 @@ class Simple
 
 #    error_log("INSERT SQL: $sql");
 #    error_log("INSERT data: ".json_encode($data));
+
+    if (!isset($this->db))
+      return [$sql, $data];
 
     $stmt = $this->query($sql);
     $stmt->execute($data);
@@ -588,6 +617,9 @@ class Simple
     }
   
     $sql = "UPDATE $table SET $set WHERE $where";
+
+    if (!isset($this->db))
+      return [$sql, $data, $wdata, $cdata];
   
     $stmt = $this->query($sql);
     $stmt->execute($data);
@@ -634,6 +666,9 @@ class Simple
     }
 
     $sql = "DELETE FROM $table WHERE $where";
+
+    if (!isset($this->db))
+      return [$sql, $wdata];
 
     $stmt = $this->query($sql);
     $stmt->execute($wdata);

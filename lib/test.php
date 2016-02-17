@@ -56,6 +56,13 @@ function is ($got, $want, $desc=Null)
   }
 }
 
+function diag ($msg)
+{
+  $lines = explode("\n", $msg);
+  foreach ($lines as $line)
+    echo "# $line\n";
+}
+
 function done_testing ()
 { global $__test_fail;
   global $__test_plan;

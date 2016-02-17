@@ -43,7 +43,13 @@ abstract class Model implements \Iterator, \ArrayAccess
    */
   public function __construct ($opts=array())
   {
-    // First, build our Simple DB object.
+    // Ensure our options are an array.
+    if (is_string($opts))
+    {
+      $opts = Simple::load_conf($opts);
+    }
+
+    // Build our Simple DB object.
     // It will throw an exception of there are missing parameters.
     $this->db = new Simple($opts, true);
 
