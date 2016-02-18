@@ -708,6 +708,8 @@ class Simple
       if (isset($pval))
         $colname = $pval;
     }
+    if (is_array($colname))
+      $colname = join(',', $colname);
     $want['cols'] = "count($colname)";
     if (isset($where))
       $want['where'] = $where;
