@@ -19,7 +19,7 @@ trait Compat
     $where = "$field = :value";
     $data  = [':value'=>$value];
     $what  = 
-      ['where'=>$where, 'data'=>$data, 'single'=>true, 'rawDocument'=>$ashash];
+      ['where'=>$where, 'data'=>$data, 'single'=>true, 'rawRow'=>$ashash];
     if (isset($cols))
       $what['cols'] = $cols;
     return $this->select($what);
@@ -34,7 +34,7 @@ trait Compat
    */
   public function getRowByFields ($fields, $ashash=False, $cols=null)
   {
-    $what = ['where'=>$fields, 'rawDocument'=>$ashash, 'single'=>true];
+    $what = ['where'=>$fields, 'rawRow'=>$ashash, 'single'=>true];
     if (isset($cols))
       $what['cols'] = $cols;
     return $this->select($what);

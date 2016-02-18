@@ -260,11 +260,11 @@ class Simple
    */
   public function select ($table, $opts=[])
   {
+    $data = null;
     if (is_array($table))
     {
       $table = join(',', $table);
     }
-
     if (is_object($opts))
     {
       $query = $opts;
@@ -311,14 +311,21 @@ class Simple
       }
     }
 
-    $sql = "SELECT $cols FROM $table ";
-    
-    $data = null;
+    if (isset($opts['sql']))
+      $sql = $opts['sql'];
+    else
+      $sql = "SELECT $cols FROM $table ";
+
+    if (isset($opts['data']))
+    {
+      $data = $opts['data'];
+    }
 
     if (isset($opts['where']))
     {
       if (!is_string($opts['where']) || strpos($opts['where'],'WHERE')===false)
         $sql .= "WHERE ";
+
       if (is_array($opts['where']))
       {
         $nulls = array_keys($opts['where'], null, true);
@@ -343,9 +350,8 @@ class Simple
           $sql  .= join(" AND ", $where);
         }
       }
-      elseif (is_string($opts['where']) && isset($opts['data']))
+      elseif (is_string($opts['where']))
       {
-        $data = $opts['data'];
         $sql .= $opts['where'];
       }
       elseif (is_object($opts['where']))
@@ -370,7 +376,8 @@ class Simple
       }
       else
       {
-        throw new \Exception(__CLASS__.": invalid WHERE clause in select()");
+        $w = json_encode($opts['where']);
+        throw new \Exception(__CLASS__.": invalid WHERE clause in select($w)");
       }
     }
 
