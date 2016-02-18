@@ -684,12 +684,23 @@ class Simple
   /**
    * Row count.
    */
-  public function rowcount ($table, $where=null, $data=[], $colname='*')
+  public function rowcount ($table, $where=null, $data=null, $colname='*')
   {
+    $want = ['fetch'=>false];
     if (is_array($where))
     {
-      if (isset($where['cols']))
-        $colname = $where['cols'];
+      if (isset($where['where']))
+      {
+        if (isset($where['data']))
+        {
+          $data = $where['data'];
+        }
+        if (isset($where['cols']))
+        {
+          $colname = $where['cols'];
+        }
+        $where = $where['where'];
+      }
     }
     elseif (is_object($where))
     {
@@ -697,13 +708,11 @@ class Simple
       if (isset($pval))
         $colname = $pval;
     }
-    elseif (is_string($where))
-    {
-      $where = ['where'=>$where, 'data'=>$data];
-    }
-    $want = ['cols'=>"count($colname)", 'fetch'=>false];
+    $want['cols'] = "count($colname)";
     if (isset($where))
       $want['where'] = $where;
+    if (isset($data))
+      $want['data'] = $data;
     $stmt = $this->select($table, $want);
     $row = $stmt->fetch();
     return $row[0];

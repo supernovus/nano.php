@@ -4,12 +4,12 @@
  * A quick class to send e-mails with.
  * Use it as a standalone component, or extend it for additional features.
  * It now uses Swift Mailer as its backend for added flexibility.
- * Swiftmailer must be installed via Pear.
+ * 
+ * This no longer loads Swift Mailer, but expects your app to do so using
+ * whatever method it uses.
  */
 
 namespace Nano4\Utils;
-
-require_once 'swift_required.php';
 
 class Mailer
 {
