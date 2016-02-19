@@ -353,6 +353,7 @@ abstract class Model implements \Iterator, \ArrayAccess
     list($stmt,$fielddata) = $this->db->insert($this->table, $row);
     if (isset($opts['return']))
     {
+      $pk = $this->primary_key;
       $return_type = $opts['return'];
       if (isset($opts['cols']) && is_array($opts['cols']))
       {
@@ -365,6 +366,7 @@ abstract class Model implements \Iterator, \ArrayAccess
       else
       {
         $fields = $fielddata;
+        unset($fields[$pk]);
       }
       $what = ['where'=>$fields, 'single'=>true];
       if ($return_type == $this::return_row)
