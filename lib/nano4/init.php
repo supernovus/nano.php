@@ -47,12 +47,17 @@ class Exception extends \Exception {}
 
 // Storage for the global Nano object.
 global $__nano__instance;
+global $__nano_registered;
+$__nano_registered = false;
 
 /**
  * Set up autoloader.
  */
 function register ($opts=[])
 {
+  global $__nano_registered;
+  if ($__nano_registered) return;
+
   if (isset($opts['classroot']))
   {
     $classroot = $opts['classroot'];
@@ -64,6 +69,28 @@ function register ($opts=[])
   set_include_path(get_include_path().PATH_SEPARATOR.$classroot);
   spl_autoload_extensions('.php');
   spl_autoload_register('spl_autoload');
+  $__nano_registered = true;
+}
+
+/**
+ * Unregister. Not sure why you'd want to do this, but anyway.
+ */
+function unregister ($opts=[])
+{
+  global $__nano_registered;
+  if (isset($opts['all']) && $opts['all'])
+  { // Unregister all autoloaders.
+    $functions = spl_autoload_functions();
+    foreach ($functions as $function)
+    {
+      spl_autoload_unregister($function);
+    }
+  }
+  else
+  { // Unregister the default autoloader.
+    spl_autoload_unregister('spl_autoload');
+  }
+  $__nano_registered = false;
 }
 
 /**
@@ -73,15 +100,14 @@ function register ($opts=[])
  */
 function initialize ($opts=[])
 {
-  if (!isset($opts['skip_autoload']) || !$opts['skip_autoload'])
-  {
-    register($opts);
-  }
-
   global $__nano__instance;
   if (isset($__nano__instance))
     throw new Exception("Nano4 instance already initialized.");
 
+  if (!isset($opts['skip_autoload']) || !$opts['skip_autoload'])
+  {
+    register($opts);
+  }
   return $__nano__instance = new Nano($opts);
 }
 
@@ -243,12 +269,20 @@ class Nano implements \ArrayAccess
 
   /**
    * Unset an option.
-   * This simply sets the value to null.
-   * Maybe a future version will be more comprehensive.
    */
   public function offsetUnset ($path)
   {
-    $this->offsetSet($path, null);
+    $tree = explode('.', $path);
+    $data = &$this->opts;
+    $key  = array_pop($tree);
+    foreach ($tree as $part)
+    {
+      if (!isset($data[$part]))
+        return; // A part of the tree doesn't exist, we're done.
+      $data = &$data[$part];
+    }
+    if (isset($data[$key]))
+      unset($data[$key]);
   }
 
   /**
