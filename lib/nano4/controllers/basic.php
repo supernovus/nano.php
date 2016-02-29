@@ -136,7 +136,7 @@ abstract class Basic
   }
 
   // Used for composed traits. Check for a property, or return a default.
-  protected function get_prop ($property, $default=Null)
+  public function get_prop ($property, $default=Null)
   {
     if (property_exists($this, $property))
       return $this->$property;
@@ -145,7 +145,7 @@ abstract class Basic
   }
 
   // Set a property, if it exists.
-  protected function set_prop ($property, $value)
+  public function set_prop ($property, $value)
   {
     if (property_exists($this, $property))
       $this->$property = $value;
