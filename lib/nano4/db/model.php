@@ -33,7 +33,6 @@ abstract class Model implements \Iterator, \ArrayAccess
 
   protected $serialize_ignore = ['resultset']; // Ignore when serializing.
 
-  // Constants used in the newRow() method.
   const return_row = 1; // Return a proper Row object.
   const return_raw = 2; // Return a raw DB query object.
   const return_key = 3; // Return the primary key value.

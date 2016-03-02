@@ -122,7 +122,7 @@ class Users extends \Nano4\DB\Model
     $rowdef[$hfield] = $hash;
 
     // Create the user.
-    $this->newRow($rowdef);
+    $this->insert($rowdef);
 
     // Return the created user if requested.
     if ($return)
