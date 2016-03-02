@@ -444,7 +444,7 @@ class Simple
       }
     }
 
-    if (isset($opts['append']) && is_array($opts['append']))
+    if (isset($opts['append']))
     {
       $sql .= ' ' . $opts['append'];
     }
