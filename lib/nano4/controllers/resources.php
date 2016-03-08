@@ -191,6 +191,17 @@ trait Resources
   }
 
   /**
+   * Reset a resource group.
+   */
+  public function reset_resource ($type)
+  {
+    if (!isset($this->resources[$type])) return false;
+    $resname = $this->resources[$type]['name'];
+    unset($this->data[$resname]);
+    $this->resources[$type]['added'] = [];
+  }
+
+  /**
    * Add a Javascript file or group to our used resources.
    */
   public function add_js ($name)
