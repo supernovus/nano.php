@@ -50,7 +50,6 @@ trait Auth
 
     $ukey = $this->get_prop('username_field',  'user');
     $pkey = $this->get_prop('password_field',  'pass');
-    $ucol = $this->get_prop('username_column', 'email');
     $tval = $this->get_prop('idle_timeout',     0);
 
     if (method_exists($this, 'pre_login'))
@@ -70,7 +69,7 @@ trait Auth
       else
         $userlog = null;
 
-      $uinfo = $users->getUser($user, $ucol);
+      $uinfo = $users->getUser($user);
       if (!$uinfo)
       {
         return $this->invalid("Attempted login by unknown user '$user'.", $opts, $userlog);
