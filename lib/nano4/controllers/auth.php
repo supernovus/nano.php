@@ -51,6 +51,7 @@ trait Auth
     $ukey = $this->get_prop('username_field',  'user');
     $pkey = $this->get_prop('password_field',  'pass');
     $ucol = $this->get_prop('username_column', 'email');
+    $tval = $this->get_prop('idle_timeout',     0);
 
     if (method_exists($this, 'pre_login'))
     {
@@ -84,11 +85,17 @@ trait Auth
         }
       }
 
-      $auth = \Nano4\Utils\SimpleAuth::getInstance();
+      // Get our authentication library.
+      $auth = $users->get_auth(true,true);
 
       $userid    = $uinfo->id;
       $userhash  = $uinfo->hash;
       $usertoken = $uinfo->token;
+
+      if (method_exists([$this, 'get_user_timeout']))
+      {
+        $tval = $this->get_user_timeout($uinfo, $tval);
+      }
 
       $regenerate = False;
       if (!isset($usertoken) || $usertoken == '')
@@ -99,7 +106,7 @@ trait Auth
         $usertoken = $uinfo->email;
       }
 
-      if ($auth->login($userid, $pass, $userhash, $usertoken))
+      if ($auth->login($userid, $pass, $userhash, $usertoken, $tval))
       {
         if ($regenerate)
         {
@@ -115,7 +122,14 @@ trait Auth
           $userlog->log(['success'=>true, 'context'=>$opts, 'user'=>$uinfo]);
 
         $nano = \Nano4\get_instance();
-        $lastpath = $nano->sess->lasturi;
+        if (isset($nano->sess->lasturi))
+        {
+          $lastpath = $nano->sess->lasturi;
+        }
+        else
+        {
+          $lastpath = null;
+        }
         $default_page = $this->get_prop('default_page', 'default');
         if (!$lastpath || $lastpath = $this->request_uri())
         { // Go to the default page.
@@ -133,7 +147,9 @@ trait Auth
 
   public function handle_logout ($opts, $path=Null)
   {
-    $auth = \Nano4\Utils\SimpleAuth::getInstance();
+    $model = $this->get_prop('users_model', 'users');
+    $users = $this->model($model);
+    $auth  = $users->get_auth(true); 
     if (method_exists($this, 'pre_logout'))
     {
       $this->pre_logout($auth, $opts);

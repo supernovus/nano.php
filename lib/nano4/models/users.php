@@ -28,15 +28,27 @@ class Users extends \Nano4\DB\Model
 
   protected $user_cache  = [];      // A cache of known users.
 
+  protected $auth_class = "\\Nano4\\Utils\\SimpleAuth";
+
   public function hash_type ()
   {
     return $this->hashType;
   }
 
-  public function get_auth ()
+  public function auth_class ()
+  {
+    return $this->auth_class;
+  }
+
+  public function get_auth ($instance=false, $store=false)
   {
     $hash = $this->hashType;
-    $auth = new \Nano4\Utils\SimpleAuth(['hash'=>$hash, 'store'=>False]);
+    $class = $this->auth_class;
+    $opts = ['hash'=>$hash, 'store'=>$store];
+    if ($instance)
+      $auth = $class::getInstance($opts);
+    else
+      $auth = new $class($opts);
     return $auth;
   }
 

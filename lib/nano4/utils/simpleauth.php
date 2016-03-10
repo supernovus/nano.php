@@ -10,9 +10,6 @@ namespace Nano4\Utils;
  * other than it needs to store the hash provided by the generate_hash
  * method.
  *
- * It has an optional paranoid mode, which forces the use of the hash
- * in the is_user() check to ensure the user is valid.
- *
  * The default storage model is to store the SimpleAuth object in the
  * session. We use the Nano4 Session helper to achieve this.
  * You can disable the autostoring, and store it yourself, or you can
@@ -22,13 +19,14 @@ namespace Nano4\Utils;
 
 class SimpleAuth
 {
-  public $log = False;          // Enable logging?
+  public $log = False;            // Enable logging?
 
   protected $hashType = 'sha256'; // Default hash algorithm.
 
-  // Internal fields.
-  protected $userid;
-  protected $authhash;
+  protected $userid;              // The currently logged in user.
+
+  protected $timeout = 0;         // Num if idle seconds until timeout.
+  protected $accessed;            // Last accessed time.
 
   // A failsafe mechanism for where you can't control the
   // location of the session_start() call in relations to
@@ -95,17 +93,19 @@ class SimpleAuth
   // Returns if a user is logged in or not.
   // If a user is logged in, it returns their user id.
   // Otherwise, it returns false.
-  public function is_user ($userhash=Null, $authtoken=Null)
+  public function is_user ()
   { 
     if (isset($this->userid))
     {
-      if (isset($userhash) && isset($authtoken) && isset($this->authhash))
-      { 
-        $checkhash = hash($this->hashType, $authtoken.$userhash);
-        if (strcmp($checkhash, $this->authhash) != 0)
+      if ($this->timeout > 0)
+      {
+        $curtime = time();
+        $oldtime = $this->accessed;
+        if (($curtime - $oldtime) > $this->timeout)
         {
-          return False;
+          return false;
         }
+        $this->accessed = $curtime;
       }
       return $this->userid;
     }
@@ -114,22 +114,22 @@ class SimpleAuth
 
   // Process a login request.
   public function login 
-    ($userid, $pass, $userhash, $usertoken=Null, $paranoid=False)
+    ($userid, $pass, $userhash, $usertoken=Null, $timeout=Null)
   {
     // If we don't specify a user token, assume the same as userid.
     if (is_null($usertoken))
       $usertoken = $userid;
 
+    if (isset($timeout) && $timeout > 0)
+    {
+      $this->timeout = $timeout;
+      $this->accessed = time();
+    }
+
     $checkhash = $this->generate_hash($usertoken, $pass);
     if (strcmp($userhash, $checkhash) == 0)
     { $this->userid = $userid;
       if ($this->log) error_log("User '$userid' logged in.");
-      if ($paranoid)
-      {
-        $authtoken = hash($this->hashType, time());
-        $this->authhash = hash($this->hashType, $authtoken.$userhash);
-        return $authtoken;
-      }
       $this->update();
       return true;
     }
@@ -145,7 +145,6 @@ class SimpleAuth
       error_log("User '$userid' logged out.");
     }
     $this->userid    = Null;
-    $this->authhash  = Null;
     $this->update();
 
     if ($destroy_session)

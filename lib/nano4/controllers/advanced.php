@@ -9,7 +9,7 @@ namespace Nano4\Controllers;
  * Including:
  *
  *  - Array access for view data.
- *  - Authenticated users using SimpleAuth.
+ *  - Authenticated users using the Users model or subclass.
  *  - Model configuration, including Database integration.
  *  - Translatable text and status messages.
  *  - A view loader for e-mail messages (now called 'mail')

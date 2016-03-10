@@ -30,11 +30,11 @@ trait UserAuth
     }
     if ($need_user)
     {
-      $auth = \Nano4\Utils\SimpleAuth::getInstance();
+      $users = $this->model($users_model);
+      $auth = $users->get_auth(true);
       $userid = $auth->is_user();
       if ($userid)
       {
-        $users = $this->model($users_model);
         $user  = $users->getUser($userid);
         if (!$user) 
         { 
