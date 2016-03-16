@@ -91,7 +91,7 @@ trait Auth
       $userhash  = $uinfo->hash;
       $usertoken = $uinfo->token;
 
-      if (method_exists([$this, 'get_user_timeout']))
+      if (method_exists($this, 'get_user_timeout'))
       {
         $tval = $this->get_user_timeout($uinfo, $tval);
       }

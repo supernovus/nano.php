@@ -89,6 +89,7 @@ trait Users
     $lfield = $this->login_field;
     $tfield = $this->token_field;
     $hfield = $this->hash_field;
+    $rfield = $this->reset_field;
 
     if (!isset($rowdef[$lfield]))
       return False; // The login field is required!
@@ -96,6 +97,10 @@ trait Users
     // Generate a unique token.
     $token = hash($this->hashType, time());
     $rowdef[$tfield] = $token;
+
+    // Generate a unique reset field.
+    $reset = uniqid();
+    $rowdef[$rfield] = $reset;
 
     // Generate the password hash.
     $auth = $this->get_auth();
