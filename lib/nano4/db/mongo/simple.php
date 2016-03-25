@@ -52,9 +52,12 @@ class Simple
 
   public function get_server ($opts=[])
   {
+#    error_log("MongoSimple::get_server()");
     $nano = \Nano4\get_instance();
     $msk  = $this->mongo_server_key;
     $msc  = $this->mongo_cache_servers;
+
+#    error_log("looking for option '$msk'");
 
     if (isset($this->server))
     {
@@ -82,6 +85,8 @@ class Simple
     {
       $server = 'mongodb://localhost:27017';
     }
+
+#    error_log("connecting to server '$server'");
 
     if (isset($nano[$msc], $nano[$msc][$server]))
     {

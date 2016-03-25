@@ -1,17 +1,13 @@
 <?php
 
-namespace Nano4\DB;
+namespace Nano4\DB\Mongo;
 
 /**
  * A base class for SQL database models.
  */
-class Item extends Child
+class Item extends \Nano\DB\Child
 {
-  /**
-   * If set to an array of field names, only those fields will be
-   * used when finding the id of a newly created row.
-   */
-  public $new_query_fields;
+  protected $primary_key = '_id';
 
   /**
    * Save our data back to the database.
@@ -29,6 +25,12 @@ class Item extends Child
       $pk = $opts['pk'];
     else
       $pk = $this->primary_key;
+
+    if (is_callable([$this, 'to_bson']))
+      $data = $this->to_bson($opts);
+    else
+      $data = $this->data;
+
     if (isset($this->data[$pk]) && !isset($this->modified_data[$pk]))
     { // Update an existing row.
       if (count($this->modified_data)==0) return;
@@ -39,42 +41,16 @@ class Item extends Child
       {
         $field = $fields[$i];
         if ($field == $pk) continue; // Sanity check.
-        $cdata[$field] = $this->data[$field];
+        $cdata[$field] = $data[$field];
       }
-      $where = [$pk => $this->data[$pk]];
-      $this->parent->update($where, $cdata);
-      return True;
+      $id = $data[$pk];
+      return $this->parent->save($id, ['$set'=>$cdata]);
     }
     else
     { // Insert a new row.
-      $model = $this->parent;
-      $opts = ['return'=>$model::return_key];
-      if ($this->auto_generated_pk)
-        $setpk = False;
-      else
-        $setpk = True;
-
-      if ($setpk)
-        $opts['allowpk'] = True;
-
-      if (isset($this->new_query_fields))
-        $opts['cols'] = $this->new_query_fields;
-
-      // Insert the row and get the new primary key.
-      $newpk = $this->parent->insert($this->data, $opts);
-
       // Clear the modified data.
       $this->modified_data = [];
-
-#      error_log("save got new '$pk' value '$newpk'");
-
-      if ($setpk && isset($this->data[$pk])) return True; // We're done.
-      elseif ($newpk)
-      {
-        $this->data[$pk] = $newpk;
-        return True;
-      }
-      return False;
+      return $this->parent->save($data);
     }
   }
 
@@ -84,8 +60,8 @@ class Item extends Child
   public function delete ()
   {
     $pk = $this->primary_key;
-    $where = [$pk => $this->data[$pk]];
-    return $this->parent->delete($where);
+    $id = $this->data[$pk];
+    return $this->parent->deleteId($id);
   }
 
 } // end class Item

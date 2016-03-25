@@ -93,6 +93,7 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
     {
       $opts['parent'] = $this;
       $opts['data']   = $data;
+      $opts['pk']     = $this->primary_key;
       return new $class($opts);
     }
   }
@@ -111,8 +112,9 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
 
     if (isset($opts['find']))
     {
+      $data = $this->get_collection();
       $fopts = isset($opts['findopts']) ? $opts['findopts'] : [];
-      $results = $this->data->find($opts['find'], $fopts);
+      $results = $data->find($opts['find'], $fopts);
       if (isset($opts['childclass']) || isset($this->childclass))
       {
         $wrapped = [];
@@ -156,9 +158,14 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
     return $this->findOne([$pk => $id], $findopts, $classopts);
   }
 
-  public function save ($doc)
+  public function save ($doc, $update=null)
   {
     $pk = $this->primary_key;
+    $data = $this->get_collection();
+    if (isset($update) && (is_string($doc) || $doc instanceof ObjectID))
+    {
+      $doc = [$pk=>$doc];
+    }
     if (isset($doc[$pk]))
     {
       if (is_string($doc[$pk]))
@@ -170,15 +177,22 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
         $doc[$pk] = new ObjectID($doc[$pk]['$id']);
       }
       $find = [$pk => $doc[$pk]];
-      $res = $this->data->replaceOne($find, $doc);
+      if (isset($update))
+      {
+        $res = $data->updateOne($find, $update);
+      }
+      else
+      {
+        $res = $data->replaceOne($find, $doc);
+      }
       $isnew = 0;
     }
     else
     {
-      $res = $this->data->insertOne($doc);
+      $res = $data->insertOne($doc);
       $isnew = 1;
     }
-    return [$isnew, $status, $doc];
+    return [$isnew, $res, $doc];
   }
 
   public function deleteId ($id)
@@ -188,7 +202,12 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
     {
       $id = new ObjectId($id);
     }
-    return $this->data->deleteOne([$pk => $id]);
+    elseif (is_array($id) && isset($id['$id']))
+    {
+      $id = new ObjectID($id['$id']);
+    }
+    $data = $this->get_collection();
+    return $data->deleteOne([$pk => $id]);
   }
 
   // Iterator interface
