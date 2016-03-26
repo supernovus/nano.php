@@ -558,14 +558,17 @@ class Route
 
 #    error_log("  -- our method matched.");
 
-    $match = "@^"
-           . $this->parent->base_uri
-           . $this->uri_regex()
-           . "*$@i";
+    if ($this->parent->base_uri || $this->uri_regex())
+    {
+      $match = "@^"
+             . $this->parent->base_uri
+             . $this->uri_regex()
+             . "*$@i";
 
 #    error_log("searching with regex: $match");
 
-    if (! preg_match($match, $uri, $matches)) return; // Doesn't match URI.
+      if (! preg_match($match, $uri, $matches)) return; // Doesn't match URI.
+    }
 
 #    error_log(" -- It matched!");
 
