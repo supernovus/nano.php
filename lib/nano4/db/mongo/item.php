@@ -1,11 +1,12 @@
 <?php
 
 namespace Nano4\DB\Mongo;
+use \MongoDB\BSON;
 
 /**
  * A base class for SQL database models.
  */
-class Item extends \Nano\DB\Child
+class Item extends \Nano4\DB\Child
 {
   protected $primary_key = '_id';
 
@@ -35,11 +36,13 @@ class Item extends \Nano\DB\Child
     { // Update an existing row.
       if (count($this->modified_data)==0) return;
       $fields = array_keys($this->modified_data);
+#      error_log("<changed>".json_encode($fields)."</changed>");
       $cdata  = [];
       $fc = count($fields);
       for ($i=0; $i< $fc; $i++)
       {
         $field = $fields[$i];
+#        error_log("<modified>$field</modified>");
         if ($field == $pk) continue; // Sanity check.
         $cdata[$field] = $data[$field];
       }
@@ -62,6 +65,46 @@ class Item extends \Nano\DB\Child
     $pk = $this->primary_key;
     $id = $this->data[$pk];
     return $this->parent->deleteId($id);
+  }
+
+  /**
+   * Convert the data to a "flat" array.
+   * This only accounts for BSON stuff, so you'll need to override it
+   * if you have secondary objects.
+   */
+  public function to_array ($opts=[])
+  {
+    $array = [];
+    foreach ($this->data as $key => $val)
+    {
+      if ($val instanceof BSON\ObjectID)
+      {
+        $array[$key] = (string)$val;
+      }
+      else
+      {
+        $array[$key] = $val;
+      }
+    }
+    return $array;
+  }
+
+  /**
+   * Convert to a JSON string, optionally with fancy formatting.
+   */
+  public function to_json ($opts=[])
+  {
+    if (is_bool($opts))
+    {
+      $opts = ['fancy'=>$opts];
+    }
+    $flags = 0;
+    if (isset($opts['fancy']) && $opts['fancy'])
+    {
+      $flags = $flags | JSON_PRETTY_PRINT;
+    }
+    $array = $this->to_array();
+    return json_encode($array, $flags);
   }
 
 } // end class Item

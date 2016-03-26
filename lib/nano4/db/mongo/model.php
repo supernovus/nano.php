@@ -11,7 +11,7 @@ use \MongoDB\BSON\ObjectID;
  */
 abstract class Model extends Simple implements \Iterator, \ArrayAccess
 {
-  use \Nano4\Meta\ClassID;
+  use \Nano4\DB\ModelCommon, \Nano4\Meta\ClassID;
 
   public $parent;
 
@@ -91,6 +91,7 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
       $class = $this->childclass;
     if ($class)
     {
+      $data = $this->populate_known_fields($data);
       $opts['parent'] = $this;
       $opts['data']   = $data;
       $opts['pk']     = $this->primary_key;

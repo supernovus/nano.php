@@ -7,7 +7,7 @@ namespace Nano4\DB;
  */
 abstract class Model implements \Iterator, \ArrayAccess
 {
-  use \Nano4\Meta\ClassID;   // Adds $__classid and class_id()
+  use ModelCommon, \Nano4\Meta\ClassID; // Adds $__classid and class_id()
 
   protected $table;          // Our database table.
   protected $childclass;     // The class name for our children.
@@ -23,9 +23,6 @@ abstract class Model implements \Iterator, \ArrayAccess
   protected $resultset;      // Used if you use the iterator interface.
 
   public $parent;            // The object which spawned us.
-
-  public $known_fields;      // If set, it's a list of fields we know about.
-                             // DO NOT set the primary key in here!
 
   protected $get_fields;     // Set to fields to get if none are specified.
 
@@ -152,27 +149,7 @@ abstract class Model implements \Iterator, \ArrayAccess
    */
   public function newChild ($data=[], $opts=[])
   {
-    if (isset($this->known_fields) && is_array($this->known_fields))
-    {
-      foreach ($this->known_fields as $key => $val)
-      {
-        if (is_numeric($key))
-        {
-          $field   = $val;
-          $default = $this->default_value;
-        }
-        else
-        {
-          $field   = $key;
-          $default = $val;
-        }
-        if (!array_key_exists($field, $data))
-        { // Add a placeholder value, to ensure the field is present.
-          $data[$field] = $default;
-        }
-      }
-    }
-
+    $data = $this->populate_known_fields($data);
     if (isset($opts['childclass']))
       $class = $opts['childclass'];
     else
@@ -188,40 +165,6 @@ abstract class Model implements \Iterator, \ArrayAccess
       $object = new $class($opts);
       return $object;
     }
-  }
-
-  /**
-   * Check and see if a field is known.
-   */
-  public function is_known ($field)
-  {
-    // First check to see if it is the primary key.
-    if ($field == $this->primary_key)
-    {
-      return True;
-    }
-
-    if (isset($this->known_fields) && is_array($this->known_fields))
-    {
-      // Next look through our known_fields.
-      foreach ($this->known_fields as $key => $val)
-      {
-        if (is_numeric($key))
-        {
-          $name = $val;
-        }
-        else
-        {
-          $name = $key;
-        }
-        if ($field == $name)
-        {
-          return True;
-        }
-      }
-    }
-
-    return False;
   }
 
   /** 

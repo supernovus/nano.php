@@ -24,6 +24,10 @@ abstract class Child implements \ArrayAccess
 
   protected $primary_key = 'id';
 
+  protected $strict_keys = false; // Change to true to force strict keys.
+  protected $warn_keys   = false; // If strict_keys is false, then warn?
+  protected $null_keys   = false; // If strict_keys is false, return null?
+
   /** 
    * To make aliases to the database field names, override the $aliases
    * member in your sub-classes. It should be an associative array, where
@@ -86,7 +90,7 @@ abstract class Child implements \ArrayAccess
    * If neither exists, and the field is not the primary key,
    * an exception will be thrown.
    */
-  protected function db_field ($name, $strict=True)
+  protected function db_field ($name, $strict=null)
   {
     if (array_key_exists($name, $this->data))
       return $name;
@@ -99,10 +103,24 @@ abstract class Child implements \ArrayAccess
     elseif (in_array($name, $this->virtuals))
       return $name;
     else
+    {
+      if (!isset($strict))
+        $strict = $this->strict_keys;
+      $message = "Unknown field '$name' in ".json_encode($this->data);
       if ($strict)
-        throw new Exception("Unknown field '$name' in ".json_encode($this->data));
+      {
+        throw new Exception($message);
+      }
       else
-        return Null;
+      {
+        if ($this->warn_keys)
+          error_log($message);
+        if ($this->null_keys)
+          return Null;
+        else
+          return $name;
+      }
+    }
   }
 
   /** 
@@ -128,7 +146,12 @@ abstract class Child implements \ArrayAccess
     }
 
     if (!in_array($name, $this->virtuals))
-      $this->modified_data[$name] = $this->data[$name];
+    {
+      $modval = null;
+      if (isset($this->data[$name]))
+        $modval = $this->data[$name];
+      $this->modified_data[$name] = $modval;
+    }
 
     $meth = "_set_$field";
     if (is_callable(array($this, $meth)))
