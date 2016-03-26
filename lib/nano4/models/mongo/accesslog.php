@@ -23,6 +23,6 @@ class AccessLog extends \Nano4\DB\Mongo\Model
 
 class AccessRecord 
 extends \Nano4\DB\Mongo\Item 
-implements Common\AccessRecord 
+implements \Nano4\Models\Common\AccessRecord 
 {}
 

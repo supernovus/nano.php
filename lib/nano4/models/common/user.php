@@ -5,6 +5,7 @@ namespace Nano4\Models\Common;
 trait User
 {
   abstract public function save ($opts=[]);
+  abstract public function get_id ();
 
   /**
    * Change our password.

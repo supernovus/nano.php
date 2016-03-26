@@ -22,5 +22,9 @@ namespace Nano4\Models;
 class User extends \Nano4\DB\Item
 {
   use \Nano4\DB\Model\Compat, Common\User;  
+  public function get_id ()
+  {
+    return $this->id;
+  }
 }
 

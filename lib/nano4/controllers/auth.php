@@ -87,7 +87,7 @@ trait Auth
       // Get our authentication library.
       $auth = $users->get_auth(true,true);
 
-      $userid    = $uinfo->id;
+      $userid    = $uinfo->get_id();
       $userhash  = $uinfo->hash;
       $usertoken = $uinfo->token;
 
@@ -308,7 +308,7 @@ trait Auth
     ( // Ensure it's a valid User object.
       isset($user) 
       && is_object($user)
-      && isset($user->id) 
+      && $user->get_id() 
       && isset($user->hash) 
       && isset($user->token)
       && isset($user->email)
@@ -342,7 +342,7 @@ trait Auth
     // Get our required information.
     $nano = \Nano4\get_instance();
     $code = $user->resetReset();
-    $uid  = $user->id;
+    $uid  = $user->get_id();
 
     // Set up a validation code to send to the user.
     $validInfo = array('uid'=>$uid, 'code'=>$code);

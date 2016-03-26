@@ -22,5 +22,9 @@ namespace Nano4\Models\Mongo;
 class User extends \Nano4\DB\Mongo\Item
 {
   use \Nano4\Models\Common\User;  
+  public function get_id ()
+  {
+    return (string)$this->_id;
+  }
 }
 

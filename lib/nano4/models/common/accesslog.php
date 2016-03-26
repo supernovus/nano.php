@@ -167,7 +167,11 @@ trait AccessLog
 
   protected function log_user ($log, $user)
   {
-    $userdata = ['id'=>$user->id];
+    $userdata = [];
+    if (isset($user->id))
+      $userdata['id'] = $user->id;
+    elseif (isset($user->_id))
+      $userdata['id'] = $user->_id;
     if (isset($user->email))
       $userdata['email'] = $user->email;
     if (isset($user->name))
