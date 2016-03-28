@@ -8,6 +8,8 @@ use \MongoDB\BSON;
  */
 class Item extends \Nano4\DB\Child
 {
+  use \Nano4\Data\JSON;
+
   protected $primary_key = '_id';
 
   /**
@@ -87,24 +89,6 @@ class Item extends \Nano4\DB\Child
       }
     }
     return $array;
-  }
-
-  /**
-   * Convert to a JSON string, optionally with fancy formatting.
-   */
-  public function to_json ($opts=[])
-  {
-    if (is_bool($opts))
-    {
-      $opts = ['fancy'=>$opts];
-    }
-    $flags = 0;
-    if (isset($opts['fancy']) && $opts['fancy'])
-    {
-      $flags = $flags | JSON_PRETTY_PRINT;
-    }
-    $array = $this->to_array();
-    return json_encode($array, $flags);
   }
 
 } // end class Item

@@ -41,10 +41,9 @@ namespace Nano4\Data;
  * detect_string_type() methods is easy, so go crazy!
  *
  */
-
 abstract class Object implements \JsonSerializable
 {
-  use \Nano4\Meta\ClassInfo;
+  use \Nano4\Meta\ClassInfo, JSON;
 
   protected $parent;             // Will be set if we have a parent object.
   protected $data       = [];    // The actual data we represent.
@@ -307,17 +306,6 @@ abstract class Object implements \JsonSerializable
   public function jsonSerialize ()
   {
     return $this->to_array();
-  }
-
-  // Output as a JSON string. Again, pretty cheap.
-  public function to_json ($opts=Null)
-  {
-    $json_opts = 0;
-    if (isset($opts['fancy']) && $opts['fancy'])
-    {
-      $json_opts = JSON_PRETTY_PRINT;
-    }
-    return json_encode($this->to_array($opts), $json_opts);
   }
 
   // And again, the same as above, but with YAML.

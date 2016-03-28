@@ -4,6 +4,8 @@ namespace Nano4\DB\Mongo;
 
 class Results implements \Iterator, \Countable
 {
+  use \Nano4\Data\JSON;
+
   public $parent;
   protected $find_query = [];
   protected $find_opts  = [];
@@ -60,6 +62,17 @@ class Results implements \Iterator, \Countable
   public function valid ()
   {
     return $this->results->valid();
+  }
+
+  public function to_array ($opts=[])
+  {
+    $array = [];
+    foreach ($this as $that)
+    {
+      $item = $that->to_array();
+      $array[] = $item;
+    }
+    return $array;
   }
 
 }
