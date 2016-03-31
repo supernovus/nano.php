@@ -362,6 +362,11 @@ trait Auth
     $mail_opts['subject']  = $subject;
     $mail_opts['to']       = $user->email;
     $mail_opts['template'] = $template;
+    if (property_exists($this, 'email_class') 
+        && isset($this->email_class) && !isset($mail_opts['handler']))
+    {
+      $mail_opts['handler'] = $this->email_class;
+    }
 
     // Populate $mail_rules and $mail_opts with further data here.
     if (method_exists($this, 'prep_email_options'))

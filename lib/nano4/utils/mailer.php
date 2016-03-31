@@ -3,10 +3,9 @@
 /**
  * A quick class to send e-mails with.
  * Use it as a standalone component, or extend it for additional features.
- * It now uses Swift Mailer as its backend for added flexibility.
- * 
- * This no longer loads Swift Mailer, but expects your app to do so using
- * whatever method it uses.
+ *
+ * It requires an underlying mailer library, see mailer/ for supported ones.
+ * If none is supplied, it will default to 'swift' which requires SwiftMailer.
  */
 
 namespace Nano4\Utils;
@@ -17,12 +16,11 @@ class Mailer
   protected $fields;     // Field rules. 'true' required, 'false' optional.
   protected $template;   // Default template to use for e-mails.
   protected $views;      // Nano loader to use to load template.
-  protected $mailer;     // The Swift Mailer object.
+  protected $handler;    // The underlying handler. Use get_handler()
 
   // Public fields. Reset on each send().
   public $failures;     // A list of messages that failed.
   public $missing;      // Set to an array if a required field wasn't set.
-  public $message;      // The Swift Message object.
 
   // Set to true to enable logging errors.
   public $log_errors = False;
@@ -42,38 +40,26 @@ class Mailer
     elseif (!isset($this->views))
       $this->views = 'views'; // Default if nothing else is set.
 
-    if (isset($opts['transport']))
-      $transport = $opts['transport'];
-    elseif (isset($opts['host']))
-    { // Using SMTP transport.
-      $transport = \Swift_SmtpTransport::newInstance($opts['host']);
-      if (isset($opts['port']))
-        $transport->setPort($opts['port']);
-      if (isset($opts['enc']))
-        $transport->setEncryption($opts['enc']);
-      if (isset($opts['user']))
-        $transport->setUsername($opts['user']);
-      if (isset($opts['pass']))
-        $transport->setPassword($opts['pass']);
+    if (!isset($opts['handler']))
+      $opts['handler'] = 'swift'; // The default handler.
+
+    if (is_object($opts['handler']) && is_callable([$opts['handler'], 'send_message']))
+    {
+      $this->handler = $opts['handler'];
+    }
+    elseif (is_string($opts['hander']))
+    {
+      $classname = $opts['handler'];
+      if (strpos($classname, '\\') === False)
+      {
+        $classname = "\\Nano4\\Utils\\Mailer\\$classname";
+      }
+      $this->handler = new $classname($this, $opts);
     }
     else
-    { // Using sendmail transport.
-      $transport = \Swift_SendmailTransport::newInstance();
+    {
+      throw new \Exception("Unsupported 'handler' send to Nano Mailer");
     }
-
-    $this->mailer = \Swift_Mailer::newInstance($transport);
-
-    $this->message = \Swift_Message::newInstance();
-
-    if (isset($opts['subject']))
-      $this->message->setSubject($opts['subject']);
-
-    if (isset($opts['from']))
-      $this->message->setFrom($opts['from']);
-
-    if (isset($opts['to']))
-      $this->message->setTo($opts['to']);
-
   }
 
   public function send ($data, $opts=array())
@@ -81,14 +67,6 @@ class Mailer
     // First, let's reset our special attributes.
     $this->missing  = array();
     $this->failures = array();
-
-    // Find the subject.
-    if (isset($opts['subject']))
-      $this->message->setSubject($opts['subject']);
-
-    // Find the recipient.
-    if (isset($opts['to']))
-      $this->message->setTo($opts['to']);
 
     // Find the template to use.
     if (isset($opts['template']))
@@ -161,7 +139,7 @@ class Mailer
     elseif (isset($template))
     {
       $message = $template;
-    }
+    } 
     else
     {
       if ($this->log_errors)
@@ -171,8 +149,8 @@ class Mailer
       }
     }
 
-    $this->message->setBody($message);
-    $sent = $this->mailer->send($this->message, $this->failures);
+    $sent = $this->handler->send_message($message, $opts);
+
     if ($this->log_errors && !$sent)
     {
       error_log("Error sending mail to '$to' with subject: $subject");
