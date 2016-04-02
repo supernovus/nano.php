@@ -55,7 +55,7 @@ trait User
     {
       return False; // Sorry, e-mail already in use.
     }
-    $this->$lfield = $newemail;
+    $this->$lfield = $newlogin;
     if ($autosave) $this->save();
     return True;
   }

@@ -147,7 +147,7 @@ trait Messages
       }
     }
 
-    if (!is_numeric(strpos(':', $name)))
+    if (!is_numeric(strpos(':', $name)) && isset($opts['prefix']))
     {
       $prefix = $opts['prefix'];
     }
@@ -156,16 +156,52 @@ trait Messages
       $prefix = '';
     }
 
-    $text = $this->text->getStr($prefix.$name, $opts);
+    if (isset($opts['suffix']))
+    {
+      $suffix = $opts['suffix'];
+    }
+    else
+    {
+      $suffix = '';
+    }
+
+    $text = $this->text->getStr($prefix.$name.$suffix, $opts);
 
     if (isset($opts['prefix']))
     {
       $text = str_replace($opts['prefix'], '', $text);
     }
+    if (isset($opts['suffix']))
+    {
+      $text = str_replace($opts['suffix'], '', $text);
+    }
 
     $key = preg_replace('/\s+/', '_', $name);
 
     $message = ['key'=>$key, 'name'=>$name, 'class'=>$class, 'text'=>$text];
+
+    if (isset($opts['title_suffix']))
+    {
+      $tsuffix = $opts['title_suffix'];
+      $topts = isset($opts['title_opts']) ? $opts['title_opts'] : $opts;
+      $title = $this->text->getStr($name.$tsuffix, $topts);
+      if ($title != $name.$tsuffix)
+        $message['title'] = $title;
+    }
+
+    if (isset($opts['icon']))
+    {
+      $message['icon'] = $opts['icon'];
+    }
+
+    if (isset($opts['msg_opts']))
+    {
+      $msgopts = $opts['msg_opts'];
+      foreach ($msgopts as $mkey => $mval)
+      {
+        $message[$mkey] = $mval;
+      }
+    }
 
     // Handle 
     if (isset($opts['actions']))
