@@ -83,6 +83,10 @@ class Item extends \Nano4\DB\Child
       {
         $array[$key] = (string)$val;
       }
+      elseif ($val instanceof \MongoDB\Model\BSONArray)
+      {
+        $array[$key] = $val->getArrayCopy();
+      }
       else
       {
         $array[$key] = $val;

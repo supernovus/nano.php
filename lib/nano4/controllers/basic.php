@@ -256,18 +256,20 @@ abstract class Basic
   { 
     $nano = \Nano4\get_instance();
     $nano->pragmas['json no-cache'];    // Don't cache this.
+
+    $json_opts = 0;
+    if 
+    (
+      isset($opts['fancy']) 
+      && $opts['fancy'] 
+      && defined('JSON_PRETTY_PRINT') // PHP 5.4+
+    )
+    {
+      $json_opts = JSON_PRETTY_PRINT;
+    }
+
     if (is_array($data)) 
     { // Basic usage is to send simple arrays.
-      $json_opts = 0;
-      if 
-      (
-        isset($opts['fancy']) 
-        && $opts['fancy'] 
-        && defined('JSON_PRETTY_PRINT') // PHP 5.4+
-      )
-      {
-        $json_opts = JSON_PRETTY_PRINT;
-      }
       $json = json_encode($data, $json_opts);
     }
     elseif (is_string($data))
@@ -280,7 +282,7 @@ abstract class Basic
       if (is_callable(array($data, $method)))
         $json = $data->$method($opts);
       else
-        throw new Exception('Unsupported object sent to send_json()');
+        $json = json_encode($data, $json_opts);
     }
     else
     {
