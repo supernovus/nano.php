@@ -47,7 +47,7 @@ class Mailer
     {
       $this->handler = $opts['handler'];
     }
-    elseif (is_string($opts['hander']))
+    elseif (is_string($opts['handler']))
     {
       $classname = $opts['handler'];
       if (strpos($classname, '\\') === False)
