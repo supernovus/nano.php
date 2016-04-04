@@ -184,6 +184,12 @@ abstract class Basic
     else
       $layout = $this->layout;
 
+    // Allow for some preparation code before rendering the page.
+    if (is_callable([$this, 'pre_render_page']))
+    {
+      $this->pre_render_page($screen, $layout, $opts);
+    }
+
     // Make sure the 'parent' is set correctly.
     if (!isset($this->data['parent']))
       $this->data['parent'] = $this;
@@ -195,7 +201,7 @@ abstract class Basic
     // Now for post-page, pre-layout stuff.
     if (is_callable([$this, 'post_render_page']))
     {
-      $this->post_render_page($opts);
+      $this->post_render_page($page, $layout, $opts);
     }
 
     if ($layout)
