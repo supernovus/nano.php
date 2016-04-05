@@ -29,6 +29,12 @@ class Item extends Child
       $pk = $opts['pk'];
     else
       $pk = $this->primary_key;
+
+    if (is_callable([$this, 'to_row']))
+      $data = $this->to_row($opts);
+    else
+      $data = $this->data;
+
     if (isset($this->data[$pk]) && !isset($this->modified_data[$pk]))
     { // Update an existing row.
       if (count($this->modified_data)==0) return;
@@ -39,9 +45,9 @@ class Item extends Child
       {
         $field = $fields[$i];
         if ($field == $pk) continue; // Sanity check.
-        $cdata[$field] = $this->data[$field];
+        $cdata[$field] = $data[$field];
       }
-      $where = [$pk => $this->data[$pk]];
+      $where = [$pk => $data[$pk]];
       $this->parent->update($where, $cdata);
       return True;
     }
@@ -61,7 +67,7 @@ class Item extends Child
         $opts['cols'] = $this->new_query_fields;
 
       // Insert the row and get the new primary key.
-      $newpk = $this->parent->insert($this->data, $opts);
+      $newpk = $this->parent->insert($data, $opts);
 
       // Clear the modified data.
       $this->modified_data = [];

@@ -29,6 +29,7 @@ abstract class Basic
 
   public $models  = [];     // Any Models we have loaded.
 
+  protected $object_data = false; // If true, use an ArrayObject()
   protected $data = [];     // Our data to send to the templates.
   protected $screen;        // Set if needed, otherwise uses $this->name().
 
@@ -62,6 +63,9 @@ abstract class Basic
    */
   public function __construct ($opts=[])
   {
+    if ($this->object_data)
+      $this->data = new \ArrayObject();
+
     // Assign an exception handler, if we specified one.
     if (isset($this->exception_handler))
     {

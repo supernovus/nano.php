@@ -21,14 +21,21 @@ function get_php_content ($__view_file, $__view_data=NULL)
 { 
   // First, start saving the buffer.
   ob_start();
-  if (isset($__view_data) && is_array($__view_data))
+  if (isset($__view_data))
   { // First let's see if we have set a local name for the full data.
     if (isset($__view_data['__data_alias']))
     {
       $__data_alias = $__view_data['__data_alias'];
       $$__data_alias = $__view_data;
     }
-    extract($__view_data);
+    if ($__view_data instanceof \ArrayObject)
+    {
+      extract($__view_data->getArrayCopy());
+    }
+    elseif (is_array($__view_data))
+    {
+      extract($__view_data);
+    }
   }
   // Now, let's load that template file.
   include $__view_file;

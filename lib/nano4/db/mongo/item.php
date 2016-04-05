@@ -34,7 +34,7 @@ class Item extends \Nano4\DB\Child
     else
       $data = $this->data;
 
-    if (isset($this->data[$pk]) && !isset($this->modified_data[$pk]))
+    if (isset($data[$pk]) && !isset($this->modified_data[$pk]))
     { // Update an existing row.
       if (count($this->modified_data)==0) return;
       $fields = array_keys($this->modified_data);
@@ -48,8 +48,7 @@ class Item extends \Nano4\DB\Child
         if ($field == $pk) continue; // Sanity check.
         $cdata[$field] = $data[$field];
       }
-      $id = $data[$pk];
-      return $this->parent->save($id, ['$set'=>$cdata]);
+      return $this->parent->save($data, ['$set'=>$cdata]);
     }
     else
     { // Insert a new row.

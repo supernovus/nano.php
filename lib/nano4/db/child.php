@@ -52,13 +52,12 @@ abstract class Child implements \ArrayAccess
   // Build a new object.
   public function __construct ($opts, $parent=null, $table=null, $pk=null)
   { 
+    $data = null;
     if (isset($opts, $opts['parent']) && !isset($parent))
     { // Using new-style constructor.
       $this->parent = $opts['parent'];
       if (isset($opts['data']))
-        $this->data = $opts['data'];
-      else
-        $this->data = [];
+        $data = $opts['data'];
       if (isset($opts['table']))
         $this->table = $opts['table'];
       if (isset($opts['pk']))
@@ -66,7 +65,8 @@ abstract class Child implements \ArrayAccess
     }
     elseif (isset($opts, $parent))
     { // Using old-style constructor.
-      $this->data   = $opts;
+      $data = $opts;
+      $opts = [];
       $this->parent = $parent;
       if (isset($table))
         $this->table = $table;
@@ -77,6 +77,25 @@ abstract class Child implements \ArrayAccess
     {
       throw new \Exception("Invalid constructor for DB\Item");
     }
+
+    if ($data === null || is_bool($data))
+    {
+      if (is_callable([$this, 'default_data']))
+      {
+        $data = $this->default_data($opts);
+      }
+      else
+      {
+        $data = [];
+      }
+    }
+
+    if (is_callable([$this, 'init_data']))
+    {
+      $data = $this->init_data($data, $opts);
+    }
+
+    $this->data = $data;
     $this->modified_data = [];
   }
 

@@ -163,10 +163,12 @@ abstract class Model extends Simple implements \Iterator, \ArrayAccess
   {
     $pk = $this->primary_key;
     $data = $this->get_collection();
+    /* not using this hack anymore.
     if (isset($update) && (is_string($doc) || $doc instanceof ObjectID))
     {
       $doc = [$pk=>$doc];
     }
+    */
     if (isset($doc[$pk]))
     {
       if (is_string($doc[$pk]))
