@@ -11,6 +11,10 @@ use Nano4\Exception;
  *
  * TODO: more logging/debugging.
  */
+
+// The recognized HTTP methods.
+const ROUTE_METHODS = ['GET','POST','PUT','DELETE','HEAD','PATCH','OPTIONS'];
+
 class Router
 {
   protected $routes = [];  // A flat list of routes.
@@ -81,7 +85,7 @@ class Router
   /**
    * Add a route
    */
-  public function add ($route, $is_default=False, $add_it=True)
+  public function add ($route, $is_default=False, $add_it=True, $chain=null)
   {
     if ($route instanceof Route)
     { // It's a route object.
@@ -101,12 +105,18 @@ class Router
       if ($is_default)
         $this->default = $route;
 
+      if (isset($chain) && is_array($chain))
+      {
+//        error_log("chaining: ".$route->uri);
+        $this->load($chain, $route);
+      }
+
       return $route;
     }
     elseif (is_array($route))
     { // It's options for constructing a route.
       $route = new Route($route);
-      return $this->add($route, $is_default, $add_it); // magical recursion.
+      return $this->add($route, $is_default, $add_it, $chain); // magical recursion.
     }
     elseif (is_string($route))
     { 
@@ -134,14 +144,22 @@ class Router
       }
 
       // If the third parameter is a string or array, it's allowed methods.
-      if (is_string($add_it))
-        $ropts['methods'] = [$add_it];
-      elseif (is_array($add_it))
-        $ropts['methods'] = $add_it;
+      if (!is_bool($add_it))
+      {
+        if (is_string($add_it) && in_array($add_it, ROUTE_METHODS))
+        { // It's an HTTP method.
+          $ropts['methods'] = [$add_it];
+        }
+        elseif (is_array($add_it) && in_array($add_it[0], ROUTE_METHODS))
+        { // It's a list of route methods.
+          $ropts['methods'] = $add_it;
+        }
+        $add_it = true;
+      }
 
       // Okay, build the route, and add it.
       $route = new Route($ropts);
-      return $this->add($route);
+      return $this->add($route, false, $add_it, $chain);
     }
     else
     {
@@ -153,7 +171,7 @@ class Router
   {
 /*    $msg = 'load('.json_encode($routes);
     if (isset($parent))
-      $msg .= ', $parent';
+      $msg .= ', '.$parent->uri;
     $msg .= ')';
     error_log($msg); */
 
@@ -632,7 +650,7 @@ class Route
   }
 
   // For chaining Routes.
-  public function add ($suburi, $action=Null, $rechain=False)
+  public function add ($suburi, $action=Null, $rechain=False, $nestchain=null)
   {
     $ctrl = $this->controller;
     $baseuri = rtrim($this->uri, "/");
@@ -667,17 +685,21 @@ class Route
     // If the third parameter is a string or array, it's allowed methods.
     if (!is_bool($rechain))
     {
-      if (is_string($rechain))
+      if (is_string($rechain) && in_array($rechain, ROUTE_METHODS))
+      {
         $ropts['methods'] = [$rechain];
-      elseif (is_array($rechain))
+      }
+      elseif (is_array($rechain) && in_array($rechain[0], ROUTE_METHODS))
+      {
         $ropts['methods'] = $rechain;
+      }
       // Reset rechain back to a boolean value.
       $rechain = False;
     }
 
     // Build the sub-route with our compiled options.
     $subroute = new Route($ropts);
-    $this->parent->add($subroute);
+    $this->parent->add($subroute, false, true, $nestchain);
 
     if ($rechain)
       return $subroute;
