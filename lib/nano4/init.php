@@ -10,6 +10,22 @@
 
 namespace Nano4;
 
+/**
+ * Populate some options in an array or array-like object based
+ * on the contents of a JSON configuration file.
+ */
+function load_opts_from ($file, &$opts)
+{
+  if (file_exists($file))
+  {
+    $conf = json_decode(file_get_contents($file), true);
+    foreach ($conf as $ckey => $cval)
+    {
+      $opts[$ckey] = $cval;
+    }
+  }
+}
+
 /** 
  * Get the output content from a PHP file.
  * This is used as the backend function for all View related methods.
