@@ -1,5 +1,5 @@
 {
-  "desc": "  Installs into an application folder with a webroot within.\n  Uses newer techniques and libraries such as the new Router plugin.\n  Uses modules for all other features.",
+  "desc": "  Installs into an application folder with a webroot within.\n  Uses modules for all other features.",
   "base": "approot",
   "appname": "Example",
   "nano.js":

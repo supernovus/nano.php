@@ -241,7 +241,7 @@ function put_tree ($src, $tgt, $contents=false)
 	global $copymode;
 	if ($copymode)
 	{
-		system(rsync -a $src/ $tgt/);
+		system("rsync -a $src/ $tgt/");
 	}
 	elseif ($contents)
 	{
