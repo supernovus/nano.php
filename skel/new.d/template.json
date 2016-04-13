@@ -1,0 +1,48 @@
+{
+  "desc": "  Installs into an application folder with a webroot within.\n  Uses newer techniques and libraries such as the new Router plugin.\n  Uses modules for all other features.",
+  "base": "approot",
+  "appname": "Example",
+  "nano.js":
+  {
+    "grunt":   true,
+    "modules": true,
+    "scripts": "htdocs/scripts",
+    "styles":  "htdocs/style"
+  },
+  "requires": ["templates"],
+  "modules":
+  {
+    "sqlite":
+    {
+      "desc":     "Use SQL database models, and an example SQLite3 database.",
+      "path":     "db/sqlite",
+      "provides": ["db"],
+      "postinstall":
+        "cd $TARGET && mkdir db && touch db/staging.sqlite"
+    },
+    "mysql":
+    {
+      "desc":     "Use SQL database models, with MySQL/MariaDB example files.",
+      "path":     "db/mysql",
+      "provides": ["db"]
+    },
+    "mongo":
+    {
+      "desc":     "Use the MongoDB database models and example files.",
+      "path":     "db/mongo",
+      "provides": ["db"]
+    },
+    "translations":
+    {
+      "desc":     "Support translation strings in templates.",
+      "path":     "templates/translatable",
+      "provides": ["templates"]
+    },
+    "simple":
+    {
+      "desc":     "Simple templates with no translations.",
+      "path":     "templates/simple",
+      "provides": ["templates"]
+    }
+  }
+}
