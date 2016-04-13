@@ -1,0 +1,4 @@
+{
+  "users": {".type": "db", "table": "users"},
+  "docs":  {".type": "db", "table": "docs"}
+}

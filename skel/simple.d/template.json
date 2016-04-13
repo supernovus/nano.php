@@ -9,5 +9,5 @@
     "scripts": "scripts",
     "styles":  "style"
   },
-  "postinstall": "cd $TARGET && mkdir db && touch db/staging.sqlite"
+  "postinstall": "cd $TARGET && mkdir db && touch db/staging.sqlite && sqlite3 db/staging.sqlite '.load doc/db-schema/users.sql'"
 }

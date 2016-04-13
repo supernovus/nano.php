@@ -5,34 +5,37 @@
  *
  */
 
+namespace Example;
+
 // We are using Nano4 as our framework.
 require_once 'lib/nano4/init.php';
-
-// Define our namespace here.
-define('NANO_CLASS_PREFIX', "\\ExampleApp");
-
-// Define our pages here.
-define('PAGE_DEFAULT', '/');
-define('PAGE_LOGIN',   '/login');
-define('PAGE_LOGOUT',  '/logout');
-
-// Define our layouts here.
-define('LAYOUT_DEFAULT', 'default');
 
 // Create our Nano instance.
 $nano = \Nano4\initialize();
 
 // Load our database configuration.
-$nano->conf->loadInto('db', 'conf/db.json', 'json');
+$nano->conf->setDir('conf');
+
+// Add our controllers.
+$nano->controllers->addNS("\\Example\\Controllers");
+$nano->models->addNS("\\Example\\Models");
+
+// Use default view loaders ('screens' and 'layouts')
+// By passing true, we use the default 'views/screens', 'views/layouts'
+// folders.
+$nano->controllers->use_screens(true);
 
 // Add Dispatch methods into Nano itself.
-$nano->dispatch = ['extend'=>true];
+$nano->router = ['extend'=>true];
 
 // Add routes to the auth controller to handle login and logout.
-$nano->addRoutes('auth', array('login', 'logout'));
+$nano->addRoute(['controller'=>'auth', false, false)
+  ->add('login')
+  ->add('logout');
+// We could add more bits like forgot password here.
 
 // Set our "root" controller.
-$nano->setRoot('welcome');
+$nano->addRoute('/', 'welcome');
 
 // Set the controller to handle unknown paths.
 $nano->setDefault('invalid');

@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS users
  email VARCHAR(255), 
  name VARCHAR(255), 
  hash VARCHAR(255), 
- token VARCHAR(255)
+ token VARCHAR(255),
+ reset VARCHAR(255)
 );
 
