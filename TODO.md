@@ -2,8 +2,7 @@
 
 ## Before public release
 
-* Finish creating ./skel/standard.d with the new app template and modules.
-* Update the old ./skel/simple.d with Nano4 libraries and Router plugin.
+* Finish creating ./skel/flexible.d with the new app template and modules.
 * Make a new bin/user.php script for the new template(s).
 * Finish and test the bin/initapp.php script.
 

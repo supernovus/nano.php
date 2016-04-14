@@ -1,13 +1,14 @@
 {
-  "desc": "  Installs into a single webroot folder.\n  Uses SQL database models (with SQLite as example DB.)\n  Doesn't offer translations, or anything advanced.",
+  "desc": "  Installs into a single folder.\n  Uses SQL database models (with SQLite as example DB.)\n  Doesn't offer translations, or anything advanced.",
   "base": "approot",
   "appname": "Example",
   "nano.js":
   {
     "grunt":   false,
+    "gulp":    false,
     "modules": false,
     "scripts": "scripts",
     "styles":  "style"
   },
-  "postinstall": "cd $TARGET && mkdir db && touch db/staging.sqlite && sqlite3 db/staging.sqlite '.load doc/db-schema/users.sql'"
+  "setup": ["bin/setup_database.sh"]
 }

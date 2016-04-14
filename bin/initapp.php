@@ -111,12 +111,24 @@ if (isset($opts['M']))
 		echo "  Modules:\n";
 		foreach ($conf['modules'] as $modname => $module)
 		{
+      if (isset($module['internal']) && $module['internal']) continue;
 			echo "    '$modname'\n";
 			echo "      ".$module['desc']."\n";
 			if (isset($module['provides']))
 			{
 				echo "      Provides: ".join(', ', $module['provides'])."\n";
 			}
+      if (isset($module['default']))
+      {
+        if (is_array($module['default']))
+        {
+          echo "      Default for: ".join(', ', $module['default'])."\n";
+        }
+        elseif (is_bool($module['default']) && $module['default'])
+        {
+          echo "      Default for: ".join(', ', $module['provides'])."\n";
+        }
+      }
 		}
 	}
 	else
@@ -136,40 +148,74 @@ if (file_exists($target))
 
 $modules = null;
 $provides = [];
+$defaults = [];
 if (isset($conf['modules']) && isset($opts['m']))
 {
 	$modules = [];
 	$amodules = $conf['modules'];
+
+  // Scan for default modules.
+  foreach ($amodules as $module)
+  {
+    if (isset($module['provides'], $module['default']))
+    {
+      if (is_array($module['default']))
+      {
+        foreach ($module['default'] as $provide)
+        {
+          $defaults[$provide] = $module;
+        }
+      }
+      elseif (is_bool($module['default']) && $module['default'])
+      {
+        foreach ($module['provides'] as $provide)
+        {
+          $defaults[$provide] = $module;
+        }
+      }
+    }
+  }
+
+  // A function to add modules that were selected or used by other modules.
+  function use_modules ($modlist, $where)
+  {
+    global $modules, $amodules;
+  	foreach ($modlist as $modname)
+  	{
+  		if (!isset($amodules[$modname]))
+  		{
+  			usage("unknown module '$modname' specified in $where.");
+  		}
+  		$module = $amodules[$modname];
+  		if (isset($module['provides']))
+  		{
+  			foreach ($module['provides'] as $provide)
+  			{
+  				if (isset($provides[$provide]))
+  				{
+  					usage("mutually exclusive modules both provide '$provide'.");
+  				}
+  				else
+  				{
+  					$provides[$provide] = true;
+  				}
+  			}
+  		}
+      if (isset($module['use']))
+      {
+        use_modules($module['use'], "$modname module definition");
+      }
+  		$modules[] = $module;
+  	}
+  }
+
 	if (is_string($opts['m']))
 		$tmodules = [$opts['m']];
 	elseif (is_array($opts['m']))
 		$tmodules = $opts['m'];
 	else
 		usage("invalid -m paramter passed");
-	// Let's get a list of provides and make sure there are no duplicates.
-	foreach ($tmodules as $modname)
-	{
-		if (!isset($amodules[$modname]))
-		{
-			usage("unknown module '$modname' specified in -m parameter.");
-		}
-		$module = $amodules[$modname];
-		if (isset($module['provides']))
-		{
-			foreach ($module['provides'] as $provide)
-			{
-				if (isset($provides[$provide]))
-				{
-					usage("mutually exclusive -m options both provide '$provide'.");
-				}
-				else
-				{
-					$provides[$provide] = true;
-				}
-			}
-		}
-		$modules[] = $module;
-	}
+  use_modules($tmodules, '-m parameter');
 }
 
 // Now let's make sure any required module provides are fullfilled.
@@ -179,7 +225,14 @@ if (isset($conf['requires']))
 	{
 		if (!isset($provides[$require]))
 		{
-			usage("missing a module providing required '$require' resource.");
+      if (isset($defaults[$require]))
+      {
+        $modules[] = $defaults[$require];
+      }
+      else
+      {
+			  usage("missing a module providing required '$require' resource.");
+      }
 		}
 	}
 }
@@ -192,7 +245,7 @@ $appns = ucfirst($appid);
 $tempns = $conf['appname'];
 $tempid = strtolower($tempns);
 
-$basedir = $tdir/$conf['base'];
+$basedir = $tdir.'/'.$conf['base'];
 if (!file_exists($basedir))
 {
 	invalid_settings();
@@ -201,10 +254,16 @@ if (!file_exists($basedir))
 mkdir($target, 0755, true);
 system("rsync -a $basedir/ $target/");
 
+foreach ($modules as $module)
+{
+  $mdir = $tdir.'/'.$module['path'];
+  system("rsync -a $mdir/ $target/");
+}
+
 if (file_exists("$target/lib/$tempid"))
 {
 	rename("$target/lib/$tempid", "$target/lib/$appid");
-	system("find $target/lib/$tempid -name '*.php' | xargs perl -pi -e \"s/$tempns/$appns/g\"");
+	system("find $target/lib/$appid -name '*.php' | xargs perl -pi -e \"s/$tempns/$appns/g\"");
 }
 
 function put_file ($src, $tgt)
@@ -268,6 +327,7 @@ if (isset($opts['j']) && isset($conf['nano.js']))
 	$scriptdest = $jsconf['scripts'];
 	$styledest  = $jsconf['styles'];
 	$dogrunt    = $jsconf['grunt'];
+  $dogulp     = $jsconf['gulp'];
 	$domods     = $jsconf['modules'];
 
 	put_tree("$jspath/scripts", "$target/$scriptdest", true);
@@ -279,12 +339,52 @@ if (isset($opts['j']) && isset($conf['nano.js']))
 		{
 			mkdir("$target/grunt");
 			system("rsync -a $jspath/grunt/ $target/grunt/");
-			echo "==> You will need to customize the $target/grunt/* files";
+      system("perl -pi -e 's/nano/$appid/g' $target/grunt/*");
 		}
 	}
+  if ($dogulp)
+  {
+    if (!file_exists("$target/gulpfile.js"))
+    {
+      copy("$jspath/gulpfile.js", "$target/gulpfile.js");
+      system("perl -pi -e 's/nano/$appid/g' $target/gulpfile.js");
+    }
+  }
 	if ($domods)
 	{
 		put_tree("$jspath/node_modules", "$target/node_modules", true);
 	}
+}
+
+// Now let's go into the target directory.
+chdir($target);
+
+// First run any module setup scripts.
+foreach ($modules as $module)
+{
+  if (isset($module['setup']))
+  {
+    foreach ($module['setup'] as $script)
+    {
+      system("$script");
+    }
+  }
+  if (isset($module['notify']))
+  {
+    echo $module['notify']."\n";
+  }
+}
+
+// Now run the template setup scripts.
+if (isset($conf['setup']))
+{
+  foreach ($conf['setup'] as $script)
+  {
+    system("$script");
+  }
+}
+if (isset($conf['notify']))
+{
+  echo $conf['notify']."\n";
 }
 
