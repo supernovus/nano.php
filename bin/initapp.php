@@ -12,6 +12,10 @@
 
 namespace Nano4;
 
+// Even though I personally use gulp 4, gulp 3 is still considered the 'stable'
+// version, so it's going to be the default if the template doesn't specify one.
+const DEFAULT_GULP = 3;
+
 function invalid_settings ()
 {
 	die("the specified template has invalid settings");
@@ -39,20 +43,24 @@ Commands:
 
 Options for -A:
 
- -t <template_name>    Choose the template you want to use. <mandatory>
+ -t <template_name>              Choose the template. (Required)
 
- -m <module> ...       Choose the modules you want.
-                       Some modules may be combined, some may not.
+ -m <module> [-m <module2> ...]  Choose the modules for the template.
+                                 Some modules may be combined, some may not.
+                                 See the -M listings for details.
 
- -j <path_to_nanojs>   Use Nano.js in the application.
+ -j <path_to_nanojs>             Use Nano.js in the application.
 
- -c                    Copy the Nano.php and Nano.js files instead of linking.
+ -c                              Copy all files instead of using symlinks.
+
+ -n <app_name>                   A name for your app, if not specified,
+                                 it will be derived from the target_dir.
 
 ENDOFTEXT;
 	exit;
 }
 
-$opts = getopt('LA:M:t:m:j:c');
+$opts = getopt('LA:M:t:m:j:cn:');
 
 if (!isset($opts['L']) && !isset($opts['M']) && !isset($opts['A']))
 {
@@ -239,8 +247,24 @@ if (isset($conf['requires']))
 
 // If we made it this far, the initial consistency checks are done.
 
-$appid = strtolower(basename($target));
-$appns = ucfirst($appid);
+if (isset($opts['n']))
+{
+  $appid = preg_replace('/\W+/', '_', strtolower(trim($opts['n'])));
+  $appns = explode('_', $appid);
+  foreach ($appns as &$ns)
+  {
+    if ($ns != '')
+    {
+      $ns = ucfirst($ns);
+    } 
+  }
+  $appns = join('', $appns);
+}
+else
+{
+  $appid = strtolower(basename($target));
+  $appns = ucfirst($appid);
+}
 
 $tempns = $conf['appname'];
 $tempid = strtolower($tempns);
@@ -256,14 +280,58 @@ system("rsync -a $basedir/ $target/");
 
 foreach ($modules as $module)
 {
-  $mdir = $tdir.'/'.$module['path'];
-  system("rsync -a $mdir/ $target/");
+  if (isset($module['path']))
+  {
+    $mdir = $tdir.'/'.$module['path'];
+    system("rsync -a $mdir/ $target/");
+  }
 }
 
+function rename_app_refs ($target_item)
+{
+  global $appid, $appns, $tempns, $tempid;
+  $scmd = "xargs perl -pi -e \"s/$tempns/$appns/g; s/$tempid/$appid/g\"";
+  if (is_link($target_item))
+  {
+    error_log("rename_app_refs shouldn't be used on links!");
+    return;
+  }
+  if (is_dir($target_item))
+  {
+  	system("find $target_item -name '*.php' | $scmd");
+  }
+  elseif (is_file($target_item))
+  {
+    system("$scmd $target_item");
+  }
+}
+
+// TODO: make the lib path configurable.
 if (file_exists("$target/lib/$tempid"))
 {
 	rename("$target/lib/$tempid", "$target/lib/$appid");
-	system("find $target/lib/$appid -name '*.php' | xargs perl -pi -e \"s/$tempns/$appns/g\"");
+  rename_app_refs("$target/lib/$appid");
+}
+
+if (isset($conf['bin']))
+  $bins = $conf['bin'];
+else
+  $bins = [];
+
+foreach ($modules as $module)
+{
+  if (isset($module['bin']))
+  {
+    $bins = array_merge($bins, $module['bin']);
+  }
+}
+
+foreach ($bins as $bin)
+{
+  if (file_exists("$target/$bin"))
+  {
+    rename_app_refs("$target/$bin");
+  }
 }
 
 function put_file ($src, $tgt)
@@ -315,7 +383,7 @@ function put_tree ($src, $tgt, $contents=false)
 
 put_tree("$nanolib/nano4", "$target/lib/nano4");
 
-if (isset($opts['j']) && isset($conf['nano.js']))
+if (isset($opts['j']))
 {
 	$jspath = $opts['j'];
 	if (!file_exists($jspath))
@@ -323,15 +391,34 @@ if (isset($opts['j']) && isset($conf['nano.js']))
 		error("'$jspath' does not exist, skipping Nano.js installation.");
 	}
 
-	$jsconf = $conf['nano.js'];
-	$scriptdest = $jsconf['scripts'];
-	$styledest  = $jsconf['styles'];
-	$dogrunt    = $jsconf['grunt'];
-  $dogulp     = $jsconf['gulp'];
-	$domods     = $jsconf['modules'];
+  if (isset($conf['nano.js']))
+    $jsconf = $conf['nano.js'];
+  else
+    $jsconf = [];
+  foreach ($modules as $module)
+  {
+    if (isset($module['nano.js']))
+    {
+      $jsconf += $module['nano.js'];
+    }
+  }
 
-	put_tree("$jspath/scripts", "$target/$scriptdest", true);
-	put_tree("$jspath/style",   "$target/$styledets",  true);
+  if (isset($jsconf['scripts']))
+  {
+  	$scriptdest = $jsconf['scripts'];
+  	put_tree("$jspath/scripts", "$target/$scriptdest", true);
+  }
+
+  if (isset($jsconf['styles']))
+  {
+  	$styledest  = $jsconf['styles'];
+  	put_tree("$jspath/style",   "$target/$styledets",  true);
+  }
+
+	$dogrunt    = isset($jsconf['grunt'])   ? $jsconf['grunt']   : false;
+  $dogulp     = isset($jsconf['gulp'])    ? $jsconf['gulp']    : false;
+	$domods     = isset($jsconf['modules']) ? $jsconf['modules'] : false;
+
 	if ($dogrunt)
 	{
 		put_file("$jspath/Gruntfile.js", "$target/Gruntfile.js");
@@ -346,8 +433,15 @@ if (isset($opts['j']) && isset($conf['nano.js']))
   {
     if (!file_exists("$target/gulpfile.js"))
     {
-      copy("$jspath/gulpfile.js", "$target/gulpfile.js");
-      system("perl -pi -e 's/nano/$appid/g' $target/gulpfile.js");
+      $gulp_ver = is_int($dogulp) ? $dogulp : DEFAULT_GULP;
+      $gulp_src = "src/build/gulp$gulp_ver/gulpfile.js";
+      if (file_exists("$target/$gulp_src"))
+        copy("$target/$gulp_src", "$target/gulpfile.js");
+      else
+      {
+        copy("$jspath/$gulp_src", "$target/gulpfile.js");
+        system("perl -pi -e 's/nano/$appid/g' $target/gulpfile.js");
+      }
     }
   }
 	if ($domods)

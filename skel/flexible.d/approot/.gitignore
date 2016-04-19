@@ -1,12 +1,13 @@
 # Ignore compiled scripts and styles.
-htdocs/scripts/app
-htdocs/style/app
+/htdocs/scripts/app
+/htdocs/style/app
 
 # Ignore stuff injected from composer.
-lib/vendor
+/lib/vendor
 
 # Ignore configuration files that contain sensitive data.
-conf/db.json
-conf/site.json
-conf/mail.json
-conf/*.local
+/conf/db.json
+/conf/site.json
+/conf/mail.json
+/conf/*.local
+

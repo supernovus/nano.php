@@ -2,17 +2,43 @@
   "desc": "  Installs into an application folder with a webroot within.\n  Uses modules for all other features.",
   "base": "approot",
   "appname": "Example",
+  "bin": ["htdocs/index.php"],
   "nano.js":
   {
-    "grunt":   false,
-    "gulp":    true,
     "modules": true,
     "scripts": "htdocs/scripts",
     "styles":  "htdocs/style"
   },
-  "requires": ["templates","db"],
+  "requires": ["views","db"],
   "modules":
   {
+    "gulp3":
+    {
+      "desc": "Use gulp 3.x for build system (use with -j).",
+      "nano.js":
+      {
+        "gulp": 3
+      },
+      "provides": ["build"]
+    },
+    "gulp4":
+    {
+      "desc": "Use gulp 4.x for build system (use with -j).",
+      "nano.js":
+      {
+        "gulp": 4
+      },
+      "provides": ["build"]
+    },
+    "grunt":
+    {
+      "desc": "Use grunt for build system (use with -j).",
+      "nano.js":
+      {
+        "grunt": true
+      },
+      "provides": ["build"]
+    },
     "sql":
     {
       "internal": true,
@@ -47,15 +73,15 @@
     "translations":
     {
       "default":  true,
-      "desc":     "Support translation strings in templates.",
-      "path":     "templates/translatable",
-      "provides": ["templates"]
+      "desc":     "Support translation strings in views.",
+      "path":     "views/translatable",
+      "provides": ["views"]
     },
     "simple":
     {
-      "desc":     "Simple templates with no translations.",
-      "path":     "templates/simple",
-      "provides": ["templates"]
+      "desc":     "Simple views with no translations.",
+      "path":     "views/simple",
+      "provides": ["views"]
     }
   }
 }
