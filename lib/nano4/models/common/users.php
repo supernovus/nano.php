@@ -5,6 +5,7 @@ namespace Nano4\Models\Common;
 trait Users
 {
   abstract public function getUser ($identifier, $fieldname=null);
+  abstract public function listUsers ($fields=[]);
   abstract public function newChild ($data=[], $opts=[]);
 
   protected $login_field = 'email'; // The unique stringy DB field.

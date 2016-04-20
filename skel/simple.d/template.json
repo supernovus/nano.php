@@ -2,7 +2,7 @@
   "desc": "  Installs into a single folder.\n  Uses SQL database models (with SQLite as example DB.)\n  Doesn't offer translations, or anything advanced.",
   "base": "approot",
   "appname": "SimpleApp",
-  "bin": ["index.php"],
+  "refs": ["index.php"],
   "nano.js":
   {
     "grunt":   false,
@@ -11,5 +11,5 @@
     "scripts": "scripts",
     "styles":  "style"
   },
-  "setup": ["bin/setup_database.sh"]
+  "setup": ["bin/create_db.sh"]
 }

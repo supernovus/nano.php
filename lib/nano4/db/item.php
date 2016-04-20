@@ -7,6 +7,8 @@ namespace Nano4\DB;
  */
 class Item extends Child
 {
+  use \Nano4\Data\JSON;
+
   /**
    * If set to an array of field names, only those fields will be
    * used when finding the id of a newly created row.
@@ -92,6 +94,14 @@ class Item extends Child
     $pk = $this->primary_key;
     $where = [$pk => $this->data[$pk]];
     return $this->parent->delete($where);
+  }
+
+  /**
+   * Convert to an array. Override this as required.
+   */
+  public function to_array ($opts=[])
+  {
+    return $this->data;
   }
 
 } // end class Item

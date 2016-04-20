@@ -103,13 +103,13 @@ abstract class Basic
   }
 
   // Internal function to actually call the constructors.
-  protected function needs ($constructor, $opts=[], $fullname=False)
+  protected function needs ($constructor, $opts=[], $fullname=False, $nofail=false)
   {
     if (is_array($constructor))
     {
       foreach ($constructor as $const)
       {
-        $this->needs($const, $opts, $fullname);
+        $this->needs($const, $opts, $fullname, $nofail);
       }
       return;
     }
@@ -130,13 +130,19 @@ abstract class Basic
 
     if (method_exists($this, $method))
     {
-      $this->called_constructor[$method] = True;
+      $this->called_constructors[$method] = true;
       $this->$method($opts);
     }
-    else
+    elseif (!$nofail)
     {
       throw new Exception("Invalid constructor '$constructor' requested.");
     }
+  }
+
+  // Internal function to load a constructor only if it exists.
+  protected function wants ($constructor, $opts=[], $fullname=False)
+  {
+    return $this->needs($constructor, $opts, $fullname, true);
   }
 
   // Used for composed traits. Check for a property, or return a default.

@@ -17,6 +17,9 @@ trait UserAuth
     // Ensure that modelconf is loaded first.
     $this->needs('modelconf');
 
+    // If the 'auth' trait is available, load it first.
+    $this->wants('auth');
+
     // Some configurable settings, with appropriate defaults.
     $save_uri    = $this->get_prop('save_uri',    True);
     $need_user   = $this->get_prop('need_user',   True);

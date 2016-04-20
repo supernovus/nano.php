@@ -2,7 +2,7 @@
   "desc": "  Installs into an application folder with a webroot within.\n  Uses modules for all other features.",
   "base": "approot",
   "appname": "Example",
-  "bin": ["htdocs/index.php"],
+  "refs": ["htdocs/index.php"],
   "nano.js":
   {
     "modules": true,

@@ -53,8 +53,8 @@ Options for -A:
 
  -c                              Copy all files instead of using symlinks.
 
- -n <app_name>                   A name for your app, if not specified,
-                                 it will be derived from the target_dir.
+ -n <app_namespace>              The PHP namespace for your app (e.g. 'MyApp').
+                                 If not specified, it will use <target_dir>.
 
 ENDOFTEXT;
 	exit;
@@ -93,7 +93,6 @@ if (isset($opts['L']))
 
 $nanodir = getcwd();
 $nanolib = "$nanodir/lib";
-$nanobin = "$nanodir/bin";
 
 if (isset($opts['M']))
 	$template = $opts['M'];
@@ -248,23 +247,17 @@ if (isset($conf['requires']))
 // If we made it this far, the initial consistency checks are done.
 
 if (isset($opts['n']))
-{
-  $appid = preg_replace('/\W+/', '_', strtolower(trim($opts['n'])));
-  $appns = explode('_', $appid);
-  foreach ($appns as &$ns)
-  {
-    if ($ns != '')
-    {
-      $ns = ucfirst($ns);
-    } 
-  }
-  $appns = join('', $appns);
+{ // The user specified a namespace.
+  $appns = preg_replace('/\W+/', '', trim($opts['n']));
+  $appid = strtolower($appns);
 }
 else
-{
+{ // Use the basename of the target folder to derive the namespace.
   $appid = strtolower(basename($target));
   $appns = ucfirst($appid);
 }
+
+echo "Creating new '$appns' application in '$target'...\n";
 
 $tempns = $conf['appname'];
 $tempid = strtolower($tempns);
@@ -287,7 +280,7 @@ foreach ($modules as $module)
   }
 }
 
-function rename_app_refs ($target_item)
+function rename_app_refs ($target_item, $name='*.php')
 {
   global $appid, $appns, $tempns, $tempid;
   $scmd = "xargs perl -pi -e \"s/$tempns/$appns/g; s/$tempid/$appid/g\"";
@@ -298,7 +291,7 @@ function rename_app_refs ($target_item)
   }
   if (is_dir($target_item))
   {
-  	system("find $target_item -name '*.php' | $scmd");
+  	system("find $target_item -name $name | $scmd");
   }
   elseif (is_file($target_item))
   {
@@ -313,24 +306,24 @@ if (file_exists("$target/lib/$tempid"))
   rename_app_refs("$target/lib/$appid");
 }
 
-if (isset($conf['bin']))
-  $bins = $conf['bin'];
+if (isset($conf['refs']))
+  $refs = $conf['refs'];
 else
-  $bins = [];
+  $refs = [];
 
 foreach ($modules as $module)
 {
-  if (isset($module['bin']))
+  if (isset($module['refs']))
   {
-    $bins = array_merge($bins, $module['bin']);
+    $refs = array_merge($refs, $module['refs']);
   }
 }
 
-foreach ($bins as $bin)
+foreach ($refs as $ref)
 {
-  if (file_exists("$target/$bin"))
+  if (file_exists("$target/$ref"))
   {
-    rename_app_refs("$target/$bin");
+    rename_app_refs("$target/$ref");
   }
 }
 
@@ -344,17 +337,6 @@ function put_file ($src, $tgt)
 	else
 	{
 		symlink($src, $tgt);
-	}
-}
-
-if (isset($conf['bin']))
-{
-	mkdir("$target/bin", 0755, true);
-	foreach ($conf['bin'] as $srcname => $tgtname)
-	{
-		if (is_bool($tgtname))
-			$tgtname = $srcname;
-		put_file("$nanobin/$srcname", "$target/bin/$tgtname");
 	}
 }
 
@@ -383,12 +365,12 @@ function put_tree ($src, $tgt, $contents=false)
 
 put_tree("$nanolib/nano4", "$target/lib/nano4");
 
-if (isset($opts['j']))
+function do_nanojs ($jspath)
 {
-	$jspath = $opts['j'];
 	if (!file_exists($jspath))
 	{
-		error("'$jspath' does not exist, skipping Nano.js installation.");
+		error_log("warning: '$jspath' does not exist, skipping Nano.js installation.");
+    return;
 	}
 
   if (isset($conf['nano.js']))
@@ -421,26 +403,54 @@ if (isset($opts['j']))
 
 	if ($dogrunt)
 	{
-		put_file("$jspath/Gruntfile.js", "$target/Gruntfile.js");
-		if (!file_exists("$target/grunt"))
+    if (file_exists("$target/Gruntfile.js"))
+    {
+      if (!is_link("$target/Gruntfile.js"))
+      {
+        rename_app_refs("$target/Gruntfile.js");
+      }
+    }
+    else
+    {
+      put_file("$jspath/src/grunt/Gruntfile.js", "$target/Gruntfile.js");
+    }
+    if (file_exists("$target/grunt"))
+    {
+      rename_app_refs("$target/grunt", '*.js');
+    }
+    else
 		{
-			mkdir("$target/grunt");
-			system("rsync -a $jspath/grunt/ $target/grunt/");
-      system("perl -pi -e 's/nano/$appid/g' $target/grunt/*");
+      $grunt_src = "src/build/grunt/tasks/";
+      foreach ([$target, $jspath] as $grunt_root)
+      {
+        if (file_exists("$grunt_root/$grunt_src"))
+        {
+          mkdir("$target/grunt");
+          system("rsync -a $grunt_root $target/grunt/");
+          rename_app_refs("$target/grunt", '*.js');
+          break;
+        }
+      }
 		}
 	}
   if ($dogulp)
   {
-    if (!file_exists("$target/gulpfile.js"))
+    if (file_exists("$target/gulpfile.js"))
+    {
+      rename_app_refs("$target/gulpfile.js");
+    }
+    else
     {
       $gulp_ver = is_int($dogulp) ? $dogulp : DEFAULT_GULP;
       $gulp_src = "src/build/gulp$gulp_ver/gulpfile.js";
-      if (file_exists("$target/$gulp_src"))
-        copy("$target/$gulp_src", "$target/gulpfile.js");
-      else
+      foreach ([$target, $jspath] as $gulp_root)
       {
-        copy("$jspath/$gulp_src", "$target/gulpfile.js");
-        system("perl -pi -e 's/nano/$appid/g' $target/gulpfile.js");
+        if (file_exists("$gulp_root/$gulp_src"))
+        {
+          copy("$gulp_root/$gulp_src", "$target/gulpfile.js");
+          rename_app_refs("$target/gulpfile.js");
+          break;
+        }
       }
     }
   }
@@ -450,17 +460,30 @@ if (isset($opts['j']))
 	}
 }
 
+if (isset($opts['j']))
+{
+  do_nanojs($opts['j']);
+}
+
 // Now let's go into the target directory.
 chdir($target);
+
+$BASEENV = "NANODIR=$nanodir SKELDIR=$tdir BASEDIR=$basedir";
+if (isset($jspath))
+  $BASEENV .= " NANOJSDIR=$jspath";
 
 // First run any module setup scripts.
 foreach ($modules as $module)
 {
   if (isset($module['setup']))
   {
+    if (isset($module['path']))
+      $MODENV = "$BASEENV MODDIR=".$module['path'];
+    else
+      $MODENV = $BASEENV;
     foreach ($module['setup'] as $script)
     {
-      system("$script");
+      system("$MODENV $script");
     }
   }
   if (isset($module['notify']))
@@ -474,11 +497,13 @@ if (isset($conf['setup']))
 {
   foreach ($conf['setup'] as $script)
   {
-    system("$script");
+    system("$BASEENV $script");
   }
 }
 if (isset($conf['notify']))
 {
   echo $conf['notify']."\n";
 }
+
+echo "Application skeleton setup complete.\n";
 

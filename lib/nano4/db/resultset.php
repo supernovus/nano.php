@@ -9,6 +9,8 @@ namespace Nano4\DB;
 
 class ResultSet implements \Iterator, \Countable
 {
+  use ResultToArray, \Nano4\Data\JSON;
+
   protected $query;       // The SQL query we represent.
   protected $parent;      // The DBModel which called us.
 

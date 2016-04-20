@@ -60,5 +60,17 @@ class Users extends \Nano4\DB\Mongo\Model
     }
   }
 
+  /**
+   * Get a list of users.
+   */
+  public function listUsers ($fields=[])
+  {
+    if (count($fields) == 0)
+    {
+      $fields[$this->login_field] = true;
+    }
+    return $this->find([], ['projection'=>$fields]);
+  }
+
 }
 

@@ -14,6 +14,8 @@ namespace Nano4\DB;
 
 class ResultArray implements \ArrayAccess, \Countable, \Iterator
 {
+  use ResultToArray, \Nano4\Data\JSON;
+
   protected $parent;
   protected $results;
   protected $primary_key = 'id';

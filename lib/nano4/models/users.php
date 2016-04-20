@@ -59,5 +59,18 @@ class Users extends \Nano4\DB\Model
     }
   }
 
+  /**
+   * Get a list of users.
+   */
+  public function listUsers ($fields=[])
+  {
+    if (count($fields) == 0)
+    {
+      $fields[] = $this->primary_key;
+      $fields[] = $this->login_field;
+    }
+    return $this->select(['cols'=>$fields]);
+  }
+
 }
 

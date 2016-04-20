@@ -15,6 +15,9 @@ trait UserValidation
 {
   protected function __construct_uservalidation_controller ($opts=[])
   {
+    // We require the UserAuth trait.
+    $this->needs('userauth');
+
     $validate_user = $this->get_prop('validate_user', True);
 
     if 

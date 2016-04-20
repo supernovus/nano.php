@@ -24,7 +24,6 @@ trait Auth
     $this->set_prop('need_user',     False); // Auth screens require no user.
     $this->set_prop('save_uri',      False); // We don't want to save the URI.
     $this->set_prop('validate_user', False); // No user validation either.
-
     if (is_callable([$this, 'setup_auth']))
     {
       $this->setup_auth($opts);
