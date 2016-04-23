@@ -54,7 +54,16 @@ class Item extends \Nano4\DB\Child
     { // Insert a new row.
       // Clear the modified data.
       $this->modified_data = [];
-      return $this->parent->save($data);
+      $results = $this->parent->save($data);
+      if (is_object($results[1]) && $results[1]->isAcknowledged())
+      {
+        $newid = $results[1]->getInsertedId();
+        if ($newid)
+        {
+          $this->data[$pk] = $newid;
+        }
+      }
+      return $results;
     }
   }
 
