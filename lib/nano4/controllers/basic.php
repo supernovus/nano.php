@@ -502,6 +502,18 @@ abstract class Basic
   }
 
   /**
+   * Get a sub-URI of this controller.
+   */
+  public function get_suburi ($subpage, $params=[])
+  {
+    $ourid = $this->__classid;
+    if (is_null($subpage))
+      return $this->get_uri($ourid, $params);
+    else
+      return $this->get_uri($ourid.'_'.$subpage, $params);
+  }
+
+  /**
    * Return our site URL. See Nano4\Plugins\URL::site_url() for details.
    */
   public function url ($ssl=Null, $port=Null)
