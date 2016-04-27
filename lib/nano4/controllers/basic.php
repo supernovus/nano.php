@@ -474,6 +474,12 @@ abstract class Basic
   {
     $nano = \Nano4\get_instance();
 
+    if (isset($opts['sub']) && $opts['sub'])
+    {
+      $page = $this->__classid . '_' . $page;
+      unset($opts['sub']);
+    }
+
     if ($nano->router->has($page))
     {
       $nano->router->go($page, $params, $opts);
