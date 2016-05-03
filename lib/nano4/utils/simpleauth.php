@@ -68,11 +68,15 @@ class SimpleAuth
   // Override this if you have changed the store() method.
   public static function getInstance ($opts=array())
   {
+#    error_log('SimpleAuth::getInstance('.json_encode($opts).')');
     $nano = \Nano4\get_instance();
+    $nano->sess; // Make sure the plugin is initialized.
     if (isset($nano->sess->SimpleAuth) && is_object($nano->sess->SimpleAuth))
     { 
+#      error_log(" -- loading session");
       return $nano->sess->SimpleAuth;
     }
+#    error_log(" -- creating session");
     return new SimpleAuth($opts);
   }
 
