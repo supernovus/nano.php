@@ -26,6 +26,8 @@ class Router
   public $log   = False;   // Basic logging, tracks routing.
   public $debug = 0;       // Advanced logging levels for debugging.
 
+  public $fix_request_data = false; // Set to true to fix broken requests.
+
   public $default_filter = "([\w\-\~\.]+)"; // Used by default.
 
   public $current; // The most recently matched route context.
@@ -326,6 +328,37 @@ class Router
         else
         {
           $request = $_REQUEST;
+        }
+
+        /**
+         * I've seen some weird behavior, this should work around it.
+         */
+        if ($this->fix_request_data)
+        {
+#          error_log("fixing request data");
+          foreach ($request as $rkey => $rval)
+          {
+            if (($pos = strpos($rkey, '?')) !== False)
+            {
+              $nkey = substr($rkey, $pos+1);
+              if (isset($request[$nkey]))
+              {
+                if (is_array($request[$nkey]))
+                {
+                  $request[$nkey][] = $rval;
+                }
+                else
+                {
+                  $request[$nkey] = [$rval, $request[$nkey]];
+                }
+              }
+              else
+              {
+                $request[$nkey] = $rval;
+              }
+#              error_log("set $nkey from $rkey");
+            }
+          }
         }
 
         // Let's get the body params if applicable.
