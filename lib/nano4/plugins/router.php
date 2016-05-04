@@ -331,33 +331,41 @@ class Router
         }
 
         /**
-         * I've seen some weird behavior, this should work around it.
+         * Due to a weird bug, sometimes the very first query string
+         * parameter is corrupted. I haven't figured out what causes it,
+         * but this fixes it.
          */
         if ($this->fix_request_data)
         {
 #          error_log("fixing request data");
+          $nkey = null;
           foreach ($request as $rkey => $rval)
           {
             if (($pos = strpos($rkey, '?')) !== False)
             {
               $nkey = substr($rkey, $pos+1);
-              if (isset($request[$nkey]))
+              break;
+            }
+          }
+          if (isset($nkey))
+          {
+            if (isset($request[$nkey]))
+            {
+              if (is_array($request[$nkey]))
               {
-                if (is_array($request[$nkey]))
-                {
-                  $request[$nkey][] = $rval;
-                }
-                else
-                {
-                  $request[$nkey] = [$rval, $request[$nkey]];
-                }
+                $request[$nkey][] = $rval;
               }
               else
               {
-                $request[$nkey] = $rval;
+                $request[$nkey] = [$rval, $request[$nkey]];
               }
-#              error_log("set $nkey from $rkey");
             }
+            else
+            {
+              $request[$nkey] = $rval;
+            }
+            unset($request[$rkey]);
+#            error_log("set $nkey from $rkey");
           }
         }
 
