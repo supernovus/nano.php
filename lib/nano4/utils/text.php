@@ -6,7 +6,7 @@ class Text
 {
   static function make_identifier ($string, $maxlen=null, $threshold=5)
   {
-    $ident = preg_replace('/[^A-Za-z_0-9]*/', '', preg_replace('/\s+/', '_', $string));
+    $ident = preg_replace('/[^A-Za-z_0-9]*/', '', preg_replace('/[\s\.\-]+/', '_', $string));
 
     if (isset($maxlen) && is_numeric($maxlen) && $maxlen > 0)
     {
