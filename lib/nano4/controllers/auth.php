@@ -120,6 +120,7 @@ trait Auth
           $userlog->log(['success'=>true, 'context'=>$opts, 'user'=>$uinfo]);
 
         $nano = \Nano4\get_instance();
+        $nano->sess; // ensure sessions are initialized.
         if (isset($nano->sess->lasturi))
         {
           $lastpath = $nano->sess->lasturi;

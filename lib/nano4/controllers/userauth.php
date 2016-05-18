@@ -26,26 +26,37 @@ trait UserAuth
     // Some configurable settings, with appropriate defaults.
     $save_uri    = $this->get_prop('save_uri',    True);
     $need_user   = $this->get_prop('need_user',   True);
-    $login_page  = $this->get_prop('login_page',  'login');
     
     $nano = \Nano4\get_instance();
     if ($save_uri)
     {
       $nano->sess->lasturi = $this->request_uri();
     }
+
     if ($need_user)
     {
-      $user = $this->get_user(true);
-      if (!$user) 
-      { 
-        $this->go($login_page); 
-      }
-      $this->user = $user;
-      $this->data['user'] = $user;
-      if (isset($user->lang) && $user->lang)
-      {
-        $this->set_prop('lang', $user->lang);
-      }
+      $this->need_user();
+    }
+  }
+
+  /**
+   * Call from methods where we need the user on a per method basis,
+   * but not from a per-controller basis (make sure to disable the
+   * 'need_user' property.)
+   */
+  protected function need_user ()
+  {
+    $login_page  = $this->get_prop('login_page',  'login');
+    $user = $this->get_user(true);
+    if (!$user) 
+    { 
+      $this->go($login_page); 
+    }
+    $this->user = $user;
+    $this->data['user'] = $user;
+    if (isset($user->lang) && $user->lang)
+    {
+      $this->set_prop('lang', $user->lang);
     }
   }
 
