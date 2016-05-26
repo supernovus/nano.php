@@ -15,13 +15,13 @@ trait UserAuth
   protected function __construct_userauth_controller ($opts=[])
   {
     // Ensure that modelconf is loaded first.
-    $this->needs('modelconf');
+    $this->needs('modelconf', $opts);
 
     // If the 'auth' trait is available, load it first.
-    $this->wants('auth');
+    $this->wants('auth', $opts);
 
     // If the 'webapi' trait is available, load it first.
-    $this->wants('webapi');
+    $this->wants('webapi', $opts);
 
     // Some configurable settings, with appropriate defaults.
     $save_uri    = $this->get_prop('save_uri',    True);

@@ -14,7 +14,7 @@ trait Instance
    */
   public function load ($class, $opts=[])
   {
-#    error_log("Instance::load($class)");
+#    error_log("Instance::load($class, ".json_encode($opts).")");
     // Now let's build an object and return it.
     $classname = $this->find_class($class);
     if (isset($classname))
