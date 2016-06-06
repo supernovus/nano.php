@@ -157,11 +157,11 @@ class Table
   // See if we need to be updated.
   protected function check_table_updates ()
   {
-    if ($this->current > $this->latest)
+    if (version_compare($this->current, $this->latest, '>'))
     {
       throw new \Exception(__CLASS__.": {$this->name} schema is higher than {$this->latest}.");
     }
-    elseif ($this->current < $this->latest)
+    elseif (version_compare($this->current, $this->latest, '<'))
     {
       $this->need_update = true;
     }
@@ -266,8 +266,8 @@ class Table
         }
         else
         { // Use a default upgrade script filename.
-          $ver1 = self::versionString($this->current);
-          $ver2 = self::versionString($ver);
+          $ver1 = $this->versionString($this->current);
+          $ver2 = $this->versionString($ver);
           $sql_file = $this->updateDir . '/' . $ver1 . '-' . $ver2 . '.sql';
         }
       }
@@ -307,21 +307,21 @@ class Table
     return true;
   }
 
-  public static function versionString ($num)
+  public function versionString ($num)
   {
-    if (fmod(floatval($num), 1) == 0)
+    if (!$this->parent->verIsText && fmod(floatval($num), 1) == 0)
       return (string)$num . '.0';
     return (string)$num;
   }
 
   public function currentVersion ()
   {
-    return self::versionString($this->current);
+    return $this->versionString($this->current);
   }
 
   public function latestVersion ()
   {
-    return self::versionString($this->latest);
+    return $this->versionString($this->latest);
   }
 
 }

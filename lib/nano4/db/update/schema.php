@@ -50,7 +50,12 @@ class Schema
   /**
    * The default version if no updates are found.
    */
-  public $defVer     = 1.0;
+  public $defVer     = '1.0';
+
+  /**
+   * Are we storing versions as text or numbers?
+   */
+  public $verIsText = true;
 
   protected $tables = [];                 // A cache of loaded tables.
 

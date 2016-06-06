@@ -48,6 +48,10 @@ trait NativeDB
     {
       $command = "sqlite3 -init $filename {$this->name} '.q'";
     }
+    else
+    {
+      throw new \Exception(__CLASS__.": unsupported database type: $dsn");
+    }
     return shell_exec($command); 
   }
 
