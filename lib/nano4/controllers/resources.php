@@ -52,7 +52,7 @@ trait Resources
           'exists.jq',
         ],
         '#webapp' =>
-        [ // The Webapp library with Riot.js
+        [ // The Webapp library with Riot.js (to be removed in the future.)
           '#common',
           'riot-core',
           'riot.render',
@@ -60,10 +60,11 @@ trait Resources
           'webapp',
         ],
         '#webcore' =>
-        [ // A simplified web app model core.
+        [ // A simplified web app model core. No rendering engine specified.
           '#common',
           'observable',
           'modelapi',
+          'viewcontroller',
         ],
         '#base64' =>
         [ // Base64 encoding and decoding.
