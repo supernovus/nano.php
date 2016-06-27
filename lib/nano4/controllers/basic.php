@@ -496,6 +496,7 @@ abstract class Basic
    */
   public function get_uri ($page, $params=[])
   {
+#    error_log("get_uri('$page',".json_encode($params).")");
     $nano = \Nano4\get_instance();
     if ($nano->router->has($page))
     {

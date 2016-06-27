@@ -221,7 +221,10 @@ class Table
       {
         if (isset($version["sql-file"]))
         {
-          $sql_file = $this->updateDir . '/' . $version["sql-file"];
+          if (is_string($version["sql-file"]))
+            $sql_file = $this->updateDir . '/' . $version["sql-file"];
+          else
+            $sql_file = $version["sql-file"];
         }
         if (isset($version["pre-run"]))
         {
@@ -271,10 +274,6 @@ class Table
           $sql_file = $this->updateDir . '/' . $ver1 . '-' . $ver2 . '.sql';
         }
       }
-      if (!file_exists($sql_file))
-      {
-        throw new \Exception(__CLASS__.": update file not found: $sql_file");
-      }
       if (isset($pre_run) && file_exists($this->updateDir.'/'.$pre_run[0]))
       {
         $class = $this->updateDir.'/'.$pre_run[0];
@@ -285,7 +284,7 @@ class Table
           $func($this->db, $this);
         }
       }
-      if ($sql_file)
+      if ($sql_file && file_exists($sql_file))
       {
         $this->update_sql_output = $this->db->source($sql_file);
       }
