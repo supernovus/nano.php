@@ -276,13 +276,7 @@ class Table
       }
       if (isset($pre_run) && file_exists($this->updateDir.'/'.$pre_run[0]))
       {
-        $class = $this->updateDir.'/'.$pre_run[0];
-        require_once "$class";
-        $func = "\\UpdateSchema\\".$pre_run[1];
-        if (is_callable($func))
-        {
-          $func($this->db, $this);
-        }
+        $this->run($pre_run[0], $pre_run[1]);
       }
       if ($sql_file && file_exists($sql_file))
       {
@@ -290,13 +284,7 @@ class Table
       }
       if (isset($post_run) && file_exists($this->updateDir.'/'.$post_run[0]))
       {
-        $class = $this->updateDir.'/'.$post_run[0];
-        require_once "$class";
-        $func = "\\UpdateSchema\\".$post_run[1];
-        if (is_callable($func))
-        {
-          $func($this->db, $this);
-        }
+        $this->run($post_run[0], $post_run[1]);
       }
       $this->get_table_schema();
       $this->check_table_updates();
@@ -304,6 +292,17 @@ class Table
     // TODO: actually catch and report errors.
     $this->update_ok = true;
     return true;
+  }
+
+  public function run ($filename, $funcname, $params=null)
+  {
+    $class = $this->updateDir.'/'.$filename;
+    require_once "$class";
+    $func = "\\UpdateSchema\\".$funcname;
+    if (is_callable($func))
+    {
+      return $func($this->db, $this, $params);
+    }
   }
 
   public function versionString ($num)
