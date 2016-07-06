@@ -20,15 +20,16 @@ simple helper libraries providing some useful functions for your applications.
 * The 'rsync', 'find', 'xargs', and 'perl' utilities for 'bin/initapp.php'.
 * The phpDocumentor application if you want to build the API documents.
 
-## Build a project
+## Usage
 
-To get instructions on how to build an application using this, type: 
+Right now this collection of libraries is mostly used by myself for my own 
+projects. I am working on a friendly script that will use templates to build
+skeleton applications that you can fill out from there, but it's not yet
+finished. Feel free to browse the source for anything useful.
 
-  ./bin/initapp.php
-
-It's recommended to download and set up a copy of 
-[Nano.js](https://github.com/supernovus/nano.js) as well, 
-as the initapp script can install it into your project at the same time.
+Many parts of this library set are designed to work with the
+[Nano.js](https://github.com/supernovus/nano.js) libraries for client side
+scripting. In the future further Nano themed library sets may be released.
 
 ## Author
 
