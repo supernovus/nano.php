@@ -68,7 +68,7 @@ class IPAccess extends Plugin
           }
           else
           {
-            error_log("The $header header did not match expected result.\nexpected: $hash\ngot:$authHeader");
+            error_log("The $header header did not match expected result.\nexpected: $hash\ngot:$authHeader\nvals:".json_encode($vals));
             return false;
           }
         }
@@ -80,7 +80,7 @@ class IPAccess extends Plugin
       }
       else
       {
-        error_log("Remote IP '$ip' was not in $confname access list.");
+        error_log("Remote IP '$ip' was not in access list.");
         return false;
       }
     }
