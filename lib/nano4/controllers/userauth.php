@@ -30,7 +30,9 @@ trait UserAuth
     $nano = \Nano4\get_instance();
     if ($save_uri)
     {
+      $nano->sess; // Make sure it's initialized.
       $nano->sess->lasturi = $this->request_uri();
+#      error_log("saved URI: ".$nano->sess->lasturi);
     }
 
     if ($need_user)

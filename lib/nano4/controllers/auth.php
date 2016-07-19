@@ -131,7 +131,7 @@ trait Auth
           $lastpath = null;
         }
         $default_page = $this->get_prop('default_page', 'default');
-        if (!$lastpath || $lastpath = $this->request_uri())
+        if (!$lastpath || $lastpath == $this->request_uri())
         { // Go to the default page.
           $this->go($default_page);
         }
