@@ -1,19 +1,17 @@
 <?php
 
-namespace Nano4\DB\Update;
+namespace Nano4\DB\Schemata;
 
 use \Nano4\DB\Simple;
 
 /**
- * Database Schema Update Management class.
- *
- * Use this to build tools to automatically update your database schemas.
+ * Database Schema Management class.
  *
  * This class expects that you have a special database table that stores the
  * current schema version of each table. Your initial table creation should
  * inject the current version of the schema into the metadata table.
  */
-class Schema
+class Tables
 {
   protected $db; // The DB object.
 
@@ -23,14 +21,24 @@ class Schema
   public $schemaDir;
 
   /**
+   * The namespace for update scripts.
+   */
+  public $updateNamespace = 'UpdateSchema';
+
+  /**
    * The sub-directory of $schemaDir where update folders are found.
    */
-  public $updateDir  = 'updates';
+  public $tablesDir  = 'tables';
+
+  /**
+   * The sub-directory of $schemaDir where current SQL files are found.
+   */
+  public $sqlDir = 'sql';
 
   /**
    * The name of the update configuration file.
    */
-  public $updateFile = 'update.json';
+  public $schemaFile = 'update.json';
 
   /**
    * The name of the schema metadata table.
@@ -46,6 +54,11 @@ class Schema
    * The name of the column containing the schema version in the $metaTable.
    */
   public $metaVer    = 'version';
+
+  /**
+   * The name of the version column in individual rows.
+   */
+  public $verColumn = 'version';
 
   /**
    * The default version if no updates are found.
@@ -69,15 +82,22 @@ class Schema
    * The $db object must be a subclass of Nano4\DB\Simple object that
    * includes the Nano4\DB\Simple\NativeDB trait.
    *
-   * The $schemaDir should have the current version of each table as
-   * $tablename.sql and have a folder called "updates" containing a folder
-   * for each table that has been updated. Inside, it should have a file called
-   * update.json which needs an array called "versions". Each member of the
-   * array can be either a floating point number, or an object. If it is a
-   * number, we assume a file called $oldver-$newver.sql exists, which will
-   * be called to perform the update. If it is an object, then it requires 
-   * a property called "version" which should be a floating point number, and
-   * can also have the following optional properties:
+   * The $schemaDir must contain at least the $sqlDir and $tablesDir
+   * subdirectories.
+   *
+   * The $sqlDir must have the current version of each table as $tablename.sql.
+   *
+   * The $schemaDir must contain a folder for for each table, and a schema.json
+   * file within that, which at the very least must contain a property called 
+   * "table_versions" which must be set to an array.
+   *
+   * Each member of the array can be either a version string, 
+   * or an object. If it is a string, we assume a file called 
+   * $oldver-$newver.sql exists, which will be called to perform the update. 
+   *
+   * If it is an object, then it requires a property called "version" 
+   * which should be a version string, and can also have the following 
+   * optional properties:
    *
    *   "requires"  An object where each property key is the name of a table
    *               and each property value is the version of that table that
@@ -102,6 +122,32 @@ class Schema
    *               if the pre-run or post-run PHP scripts perform all the
    *               changes required.)
    *
+   * In addition to "table_versions" the schema.json also supports the 
+   * following optional properties:
+   *
+   *   "needs"         An array of tables required by this table.
+   *
+   *   "row_versions"  Similar to the "table_versions" property, except instead
+   *                   of being on a table basis, it's for individual rows.
+   *                   It looks for a version column and compares it against
+   *                   the versions in the "row_versions" array.
+   *                   Each version definition must be an object, and supports
+   *                   the following properties:
+   *                    
+   *                    "requires"  Exactly the same as the same property in
+   *                                the "table_versions" definitions.
+   *
+   *                    "run"       The same synax as "pre-run" or "post-run".
+   *                                There is only one run command as row-based
+   *                                updates don't support SQL scripts.
+   *
+   *
+   *   "vercolumn"     Override the version column name for this table.
+   *
+   *   "tags"          A flat array of application-specific tags.
+   *
+   *   "options"       An object of application-specific options.
+   *
    * The $opts can override defaults, and specify custom behaviours.
    *
    *   "metadata_table"   Override the name of the table containing the
@@ -116,11 +162,15 @@ class Schema
    *                      schema version within the metadata table.
    *                      Defaults to "version".
    *
-   *   "updates_dir"      The sub-folder of the schema folder that contains
+   *   "version_column"   Overrides the name of the default version column
+   *                      in tables using the "row_versions" feature.
+   *                      Defaults to "version".
+   *
+   *   "tables_dir"       The sub-folder of the schema folder that contains
    *                      the list of updated tables. 
    *                      Defaults to "updates".
    *
-   *   "update_file"      The update config file for each table.
+   *   "schema_file"      The update config file for each table.
    *                      Defaults to "update.json".
    *
    *   "default_version"  The default version if no updates exist.
@@ -145,13 +195,13 @@ class Schema
     $this->db = $db;
     $this->schemaDir = $schemaDir;
 
-    if (isset($opts['updates_dir']))
+    if (isset($opts['tables_dir']))
     {
-      $this->updateDir = $opts['updates_dir'];
+      $this->tablesDir = $opts['tables_dir'];
     }
-    if (isset($opts['update_file']))
+    if (isset($opts['schema_file']))
     {
-      $this->updateFile = $opts['update_file'];
+      $this->schemaFile = $opts['schema_file'];
     }
     if (isset($opts['metadata_table']))
     {
@@ -170,9 +220,9 @@ class Schema
       $this->defVer = $opts['default_version'];
     }
 
-    if (! file_exists($schemaDir . '/' . $this->updateDir))
+    if (! file_exists($schemaDir . '/' . $this->tablesDir))
     {
-      throw new \Exception(__CLASS__.": no {$this->updateDir} folder found.");
+      throw new \Exception(__CLASS__.": no {$this->tablesDir} folder found.");
     }
 
     if (!$this->tableExists($this->metaTable))
@@ -191,7 +241,7 @@ class Schema
    */
   public function listTables ($opts=[])
   {
-    $dir = $this->schemaDir . '/' . $this->updateDir;
+    $dir = $this->schemaDir . '/' . $this->tablesDir;
     $table_names = scandir($dir);
     $tables = [];
     foreach ($table_names as $name)

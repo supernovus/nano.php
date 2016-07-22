@@ -1,16 +1,16 @@
 <?php
 
-namespace Nano4\DB\Update;
+namespace Nano4\DB\Schemata;
 
 /**
- * Represents a table with update information.
+ * Represents a table with version information.
  *
  * This should not be constructed manually. It is returned by the
  * Schema::getTable() and Schema::listTables() methods.
  */
 class Table
 {
-  protected $parent;       // The parent UpdateSchema object.
+  protected $parent;       // The parent Schemata\Tables object.
   protected $db;           // The DB object.
 
   /**
@@ -54,9 +54,9 @@ class Table
   public $update_sql_output;
 
   /**
-   * The table update folder.
+   * The table schema folder.
    */
-  public $updateDir;
+  public $tableDir;
 
   protected $conf; // The update configuration.
 
@@ -84,14 +84,14 @@ class Table
     $this->get_table_schema();
 
     // Get our table update directory.
-    $ourDir = $parent->schemaDir . '/' . $parent->updateDir . '/' . $name;
+    $ourDir = $parent->schemaDir . '/' . $parent->tablesDir . '/' . $name;
 
     if (file_exists($ourDir))
     { // Set our update directory.
-      $this->updateDir = $ourDir;
+      $this->tableDir = $ourDir;
 
       // Get our table update configuration file.
-      $ourConf = $ourDir . '/' . $parent->updateFile;
+      $ourConf = $ourDir . '/' . $parent->schemaFile;
 
       if (!file_exists($ourConf))
       {
@@ -222,7 +222,7 @@ class Table
         if (isset($version["sql-file"]))
         {
           if (is_string($version["sql-file"]))
-            $sql_file = $this->updateDir . '/' . $version["sql-file"];
+            $sql_file = $this->tableDir . '/' . $version["sql-file"];
           else
             $sql_file = $version["sql-file"];
         }
@@ -271,10 +271,10 @@ class Table
         { // Use a default upgrade script filename.
           $ver1 = $this->versionString($this->current);
           $ver2 = $this->versionString($ver);
-          $sql_file = $this->updateDir . '/' . $ver1 . '-' . $ver2 . '.sql';
+          $sql_file = $this->tableDir . '/' . $ver1 . '-' . $ver2 . '.sql';
         }
       }
-      if (isset($pre_run) && file_exists($this->updateDir.'/'.$pre_run[0]))
+      if (isset($pre_run) && file_exists($this->tableDir.'/'.$pre_run[0]))
       {
         $this->run($pre_run[0], $pre_run[1]);
       }
@@ -282,7 +282,7 @@ class Table
       {
         $this->update_sql_output = $this->db->source($sql_file);
       }
-      if (isset($post_run) && file_exists($this->updateDir.'/'.$post_run[0]))
+      if (isset($post_run) && file_exists($this->tableDir.'/'.$post_run[0]))
       {
         $this->run($post_run[0], $post_run[1]);
       }
@@ -296,9 +296,10 @@ class Table
 
   public function run ($filename, $funcname, $params=null)
   {
-    $class = $this->updateDir.'/'.$filename;
+    $class = $this->tableDir.'/'.$filename;
     require_once "$class";
-    $func = "\\UpdateSchema\\".$funcname;
+    $ns = $this->parent->updateNamespace;
+    $func = "\\$ns\\".$funcname;
     if (is_callable($func))
     {
       return $func($this->db, $this, $params);
@@ -324,3 +325,31 @@ class Table
 
 }
 
+class TableVersion
+{
+  public $version;
+  public $requires;
+  public $prerun;
+  public $postrun;
+  public $sql = true;
+
+  public function __construct ($verdef)
+  {
+    if (is_array($verdef))
+    {
+
+    }
+    elseif (is_string($verdef))
+    {
+      $
+  }
+}
+
+class RowVersion
+{
+  public $version;
+
+  public function __construct ($verdef)
+  {
+  }
+}
