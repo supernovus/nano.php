@@ -29,11 +29,6 @@ class Table
   public $latest;
 
   /**
-   * Have we checked for updates?
-   */
-  public $checked_updates = false;
-
-  /**
    * Should this table be updated?
    */
   public $need_update = false;
@@ -131,9 +126,18 @@ class Table
     }
   }
 
+  protected function ensure_db ()
+  {
+    if (!isset($this->db))
+    {
+      throw new \Exception("Cannot use version methods without a \$db");
+    }
+  }
+
   // Get the current version of our table schema.
   protected function get_table_schema ()
   {
+    $this->ensure_db();
     $mdTable = $this->parent->metaTable;
     $mdName  = $this->parent->metaName;
     $mdVer   = $this->parent->metaVer;
@@ -173,8 +177,6 @@ class Table
     {
       $this->need_update = true;
     }
-
-    $this->checked_updates = true;
   }
 
   public function verColumn ()
@@ -240,9 +242,10 @@ class Table
    */
   public function update ()
   {
+    $this->ensure_db();
+
     // See if we need to be updated.
-    if (!$this->checked_updates)
-      $this->check_table_updates();
+    $this->check_table_updates();
 
     if (!$this->need_update) return; // If we don't need updating, go away.
 
@@ -329,6 +332,8 @@ class Table
    */
   public function updateRows ()
   { // Find any rows that are outdated, and update them.
+    $this->ensure_db();
+
     if (count($this->updated_rows) > 0) return; // we've already updated.
 
     $versions = $this->rowVersions();

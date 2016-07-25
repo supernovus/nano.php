@@ -139,16 +139,19 @@ class Tables
    */
   public function __construct ($db, $opts=[], $dirs=null)
   {
-    if (!($db instanceof Simple))
+    if (isset($db))
     {
-      throw new \Exception(__CLASS__.": \$db must be a sub-class of \\Nano4\\DB\\Simple");
+      if (!($db instanceof Simple))
+      {
+        throw new \Exception(__CLASS__.": \$db must be a sub-class of \\Nano4\\DB\\Simple");
+      }
+      if (!is_callable([$db, 'source']))
+      {
+        throw new \Exception(__CLASS__.": \$db must use \\Nano4\\DB\\Simple\\NativeDB trait");
+      }
+  
+      $this->db = $db;
     }
-    if (!is_callable([$db, 'source']))
-    {
-      throw new \Exception(__CLASS__.": \$db must use \\Nano4\\DB\\Simple\\NativeDB trait");
-    }
-
-    $this->db = $db;
 
     if (isset($opts['tables_dir']))
     {
@@ -187,7 +190,7 @@ class Tables
       $this->checkUpdates = $opts['check_updates'];
     }
 
-    if (!$this->tableExists($this->metaTable))
+    if (isset($this->db) && !$this->tableExists($this->metaTable))
     {
       throw new \Exception(__CLASS__.": no {$this->metaTable} table found.");
     }
@@ -478,6 +481,10 @@ class Tables
    */
   public function tableExists ($name)
   {
+    if (!isset($this->db))
+    {
+      throw new \Exception("Cannot use tableExists() without a \$db");
+    }
     $stmt = $this->db->db->prepare("SHOW TABLES LIKE :name");
     $stmt->execute(["name"=>$name]);
     $rows = $stmt->fetchAll();
