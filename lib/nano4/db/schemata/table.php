@@ -29,6 +29,11 @@ class Table
   public $latest;
 
   /**
+   * Have we checked for updates?
+   */
+  public $checked_updates = false;
+
+  /**
    * Should this table be updated?
    */
   public $need_update = false;
@@ -36,7 +41,7 @@ class Table
   /**
    * Was an update performed (or attempted) in this session?
    */
-  public $update_run = false;
+  public $update_ran = false;
 
   /**
    * Did the update succeed? Only valid if $updated = true.
@@ -54,6 +59,11 @@ class Table
   public $update_sql_output;
 
   /**
+   * Were rows updated?
+   */
+  public $updated_rows = [];
+
+  /**
    * The table schema folder.
    */
   public $tableDir;
@@ -67,24 +77,23 @@ class Table
    * Schema class. However, in case you need to override it, the definition
    * is included here.
    *
-   * @param Str      $name     The name of the table.
-   * @param Object   $parent   The parent Schema object.
-   * @param Object   $db       The parent database object.
-   * @param Array    $opts     Extra options (reserved for future use.)
+   * @param Str      $name       The name of the table.
+   * @param Object   $schemaDir  The schemata directory for this table.
+   * @param Object   $parent     The parent Schema object.
+   * @param Object   $db         The parent database object.
+   * @param Array    $opts       Extra options (reserved for future use.)
    *
    */
-  public function __construct ($name, $parent, $db, $opts=[])
+  public function __construct ($name, $schemaDir, $parent, $db, $opts=[])
   {
     // Set some basics.
     $this->name = $name;
     $this->parent = $parent;
     $this->db = $db;
-
-    // Get the current version of our table schema.
-    $this->get_table_schema();
+    $this->schemaDir = $schemaDir;
 
     // Get our table update directory.
-    $ourDir = $parent->schemaDir . '/' . $parent->tablesDir . '/' . $name;
+    $ourDir = $schemaDir . '/' . $parent->tablesDir . '/' . $name;
 
     if (file_exists($ourDir))
     { // Set our update directory.
@@ -107,24 +116,19 @@ class Table
     }
 
     // Get the latest version of our table schema.
-    $versions = $this->get_versions();
+    $versions = $this->tableVersions();
     $latest = end($versions);
     reset($versions);
-    if (is_numeric($latest))
-    {
-      $this->latest = $latest;
-    }
-    elseif (is_array($latest) && isset($latest["version"]))
-    {
-      $this->latest = $latest["version"];
-    }
-    else
-    {
-      throw new \Exception(__CLASS__.": could not determine latest version.");
-    }
+    $this->latest = $latest;
 
-    // See if we need to be updated.
-    $this->check_table_updates();
+    if 
+    (
+      (isset($opts['checkUpdates']) && $opts['checkUpdates']) ||
+      (isset($this->parent->checkUpdates) && $this->parent->checkUpdates)
+    )
+    {
+      $this->check_table_updates();
+    }
   }
 
   // Get the current version of our table schema.
@@ -142,7 +146,7 @@ class Table
     $tableExists = $this->parent->tableExists($this->name);
     if (isset($metadata, $metadata[$mdVer]) && $tableExists)
     { // Set our current version.
-      $this->current = $metadata[$mdVer];
+      $this->current = new TableVersion($metadata[$mdVer]);
     }
     elseif ($tableExists)
     { // The table exists, but there is no metadata. This is bad.
@@ -157,21 +161,45 @@ class Table
   // See if we need to be updated.
   protected function check_table_updates ()
   {
-    if (version_compare($this->current, $this->latest, '>'))
+    // Get the current version of our table schema.
+    if (!isset($this->current))
+      $this->get_table_schema();
+
+    if ($this->current->isNewer($this->latest))
     {
-      throw new \Exception(__CLASS__.": {$this->name} schema is higher than {$this->latest}.");
+      throw new \Exception(__CLASS__.": {$this->name} schema is higher than {$this->latestVersion()}.");
     }
-    elseif (version_compare($this->current, $this->latest, '<'))
+    elseif ($this->current->isOlder($this->latest))
     {
       $this->need_update = true;
     }
+
+    $this->checked_updates = true;
   }
 
-  public function get_versions ()
+  public function verColumn ()
   {
-    if (isset($this->conf, $this->conf["versions"]))
+    if (isset($this->conf, $this->conf['vercolumn']))
     {
-      return $this->conf["versions"];
+      return $this->conf['vercolumn'];
+    }
+    else
+    {
+      return $this->parent->verColumn;
+    }
+  }
+
+  public function tableVersions ()
+  {
+    if (isset($this->conf, $this->conf["table_versions"]))
+    {
+      $versions = [];
+      foreach ($this->conf['table_versions'] as $ver)
+      {
+        $version = new TableVersion($ver);
+        $versions[] = $version;
+      }
+      return $versions;
     }
     elseif ($this->current !== 0)
     {
@@ -179,7 +207,21 @@ class Table
     }
     else
     {
-      return [$this->parent->defVer];
+      return [new TableVersion($this->parent->defVer)];
+    }
+  }
+
+  public function rowVersions ()
+  {
+    if (isset($this->conf, $this->conf['row_versions']))
+    {
+      $versions = [];
+      foreach ($this->conf['row_versions'] as $ver)
+      {
+        $version = new RowVersion($ver);
+        $versions[] = $version;
+      }
+      return $versions;
     }
   }
 
@@ -198,51 +240,32 @@ class Table
    */
   public function update ()
   {
+    // See if we need to be updated.
+    if (!$this->checked_updates)
+      $this->check_table_updates();
+
     if (!$this->need_update) return; // If we don't need updating, go away.
 
     $this->need_update = false;  // Prevent it from trying again.
     $this->update_ran  = true;   // Mark that the update() was called.
 
-    $versions = $this->get_versions();
+    $versions = $this->tableVersions();
 
     foreach ($versions as $version)
     {
-      $sql_file = $pre_run = $post_run = $requires = null;
-      if (is_numeric($version))
+      $version = new TableVersion($version);
+      if ($version->notNewer($this->current)) continue; // Older version.
+
+      $sql_file = $version->sql_file;
+      if (is_string($sql_file))
       {
-        $ver = $version;
+        $sql_file = $this->tableDir . '/' . $sql_file;
       }
-      elseif (is_array($version))
-      {
-        $ver = $version["version"];
-      }
-      if ($ver <= $this->current) continue; // Not a newer version.
-      if (is_array($version))
-      {
-        if (isset($version["sql-file"]))
-        {
-          if (is_string($version["sql-file"]))
-            $sql_file = $this->tableDir . '/' . $version["sql-file"];
-          else
-            $sql_file = $version["sql-file"];
-        }
-        if (isset($version["pre-run"]))
-        {
-          $pre_run = $version["pre-run"];
-        }
-        if (isset($version["post-run"]))
-        {
-          $post_run = $version["post-run"];
-        }
-        if (isset($version["requires"]))
-        {
-          $requires = $version["requires"];
-        }
-      }
+
       // Handle requirements if they exist.
-      if (isset($requires))
+      if (isset($version->requires))
       {
-        foreach ($requires as $rname => $rver)
+        foreach ($version->requires as $rname => $rver)
         {
           $rtable = $this->parent->getTable($rname);
           if ($rver === true)
@@ -254,34 +277,40 @@ class Table
           }
           elseif (is_numeric($rver))
           { // We need a minimum version.
-            if ($rver > $rtable->current)
+            if ($rtable->current->isOlder($rver))
             {
               $rtable->update();
             }
           }
         }
       }
+
       if (!isset($sql_file))
       {
         if ($this->current == 0)
         { // The table doesn't exist, create it.
-          $sql_file = $this->parent->schemaDir . '/' . $this->name . '.sql';
+          $sql_file = $this->schemaDir . '/' . $this->name . '.sql';
         }
         else
         { // Use a default upgrade script filename.
-          $ver1 = $this->versionString($this->current);
-          $ver2 = $this->versionString($ver);
+          $ver1 = $this->current->version;
+          $ver2 = $version->version;
           $sql_file = $this->tableDir . '/' . $ver1 . '-' . $ver2 . '.sql';
         }
       }
+
+      $pre_run = $version->pre_run;
       if (isset($pre_run) && file_exists($this->tableDir.'/'.$pre_run[0]))
       {
         $this->run($pre_run[0], $pre_run[1]);
       }
+
       if ($sql_file && file_exists($sql_file))
       {
         $this->update_sql_output = $this->db->source($sql_file);
       }
+
+      $post_run = $version->post_run;
       if (isset($post_run) && file_exists($this->tableDir.'/'.$post_run[0]))
       {
         $this->run($post_run[0], $post_run[1]);
@@ -294,6 +323,76 @@ class Table
     return true;
   }
 
+  /**
+   * This will find any rows that are outdated using the get_rows function,
+   * then pass them to the appropriate functions to update them.
+   */
+  public function updateRows ()
+  { // Find any rows that are outdated, and update them.
+    if (count($this->updated_rows) > 0) return; // we've already updated.
+
+    $versions = $this->rowVersions();
+
+    foreach ($versions as $version)
+    {
+      $version = new TableVersion($version);
+      if ($version->notNewer($this->current)) continue; // Older version.
+
+      // Handle requirements if they exist.
+      if (isset($version->requires))
+      {
+        foreach ($version->requires as $rname => $rver)
+        {
+          $rtable = $this->parent->getTable($rname);
+          if ($rver)
+          { 
+            if ($rtable->current === 0)
+            { // Create the table.
+              $rtable->update();
+            }
+            else
+            { // Update the rows to the latest schema.
+              $rtable->updateRows();
+            }
+          }
+        }
+      }
+
+      if (isset($this->conf, $this->conf['get-rows']))
+      {
+        $getrows = $this->conf['get-rows'];
+      }
+      elseif (isset($this->parent->getRows))
+      {
+        $getrows = $this->parent->getRows;
+      }
+  
+      $rows = null;
+      if (is_callable($getrows))
+      {
+        $rows = $getrows($this);
+      }
+      elseif (is_array($getrows) && file_exists($this->tableDir.'/'.$getrows[0]))
+      {
+        $rows = $this->run($getrows[0], $getrows[1]);
+      }
+
+      if (isset($rows))
+      {
+        $run = $version->run;
+        if (isset($run) && file_exists($this->tableDir.'/'.$run[0]))
+        {
+          $updated = $this->run($run[0], $run[1]);
+          if (isset($updated) && is_array($updated) && count($updated) > 0)
+          {
+            $this->updated_rows = array_merge($this->updated_rows, $updated);
+          }
+        }
+      }
+    }
+    return $this->updated_rows;
+  }
+
   public function run ($filename, $funcname, $params=null)
   {
     $class = $this->tableDir.'/'.$filename;
@@ -302,54 +401,160 @@ class Table
     $func = "\\$ns\\".$funcname;
     if (is_callable($func))
     {
-      return $func($this->db, $this, $params);
+      return $func($this, $params);
     }
-  }
-
-  public function versionString ($num)
-  {
-    if (!$this->parent->verIsText && fmod(floatval($num), 1) == 0)
-      return (string)$num . '.0';
-    return (string)$num;
   }
 
   public function currentVersion ()
   {
-    return $this->versionString($this->current);
+    if (isset($this->current))
+      return $this->current->version;
   }
 
   public function latestVersion ()
   {
-    return $this->versionString($this->latest);
+    if (isset($this->latest))
+      return $this->latest->version;
+  }
+
+  public function hasTag ($tag)
+  {
+    if (isset($this->conf, $this->conf['tags']) && is_array($this->conf['tags']) && in_array($tag, $this->conf['tags']))
+    {
+      return true;
+    }
+    return false;
+  }
+
+  public function needs ()
+  {
+    if (isset($this->conf, $this->conf['needs']))
+    {
+      return $this->conf['needs'];
+    }
+  }
+
+  public function wants ()
+  {
+    if (isset($this->conf, $this->conf['wants']))
+    {
+      return $this->conf['wants'];
+    }
+  }
+
+  public function depends ()
+  {
+    $deps = [];
+    if (isset($this->conf, $this->conf['needs']))
+    {
+      foreach ($this->conf['needs'] as $need)
+      {
+        $deps[$need] = true;
+      }
+    }
+    if (isset($this->conf, $this->conf['wants']))
+    {
+      foreach ($this->conf['wants'] as $want)
+      {
+        $deps[$want] = false;
+      }
+    }
+    return $deps;
+  }
+
+  public function getDB ()
+  {
+    return $this->db;
+  }
+
+  public function getParent ()
+  {
+    return $this->parent;
   }
 
 }
 
-class TableVersion
+abstract class Version
 {
   public $version;
   public $requires;
-  public $prerun;
-  public $postrun;
-  public $sql = true;
 
-  public function __construct ($verdef)
+  public function __construct ($def)
   {
-    if (is_array($verdef))
+    if (is_array($def) || is_object($def))
     {
-
+      foreach ($def as $propname => $propval)
+      {
+        $propname = str_replace('-','_', $propname);
+        if (property_exists($this, $propname))
+        {
+          $this->$propname = $propval;
+        }
+      }
     }
-    elseif (is_string($verdef))
+    if (!isset($this->version))
     {
-      $
+      throw new \Exception("No version property was found in: ".json_encode($def));
+    }
   }
+
+  public function compare ($checkVer, $operator=null)
+  {
+    if (is_object($checkVer))
+      $checkVer = $checkVer->version;
+    return version_compare($this->version, $checkVer, $operator);
+  }
+
+  public function notNewer ($checkVer)
+  {
+    return $this->compare($checkVer, '<=');
+  }
+
+  public function isOlder ($checkVer)
+  {
+    return $this->compare($checkVer, '<');
+  }
+
+  public function isNewer ($checkVer)
+  {
+    return $this->compare($checkVer, '>');
+  }
+
+  public function notOlder ($checkVer)
+  {
+    return $this->compare($checkVer, '>=');
+  }
+
 }
 
-class RowVersion
+class TableVersion extends Version
 {
-  public $version;
+  public $pre_run;
+  public $post_run;
+  public $sql_file = true;
 
   public function __construct ($verdef)
   {
+    if (is_string($verdef) )
+    {
+      $this->version = $verdef;
+    }
+    elseif (is_numeric($verdef))
+    {
+      if (fmod(floatval($verdef), 1) == 0)
+        $this->version = (string)$verdef . '.0';
+      else
+        $this->version = (string)$verdef;
+    }
+    else
+    {
+      parent::__construct($verdef);
+    }
   }
 }
+
+class RowVersion extends Version
+{
+  public $run;
+}
+

@@ -13,12 +13,15 @@ use \Nano4\DB\Simple;
  */
 class Tables
 {
-  protected $db; // The DB object.
+  /**
+   * The database object.
+   */
+  protected $db;
 
   /**
-   * The directory where schema files are found.
+   * The directories where schema files are found.
    */
-  public $schemaDir;
+  protected $schemaDirs = [];
 
   /**
    * The namespace for update scripts.
@@ -26,9 +29,9 @@ class Tables
   public $updateNamespace = 'UpdateSchema';
 
   /**
-   * The sub-directory of $schemaDir where update folders are found.
+   * The sub-directory of $schemaDir where table definitions are found.
    */
-  public $tablesDir  = 'tables';
+  public $tablesDir = 'tables';
 
   /**
    * The sub-directory of $schemaDir where current SQL files are found.
@@ -36,24 +39,24 @@ class Tables
   public $sqlDir = 'sql';
 
   /**
-   * The name of the update configuration file.
+   * The name of the table schema file.
    */
-  public $schemaFile = 'update.json';
+  public $schemaFile = 'schema.json';
 
   /**
    * The name of the schema metadata table.
    */
-  public $metaTable  = 'schema_metadata';
+  public $metaTable = 'schema_metadata';
 
   /**
    * The name of the column containing the table name in the $metaTable.
    */
-  public $metaName   = 'name';
+  public $metaName = 'name';
 
   /**
    * The name of the column containing the schema version in the $metaTable.
    */
-  public $metaVer    = 'version';
+  public $metaVer = 'version';
 
   /**
    * The name of the version column in individual rows.
@@ -63,12 +66,17 @@ class Tables
   /**
    * The default version if no updates are found.
    */
-  public $defVer     = '1.0';
+  public $defVer = '1.0';
 
   /**
-   * Are we storing versions as text or numbers?
+   * Force a check of updates on Table initialization?
    */
-  public $verIsText = true;
+  public $checkUpdates = false;
+
+  /**
+   * Provide a default function for retrieving outdated rows from a table.
+   */
+  public $getRows;
 
   protected $tables = [];                 // A cache of loaded tables.
 
@@ -76,11 +84,125 @@ class Tables
    * Build a Nano4\DB\Update\Schema object.
    *
    * @param Object $db          The database object instance.
-   * @param String $schemaDir   The directory with the schema files.
    * @param Array  $opts        Any extra options.
+   * @param Array  $schemaDirs  Initial schema directories to scan.
    *
    * The $db object must be a subclass of Nano4\DB\Simple object that
    * includes the Nano4\DB\Simple\NativeDB trait.
+   *
+   * The $opts can override defaults, and specify custom behaviours.
+   *
+   *   "metadata_table"   Override the name of the table containing the
+   *                      current schema version for every application table.
+   *                      Defaults to "schema_metadata".
+   *
+   *   "metadata_name"    Override the name of the column containing the
+   *                      table name within the metadata table.
+   *                      Defaults to "name".
+   *
+   *   "metadata_version" Override the name of the column containing the
+   *                      schema version within the metadata table.
+   *                      Defaults to "version".
+   *
+   *   "version_column"   Overrides the name of the default version column
+   *                      in tables using the "row_versions" feature.
+   *                      Defaults to "version".
+   *
+   *   "tables_dir"       The sub-folder of the schema folder that contains
+   *                      the list of updated tables. 
+   *                      Defaults to "tables".
+   *
+   *   "schema_file"      The update config file for each table.
+   *                      Defaults to "schema.json".
+   *
+   *   "sql_dir"          The sub-folder of the schema folder which contains
+   *                      the SQL files used to build our initial tables.
+   *                      Defaults to "sql".
+   *
+   *   "default_version"  The default version if no updates exist.
+   *                      Defaults to "1.0".
+   *
+   *   "get_rows"         A callable that will be used as the default
+   *                      implementation to look for rows. It's signature is:
+   *                      ($table);
+   *                      It should return an array of rows whose version is
+   *                      older than the latest version. The rows should be 
+   *                      in whatever format is used by your update scripts.
+   *                      See addDir() for details on row update scripts.
+   *
+   *   "check_updates"    If set to true, an update check will be forced
+   *                      on each of the Tables for listing purposes.
+   *
+   * If the $schemaDirs parameter is passed, it will be sent to the
+   * addDir() method, see below.
+   *
+   */
+  public function __construct ($db, $opts=[], $dirs=null)
+  {
+    if (!($db instanceof Simple))
+    {
+      throw new \Exception(__CLASS__.": \$db must be a sub-class of \\Nano4\\DB\\Simple");
+    }
+    if (!is_callable([$db, 'source']))
+    {
+      throw new \Exception(__CLASS__.": \$db must use \\Nano4\\DB\\Simple\\NativeDB trait");
+    }
+
+    $this->db = $db;
+
+    if (isset($opts['tables_dir']))
+    {
+      $this->tablesDir = $opts['tables_dir'];
+    }
+    if (isset($opts['schema_file']))
+    {
+      $this->schemaFile = $opts['schema_file'];
+    }
+    if (isset($opts['metadata_table']))
+    {
+      $this->metaTable = $opts['metadata_table'];
+    }
+    if (isset($opts['metadata_name']))
+    {
+      $this->metaName = $opts['metadata_name'];
+    }
+    if (isset($opts['metadata_version']))
+    {
+      $this->metaVer = $opts['metadata_version'];
+    }
+    if (isset($opts['default_version']))
+    {
+      $this->defVer = $opts['default_version'];
+    }
+    if (isset($opts['sql_dir']))
+    {
+      $this->sqlDir = $opts['sql_dir'];
+    }
+    if (isset($opts['get_rows']))
+    {
+      $this->getRows = $opts['get_rows'];
+    }
+    if (isset($opts['check_updates']))
+    {
+      $this->checkUpdates = $opts['check_updates'];
+    }
+
+    if (!$this->tableExists($this->metaTable))
+    {
+      throw new \Exception(__CLASS__.": no {$this->metaTable} table found.");
+    }
+
+    if (isset($dirs))
+    {
+      $this->addDir($dirs);
+    }
+  }
+
+  /**
+   * Add a schemata directory to our list.
+   *
+   * @param mixed $schemaDir  The path to a directory containing schema files.
+   *                          This can be an array of paths to scan.
    *
    * The $schemaDir must contain at least the $sqlDir and $tablesDir
    * subdirectories.
@@ -111,8 +233,7 @@ class Tables
    *               name is a function to call after requirements have been
    *               fulfilled, but before the update SQL for this table has
    *               been called. The SQL file should use the UpdateSchema
-   *               namespace, and the function is called function($db, $this)
-   *               where $this is the UpdateSchema object instance.
+   *               namespace, and signature is: ($table);
    *
    *   "post-run"  The same syntax as "pre-run", except if defined this is
    *               called after the update SQL for this table has been called.
@@ -127,130 +248,157 @@ class Tables
    *
    *   "needs"         An array of tables required by this table.
    *
+   *   "wants"         Similar to needs, but will continue if the table is
+   *                   not found in the current set of tables.
+   *
    *   "row_versions"  Similar to the "table_versions" property, except instead
    *                   of being on a table basis, it's for individual rows.
    *                   It looks for a version column and compares it against
    *                   the versions in the "row_versions" array.
    *                   Each version definition must be an object, and supports
    *                   the following properties:
+   *
+   *                    "version"   The version string, this is required.
    *                    
-   *                    "requires"  Exactly the same as the same property in
+   *                    "requires"  This is similar to the same property in 
    *                                the "table_versions" definitions.
+   *                                However the tables only need to be true.
+   *                                Specific versions aren't checked here.
    *
    *                    "run"       The same synax as "pre-run" or "post-run".
    *                                There is only one run command as row-based
    *                                updates don't support SQL scripts.
-   *
+   *                                The signature is slightly different:
+   *                                ($table, ['rows'=>$rows]);
+   *                                The 'rows' parameter contains the rows that
+   *                                are being processed.
    *
    *   "vercolumn"     Override the version column name for this table.
+   *
+   *   "get-rows"      Override the "get_rows" definition if it was set.
+   *                   This is an array in the same syntax of "pre-run".
+   *                   The signature is described in the "get_rows" option
+   *                   of the __construct() method.
    *
    *   "tags"          A flat array of application-specific tags.
    *
    *   "options"       An object of application-specific options.
    *
-   * The $opts can override defaults, and specify custom behaviours.
-   *
-   *   "metadata_table"   Override the name of the table containing the
-   *                      current schema version for every application table.
-   *                      Defaults to "schema_metadata".
-   *
-   *   "metadata_name"    Override the name of the column containing the
-   *                      table name within the metadata table.
-   *                      Defaults to "name".
-   *
-   *   "metadata_version" Override the name of the column containing the
-   *                      schema version within the metadata table.
-   *                      Defaults to "version".
-   *
-   *   "version_column"   Overrides the name of the default version column
-   *                      in tables using the "row_versions" feature.
-   *                      Defaults to "version".
-   *
-   *   "tables_dir"       The sub-folder of the schema folder that contains
-   *                      the list of updated tables. 
-   *                      Defaults to "updates".
-   *
-   *   "schema_file"      The update config file for each table.
-   *                      Defaults to "update.json".
-   *
-   *   "default_version"  The default version if no updates exist.
-   *                      Defaults to "1.0".
-   *
    */
-  public function __construct ($db, $schemaDir, $opts=[])
+  public function addDir ($dir)
   {
-    if (!($db instanceof Simple))
+    if (is_array($dir))
     {
-      throw new \Exception(__CLASS__.": \$db must be a sub-class of \\Nano4\\DB\\Simple");
+      foreach ($dir as $sdir)
+      {
+        $this->addDir($sdir);
+      }
     }
-    if (!is_callable([$db, 'source']))
+    elseif (is_string($dir))
     {
-      throw new \Exception(__CLASS__.": \$db must use \\Nano4\\DB\\Simple\\NativeDB trait");
-    }
-    if (!$schemaDir || ! file_exists($schemaDir))
-    {
-      throw new \Exception(__CLASS__.": \$schemaDir does not exist.");
-    }
-
-    $this->db = $db;
-    $this->schemaDir = $schemaDir;
-
-    if (isset($opts['tables_dir']))
-    {
-      $this->tablesDir = $opts['tables_dir'];
-    }
-    if (isset($opts['schema_file']))
-    {
-      $this->schemaFile = $opts['schema_file'];
-    }
-    if (isset($opts['metadata_table']))
-    {
-      $this->metaTable = $opts['metadata_table'];
-    }
-    if (isset($opts['metadata_name']))
-    {
-      $this->metaName = $opts['metadata_name'];
-    }
-    if (isset($opts['metadata_version']))
-    {
-      $this->metaVer = $opts['metadata_version'];
-    }
-    if (isset($opts['default_version']))
-    {
-      $this->defVer = $opts['default_version'];
-    }
-
-    if (! file_exists($schemaDir . '/' . $this->tablesDir))
-    {
-      throw new \Exception(__CLASS__.": no {$this->tablesDir} folder found.");
-    }
-
-    if (!$this->tableExists($this->metaTable))
-    {
-      throw new \Exception(__CLASS__.": no {$this->metaTable} table found.");
+      if (trim($dir) === '') return;
+      if (file_exists($dir . '/' . $this->tablesDir))
+      {
+        $this->schemaDirs[] = $dir;
+      }
     }
   }
 
   /**
-   * Get a list of any tables with updates.
+   * Scan all of our tables, and return an unsorted list.
    *
    * @param  Array $opts  Any options to pass to the Table class (optional.)
    *
    * @return Array        An array of Table objects.
    *
    */
-  public function listTables ($opts=[])
+  public function scanTables ($opts=[])
   {
-    $dir = $this->schemaDir . '/' . $this->tablesDir;
-    $table_names = scandir($dir);
     $tables = [];
-    foreach ($table_names as $name)
+    foreach ($this->schemaDirs as $schemaDir)
     {
-      if (substr($name,0,1) == '.') continue; // skip dots.
-      $this->tables[$name] = $tables[] = 
-        new Table($name, $this, $this->db, $opts);
+      $dir = $schemaDir . '/' . $this->tablesDir;
+      if (file_exists($dir))
+      {
+        $table_names = scandir($dir);
+        foreach ($table_names as $name)
+        {
+          if (substr($name,0,1) == '.') continue; // skip dots.
+          $this->tables[$name] = $tables[] = 
+            new Table($name, $schemaDir, $this, $this->db, $opts);
+        }
+      }
     }
     return $tables;
+  }
+
+  /**
+   * Return a sorted list of tables.
+   */
+  public function listTables ($opts=[])
+  {
+    if (count($this->tables) === 0)
+    {
+      $tableOpts = isset($opts['table_options']) ? $opts['table_options'] : [];
+      $tables = $this->scanTables($tableOpts);
+    }
+    else
+    {
+      $tables = array_values($this->tables);
+    }
+    $list = [];
+    $seen = [];
+    foreach ($tables as $table)
+    {
+      $this->sortTables($table, $list, $seen, $opts);
+    }
+    return $list;
+  }
+
+  private function sortTables ($table, &$list, &$seen, $opts)
+  {
+    if (isset($seen[$table->name])) return; // already seen.
+    $tags = null;
+    $allTags = false;
+    if (isset($opts['hasTag']))
+    { // List only tables containing a certain tag, or tags.
+      $tags = $opts['hasTag'];
+    }
+    elseif (isset($opts['allTags']))
+    {
+      $tags = $opts['allTags'];
+      $allTags = true;
+    }
+    if (isset($tags))
+    {
+      if (!is_array($tags))
+        $tags = [$tags];
+      foreach ($tags as $tag)
+      {
+        if (!$table->hasTag($tag)) return;
+        if (!$alltags) break;
+      }
+    }
+
+    $depends = $table->depends();
+
+    if (count($depends) > 0)
+    {
+      foreach ($depends as $dep => $need)
+      {
+        if (isset($this->tables[$dep]))
+        {
+          $this->sortTables($this->tables[$dep], $list, $seen, $opts);
+        }
+        elseif ($need)
+        {
+          throw new \Exception("required table '$dep' not found!");
+        }
+      }
+    }
+
+    $list[] = $table;
+    $seen[$table->name] = true;
   }
 
   /**
@@ -270,28 +418,55 @@ class Tables
     }
     else
     {
-      return $this->tables[$name] = new Table($name, $this, $this->db, $opts);
+      foreach ($this->schemaDirs as $dir)
+      {
+        if (file_exists("$dir/".$this->tablesDir."/$table/".$this->schemaFile))
+        {
+          return $this->tables[$name] = 
+            new Table($name, $dir, $this, $this->db, $opts);
+        }
+      }
     }
   }
 
   /**
    * Update all tables that are out of date.
    *
-   * @param  Array  $opts  Any options to pass to the Table class (optional.)
-   *
-   * @return Array         An array of Table objects.
+   * @return Array         An array of Table objects that were updated.
    */
-  public function updateAll ($opts=[])
+  public function updateAllTables ($opts=[])
   {
-    $tables = $this->listTables(); // Get all updates.
+    $tables = $this->listTables($opts); // Get all updates.
+    $updated = [];
     foreach ($tables as $table)
     {
       if ($table->need_update)
       {
         $table->update();
+        $updated[] = $table;
       }
     }
-    return $this->tables;
+    return $updated;
+  }
+
+  /**
+   * Update all rows that are out of date.
+   *
+   * @return Array     An array of Table objects that had rows updated.
+   */
+  public function updateAllRows ($opts=[])
+  {
+    $tables = $this->listTables($opts);
+    $updated = [];
+    foreach ($tables as $table)
+    {
+      $rows = $table->updateRows();
+      if (count($rows) > 0)
+      {
+        $updated[] = $table;
+      }
+    }
+    return $updated;
   }
 
   /**
@@ -311,6 +486,14 @@ class Tables
       return true;
     }
     return false;
+  }
+
+  /**
+   * Return our database instance.
+   */
+  public function getDB ()
+  {
+    return $this->db;
   }
 
 }
