@@ -28,7 +28,7 @@ class Text
         $jlen = strlen($join);
         $offset = 1;      // base offset from 0.
         $offset += $jlen; // offset includes size of join string.
-        $size = round((($maxlen/2)-$offset));
+        $size = floor((($maxlen/2)-$offset));
         $str1 = substr($string, 0, $size);
         $size *= -1;
         $str2 = substr($string, $size);
