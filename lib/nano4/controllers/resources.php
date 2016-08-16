@@ -66,6 +66,14 @@ trait Resources
           'modelapi',
           'viewcontroller',
         ],
+        '#webcore_ws' =>
+        [ // A version of web core for working with web services.
+          '#webcore',
+          'webservice',
+          'promise',
+          'oquery',
+          'modelapi/ws_model',
+        ],
         '#base64' =>
         [ // Base64 encoding and decoding.
           'crypto/components/core-min',
