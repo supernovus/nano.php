@@ -133,10 +133,11 @@ trait Resources
   /**
    * Add a resource file to an array of resources for use in view templates.
    *
-   * @param String $type    The resource type.
-   * @param String $name    The resource or group name.
+   * @param string  $type    The resource type.
+   * @param string  $name    The resource or group name.
+   * @param boolean $block   Don't actually add it, make it un-addable.
    */
-  public function use_resource ($type, $name)
+  public function use_resource ($type, $name, $block=false)
   {
     // Make sure it's a valid resource type.
     if (!isset($this->resources[$type])) return False;
@@ -146,7 +147,7 @@ trait Resources
     {
       foreach ($name as $res)
       {
-        $this->use_resource($type, $res);
+        $this->use_resource($type, $res, $block);
       }
       return True; // All done.
     }
@@ -162,20 +163,32 @@ trait Resources
       $group = $this->resources[$type]['groups'][$name];
       foreach ($group as $res)
       {
+        $resblock = $block;
+        if (substr($res, 0, 1) === '!')
+        {
+          $res = substr($res, 1);
+          $resblock = true;
+        }
         if (strpos($res, ':') === False)
         {
-          $this->use_resource($type, $res);
+          $this->use_resource($type, $res, $resblock);
         }
         else
         {
           $parts = explode(':', $res);
           $etype = $parts[0];
           $ename = $parts[1];
-          $this->use_resource($etype, $ename);
+          $this->use_resource($etype, $ename, $resblock);
         }
       }
       $this->resources[$type]['added'][$name] = $name;
       return True; // We've imported the group, let's leave now.
+    }
+
+    if ($block)
+    {
+      $this->resources[$type]['added'][$name] = true;
+      return true;
     }
 
     $file = $this->find_resource($type, $name);
@@ -224,6 +237,24 @@ trait Resources
   public function add_css ($name)
   {
     return $this->use_resource('css', $name);
+  }
+
+  /**
+   * Block a Javascript file or group from being loaded.
+   * This must be done BEFORE any other calls to add_js() because if the
+   * resource is already added, it cannot be blocked.
+   */
+  public function block_js ($name)
+  {
+    return $this->use_resource('js', $name, true);
+  }
+
+  /**
+   * Block a CSS stylesheet. The same rules apply with this as with JS.
+   */
+  public function block_css ($name)
+  {
+    return $this->use_resource('css', $name, true);
   }
 
 }
