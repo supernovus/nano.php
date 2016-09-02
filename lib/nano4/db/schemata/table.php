@@ -288,9 +288,9 @@ class Table
         }
       }
 
-      if (!isset($sql_file))
+      if (!isset($sql_file) || $sql_file === true)
       {
-        if ($this->current == 0)
+        if ($this->current === 0)
         { // The table doesn't exist, create it.
           $sql_file = $this->schemaDir . '/' . $this->name . '.sql';
         }

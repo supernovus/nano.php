@@ -423,7 +423,7 @@ class Tables
     {
       foreach ($this->schemaDirs as $dir)
       {
-        if (file_exists("$dir/".$this->tablesDir."/$table/".$this->schemaFile))
+        if (file_exists("$dir/".$this->tablesDir."/$name/".$this->schemaFile))
         {
           return $this->tables[$name] = 
             new Table($name, $dir, $this, $this->db, $opts);
