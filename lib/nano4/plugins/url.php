@@ -10,6 +10,13 @@ namespace Nano4\Plugins;
 
 class URL
 {
+  const FORMAT_JSON   = 0;
+  const FORMAT_SERIAL = 1;
+  const FORMAT_UBJSON = 2;
+
+  const TYPE_ARRAY    = 0;
+  const TYPE_OBJECT   = 1;
+
   /** 
    * Redirect to another page. This ends the current PHP process.
    *
@@ -288,8 +295,11 @@ class URL
   /**
    * Transform a PHP array/object into a URL-safe string.
    *
-   * @param Mixed $input        The PHP array/object to encode.
-   * @param Bool  $serialize    If set to True, we use serialize().
+   * @param mixed $input        The PHP array/object to encode.
+   * @param int   $format       One of:
+   *                            - URL::FORMAT_JSON   (default)
+   *                            - URL::FORMAT_SERIAL
+   *                            - URL::FORMAT_UBJSON
    *
    * The format of the string is simple:
    *
@@ -300,55 +310,124 @@ class URL
    *   '/' becomes '_'
    *   '=' becomes '~'
    *
-   * The data encoding scheme depends on the $serialize parameter:
+   * The encoding format can be one of the types listed above.
    *
-   * If $serialize is False (default) then we use JSON encoding, in which
-   * case the input MUST be a PHP Array, and all members of the PHP array 
-   * MUST be able to be handled by the json_encode() function.
-   *
-   * If $serialize is True, we use the serialize() function.
-   * This allows for more types of objects to be encoded, but also means that
-   * you will only be able to use the URL string with PHP.
+   * JSON is a decent default, it's supported natively in PHP and is fast.
+   * SERIAL is much larger, and thus will generate very large strings, but
+   * it can encode almost any PHP object natively.
+   * UBJSON is the smallest format, as it is a binary version of JSON.
+   * It uses pack/unpack and thus may be slightly slower than JSON.
    */
-  public static function encodeArray ($object, $serialize=False)
+  public static function encodeObject ($object, $format=0)
   {
-    if ($serialize)
+    if ($format === self::FORMAT_JSON)
+    {
+      $encoded = json_encode($object);
+    }
+    elseif ($format === self::FORMAT_SERIAL)
     {
       $encoded = serialize($object);
     }
+    elseif ($format === self::FORMAT_UBJSON)
+    {
+      $encoded = \Nano4\Utils\UBJSON::encode($object);
+    }
     else
     {
-      $encoded = json_encode($object);
+      throw new \Exception("Unrecognized format in URL::encodeObject()");
     }
     return strtr(base64_encode($encoded), '+/=', '-_~');
   }
 
-  /** 
-   * Decode a string in encodeArray() format.
+  /**
+   * The older version of encodeObject. Kept for backwards compatibility.
    *
-   * @param String $input        The URL string to decode.
-   * @param Bool   $serialize    Did the input string use serialize?
-   * @param Bool   $assoc        JSON objects will become PHP arrays (True)
+   * @param mixed $input      The PHP array/object to encode.
+   * @param bool  $serialize  If true, FORMAT_SERIAL, otherwise FORMAT_JSON.
    *
-   * The $serialize parameter MUST reflect the same value as was used in
-   * the encodeArray() call that generated the original string. 
-   * It defaults to False (the same default as encodeArray().)
-   *
-   * The $assoc parameter (default True) is only used by the JSON decoder,
-   * and is passed along to the json_decode() function to determine if JSON
-   * Objects will be decoded as PHP Objects or PHP Arrays.
+   * See encodeObject() for the rest of the details.
    */
-  public static function decodeArray ($string, $serialize=False, $assoc=True)
+  public static function encodeArray ($object, $serialize=false)
   {
-    $decoded = base64_decode(strtr($string, '-_~', '+/='));
     if ($serialize)
+      $format = self::FORMAT_SERIAL;
+    else
+      $format = self::FORMAT_JSON;
+    return self::encodeObject($object, $format);
+  }
+
+  /** 
+   * Decode a string in encodeObject() format.
+   *
+   * @param string $input        The URL string to decode.
+   * @param int    $format       Same formats as encodeObject().
+   * @param int    $type         One of:
+   *                             - URL::TYPE_ARRAY   (default)
+   *                             - URL::TYPE_OBJECT
+   *
+   * The input format must match the format that was used to encode the
+   * string. This version does not attempt detection.
+   *
+   * The output type can be either an array, or an object.
+   *
+   * The $type parameter is ignored if FORMAT_SERIAL was used.
+   */
+  public static function decodeObject ($string, $format=0, $type=0)
+  {
+#    error_log("decodeObject(string, $format, $type)");
+    $decoded = base64_decode(strtr($string, '-_~', '+/='));
+    if ($format === self::FORMAT_JSON)
+    {
+      if ($type === self::TYPE_ARRAY)
+        $assoc = true;
+      elseif ($type === self::TYPE_OBJECT)
+        $assoc = false;
+      else
+        throw new \Exception("Unrecognized JSON type in URL::decodeObject()");
+
+      return json_decode($decoded, $assoc);
+    }
+    elseif ($format === self::FORMAT_SERIAL)
     {
       return unserialize($decoded);
     }
+    elseif ($format === self::FORMAT_UBJSON)
+    {
+      if ($type === self::TYPE_ARRAY)
+        $type = \Nano4\Utils\UBJSON::TYPE_ARRAY;
+      elseif ($type === self::TYPE_OBJECT)
+        $type = \Nano4\Utils\UBJSON::TYPE_OBJECT;
+      else
+        throw new \Exception("Unrecognized UBJSON type in URL::decodeObject()");
+
+      return \Nano4\Utils\UBJSON::decode($decoded, $type);
+    }
     else
     {
-      return json_decode($decoded, $assoc);
+      throw new \Exception("Unrecognized format in URL::decodeObject()");
     }
+  }
+
+  /**
+   * The old version of decodeObject. Kept for backwards comatibility.
+   *
+   * @param string $input        The URL string to decode.
+   * @param bool   $serialized   If true, FORMAT_SERIAL, otherwise FORMAT_JSON.
+   * @param bool   $assoc        If false, TYPE_OBJECT, otherwise TYPE_ARRAY.
+   *
+   * See decodeObject() for the rest of the details.
+   */
+  public static function decodeArray ($string, $serialized=false, $assoc=true)
+  {
+    if ($serialized)
+      $format = self::FORMAT_SERIAL;
+    else
+      $format = self::FORMAT_JSON;
+    if ($assoc)
+      $type = self::TYPE_ARRAY;
+    else
+      $type = self::TYPE_OBJECT;
+    return self::decodeObject($string, $format, $type);
   }
 
 }
