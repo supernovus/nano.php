@@ -21,6 +21,8 @@ class Router
   protected $named  = [];  // Any named routes, for reverse generation.
   protected $default;      // The default route, must be explicitly set.
 
+  protected $plugins = []; // Router plugin functions.
+
   public $base_uri = '';
 
   public $log   = False;   // Basic logging, tracks routing.
@@ -117,11 +119,26 @@ class Router
     }
     elseif (is_array($route))
     { // It's options for constructing a route.
+      if (isset($route['plugin']))
+      {
+        $plugin = $route['plugin'];
+        if (isset($this->plugins[$plugin]))
+        {
+          $plugin = $this->plugins[$plugin];
+          return $plugin($this, $route, $is_default, $add_it, $chain);
+        }
+      }
       $route = new Route($route);
       return $this->add($route, $is_default, $add_it, $chain); // magical recursion.
     }
     elseif (is_string($route))
-    { 
+    {
+      if (isset($this->plugins[$route]))
+      { // A plugin, let's do this!
+        $plugin = $this->plugins[$route];
+        return $plugin($this, $is_default, $add_it, $chain, null);
+      }
+
       $ropts = ['uri' => $route];      
       if (is_bool($is_default))
       { // Assume the first parameter is the controller, and that the
@@ -166,6 +183,18 @@ class Router
     else
     {
       throw new \Exception("Unrecognized route sent to Router::add()");
+    }
+  }
+
+  public function addPlugin ($name, $function)
+  {
+    if (is_callable($function))
+    {
+      $this->plugins[$name] = $function;
+    }
+    else
+    {
+      throw new \Exception("Invalid plugin '$name' passed to Router.");
     }
   }
 
