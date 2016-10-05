@@ -63,6 +63,21 @@ class Table
    */
   public $tableDir;
 
+  /**
+   * The current state SQL files.
+   */
+  public $currentSQL;
+
+  /**
+   * SQL update files.
+   */
+  public $updateSQL;
+
+  /**
+   * PHP update files.
+   */
+  public $updatePHP;
+
   protected $conf; // The update configuration.
 
   /**
@@ -87,12 +102,24 @@ class Table
     $this->db = $db;
     $this->schemaDir = $schemaDir;
 
+    $this->currentSQL = $schemaDir . '/' . $parent->sqlDir;
+
     // Get our table update directory.
     $ourDir = $schemaDir . '/' . $parent->tablesDir . '/' . $name;
 
     if (file_exists($ourDir))
     { // Set our update directory.
       $this->tableDir = $ourDir;
+
+      if (isset($parent->tablesSQL))
+        $this->updateSQL = $ourDir . '/' . $parent->tablesSQL;
+      else
+        $this->updateSQL = $ourDir;
+
+      if (isset($parent->tablesPHP))
+        $this->updatePHP = $ourDir . '/' . $parent->tablesPHP;
+      else
+        $this->updatePHP = $ourDir;
 
       // Get our table update configuration file.
       $ourConf = $ourDir . '/' . $parent->schemaFile;
@@ -102,12 +129,7 @@ class Table
         throw new \Exception(__CLASS__.": $ourConf file does not exist.");
       }
   
-      $this->conf = json_decode(file_get_contents($ourConf), true);
-  
-      if (!$this->conf)
-      {
-        throw new \Exception(__CLASS__.": could not load $ourConf as JSON.");
-      }
+      $this->conf = new TableConfig($ourConf);  
     }
 
     // Get the latest version of our table schema.
@@ -134,6 +156,12 @@ class Table
     }
   }
 
+  public function refresh ()
+  {
+    $this->get_table_schema();
+    $this->check_table_updates();
+  }
+
   // Get the current version of our table schema.
   protected function get_table_schema ()
   {
@@ -158,7 +186,7 @@ class Table
     }
     else
     { // This table is not created yet, we'll create it.
-      $this->current = 0;
+      $this->current = new MissingVersion();
     }
   }
 
@@ -170,20 +198,28 @@ class Table
       $this->get_table_schema();
 
     if ($this->current->isNewer($this->latest))
-    {
+    { // The current version is newer than the latest? This is an error!
       throw new \Exception(__CLASS__.": {$this->name} schema is higher than {$this->latestVersion()}.");
     }
+    elseif ($this->current->missing && $this->conf->replaced_by)
+    { // We've been replaced.
+      $this->need_update = false;
+    }
     elseif ($this->current->isOlder($this->latest))
-    {
+    { // Our current version is older than the latest.
       $this->need_update = true;
+    }
+    else
+    { // We're up to date.
+      $this->need_update = false;
     }
   }
 
   public function verColumn ()
   {
-    if (isset($this->conf, $this->conf['vercolumn']))
+    if (isset($this->conf, $this->conf->vercolumn))
     {
-      return $this->conf['vercolumn'];
+      return $this->conf->vercolumn;
     }
     else
     {
@@ -193,17 +229,20 @@ class Table
 
   public function tableVersions ()
   {
-    if (isset($this->conf, $this->conf["table_versions"]))
+    if (!isset($this->current))
+      $this->get_table_schema();
+
+    if (isset($this->conf, $this->conf->table_versions))
     {
       $versions = [];
-      foreach ($this->conf['table_versions'] as $ver)
+      foreach ($this->conf->table_versions as $ver)
       {
         $version = new TableVersion($ver);
         $versions[] = $version;
       }
       return $versions;
     }
-    elseif ($this->current !== 0)
+    elseif (!$this->current->missing)
     {
       return [$this->current];
     }
@@ -215,10 +254,10 @@ class Table
 
   public function rowVersions ()
   {
-    if (isset($this->conf, $this->conf['row_versions']))
+    if (isset($this->conf, $this->conf->row_versions))
     {
       $versions = [];
-      foreach ($this->conf['row_versions'] as $ver)
+      foreach ($this->conf->row_versions as $ver)
       {
         $version = new RowVersion($ver);
         $versions[] = $version;
@@ -247,22 +286,34 @@ class Table
     // See if we need to be updated.
     $this->check_table_updates();
 
+    if ($this->update_ran) return;   // We've already run update, go away.
     if (!$this->need_update) return; // If we don't need updating, go away.
 
-    $this->need_update = false;  // Prevent it from trying again.
-    $this->update_ran  = true;   // Mark that the update() was called.
+    $this->update_ran = true;   // Mark that the update() was called.
+
+    if (isset($this->conf->replaces))
+    { // We replace an existing table.
+      if ($this->current->missing)
+      { // Our table doesn't exist.
+        $rname = $this->conf->replaces;
+        $rtable = $this->parent->getTable($rname);
+        if (!$rtable->current->missing)
+        { // The original table exists, let's replace it.
+          return $this->replaceTable($rtable);
+        }
+      }
+    }
 
     $versions = $this->tableVersions();
 
     foreach ($versions as $version)
     {
-      $version = new TableVersion($version);
       if ($version->notNewer($this->current)) continue; // Older version.
 
       $sql_file = $version->sql_file;
       if (is_string($sql_file))
       {
-        $sql_file = $this->tableDir . '/' . $sql_file;
+        $sql_file = $this->updateSQL . '/' . $sql_file;
       }
 
       // Handle requirements if they exist.
@@ -273,7 +324,7 @@ class Table
           $rtable = $this->parent->getTable($rname);
           if ($rver === true)
           { // We only care that the table exists.
-            if ($rtable->current === 0)
+            if ($rtable->current->missing)
             {
               $rtable->update();
             }
@@ -290,20 +341,20 @@ class Table
 
       if (!isset($sql_file) || $sql_file === true)
       {
-        if ($this->current === 0)
+        if ($this->current->missing)
         { // The table doesn't exist, create it.
-          $sql_file = $this->schemaDir . '/' . $this->name . '.sql';
+          $sql_file = $this->currentSQL . '/' . $this->name . '.sql';
         }
         else
         { // Use a default upgrade script filename.
           $ver1 = $this->current->version;
           $ver2 = $version->version;
-          $sql_file = $this->tableDir . '/' . $ver1 . '-' . $ver2 . '.sql';
+          $sql_file = $this->updateSQL . '/' . $ver1 . '-' . $ver2 . '.sql';
         }
       }
 
       $pre_run = $version->pre_run;
-      if (isset($pre_run) && file_exists($this->tableDir.'/'.$pre_run[0]))
+      if (isset($pre_run) && file_exists($this->updatePHP.'/'.$pre_run[0]))
       {
         $this->run($pre_run[0], $pre_run[1]);
       }
@@ -314,14 +365,78 @@ class Table
       }
 
       $post_run = $version->post_run;
-      if (isset($post_run) && file_exists($this->tableDir.'/'.$post_run[0]))
+      if (isset($post_run) && file_exists($this->updatePHP.'/'.$post_run[0]))
       {
         $this->run($post_run[0], $post_run[1]);
       }
-      $this->get_table_schema();
-      $this->check_table_updates();
+      $this->refresh();
     }
+
     // TODO: actually catch and report errors.
+    $this->update_ok = true;
+
+    if (isset($this->conf->replaced_by))
+    { // We've been replaced, make sure our replacement exists.
+      $rname = $this->conf->replaced_by;
+      $rtable = $this->parent->getTable($rname);
+      if ($rtable->current->missing && !$rtable->update_ran)
+      { 
+        return $rtable->update();
+      }
+    }
+
+    return true;
+  }
+
+  protected function replaceTable ($rtable)
+  {
+    // First, make sure the original table is the newest version.
+    if (!$rtable->update_ran)
+    {
+      $rtable->update();
+    }
+
+    // Now let's replace it.
+    $sql_file = $this->conf->replacement_sql;
+    if (is_string($sql_file))
+    {
+      $sql_file = $this->updateSQL . '/' . $sql_file;
+    }
+    if (!isset($sql_file) || $sql_file === true)
+    { // Use a default SQL name: 'replace_$oldtable.sql'
+      $sql_file = $this->updateSQL . '/' . 'replace_'.$rtable->name.'.sql';
+    }
+
+    $pre_run = $this->conf->replacement_pre_run;
+    if (isset($pre_run) && file_exists($this->updatePHP.'/'.$pre_run[0]))
+    {
+      $this->run($pre_run[0], $pre_run[1]);
+    }
+
+    if ($sql_file && file_exists($sql_file))
+    {
+      $this->update_sql_output = $this->db->source($sql_file);
+    }
+
+    $post_run = $this->conf->replacement_post_run;
+    if (isset($post_run) && file_exists($this->updatePHP.'/'.$post_run[0]))
+    {
+      $this->run($post_run[0], $post_run[1]);
+    }
+
+    $this->refresh();
+    $rtable->refresh();
+
+    if (!$rtable->current->missing)
+    { // The script didn't remove the old table, that's a problem.
+      throw new \Exception("Old table {$rtable->name} not replaced.");
+    }
+
+    if ($this->need_update)
+    {
+      return $this->update();
+    }
+
     $this->update_ok = true;
     return true;
   }
@@ -340,9 +455,6 @@ class Table
 
     foreach ($versions as $version)
     {
-      $version = new TableVersion($version);
-      if ($version->notNewer($this->current)) continue; // Older version.
-
       // Handle requirements if they exist.
       if (isset($version->requires))
       {
@@ -351,7 +463,7 @@ class Table
           $rtable = $this->parent->getTable($rname);
           if ($rver)
           { 
-            if ($rtable->current === 0)
+            if ($rtable->current->missing)
             { // Create the table.
               $rtable->update();
             }
@@ -363,9 +475,9 @@ class Table
         }
       }
 
-      if (isset($this->conf, $this->conf['get-rows']))
+      if (isset($this->conf, $this->conf->get_rows))
       {
-        $getrows = $this->conf['get-rows'];
+        $getrows = $this->conf->get_rows;
       }
       elseif (isset($this->parent->getRows))
       {
@@ -377,7 +489,7 @@ class Table
       {
         $rows = $getrows($this);
       }
-      elseif (is_array($getrows) && file_exists($this->tableDir.'/'.$getrows[0]))
+      elseif (is_array($getrows) && file_exists($this->updatePHP.'/'.$getrows[0]))
       {
         $rows = $this->run($getrows[0], $getrows[1]);
       }
@@ -385,7 +497,7 @@ class Table
       if (isset($rows))
       {
         $run = $version->run;
-        if (isset($run) && file_exists($this->tableDir.'/'.$run[0]))
+        if (isset($run) && file_exists($this->updatePHP.'/'.$run[0]))
         {
           $updated = $this->run($run[0], $run[1]);
           if (isset($updated) && is_array($updated) && count($updated) > 0)
@@ -400,7 +512,7 @@ class Table
 
   public function run ($filename, $funcname, $params=null)
   {
-    $class = $this->tableDir.'/'.$filename;
+    $class = $this->updatePHP.'/'.$filename;
     require_once "$class";
     $ns = $this->parent->updateNamespace;
     $func = "\\$ns\\".$funcname;
@@ -424,7 +536,7 @@ class Table
 
   public function hasTag ($tag)
   {
-    if (isset($this->conf, $this->conf['tags']) && is_array($this->conf['tags']) && in_array($tag, $this->conf['tags']))
+    if (isset($this->conf, $this->conf->tags) && is_array($this->conf->tags) && in_array($tag, $this->conf->tags))
     {
       return true;
     }
@@ -433,33 +545,44 @@ class Table
 
   public function needs ()
   {
-    if (isset($this->conf, $this->conf['needs']))
-    {
-      return $this->conf['needs'];
-    }
+    return $this->conf->needs;
   }
 
   public function wants ()
   {
-    if (isset($this->conf, $this->conf['wants']))
-    {
-      return $this->conf['wants'];
-    }
+    return $this->conf->wants;
+  }
+
+  public function isReplaced ()
+  {
+    if (isset($this->conf, $this->conf->replaced_by))
+      return true;
+    return false;
+  }
+
+  public function replacedBy ()
+  {
+    return $this->conf->replaced_by;
+  }
+
+  public function replaces ()
+  {
+    return $this->conf->replaces;
   }
 
   public function depends ()
   {
     $deps = [];
-    if (isset($this->conf, $this->conf['needs']))
+    if (isset($this->conf, $this->conf->needs))
     {
-      foreach ($this->conf['needs'] as $need)
+      foreach ($this->conf->needs as $need)
       {
         $deps[$need] = true;
       }
     }
-    if (isset($this->conf, $this->conf['wants']))
+    if (isset($this->conf, $this->conf->wants))
     {
-      foreach ($this->conf['wants'] as $want)
+      foreach ($this->conf->wants as $want)
       {
         $deps[$want] = false;
       }
@@ -479,11 +602,8 @@ class Table
 
 }
 
-abstract class Version
+abstract class ConfigProps
 {
-  public $version;
-  public $requires;
-
   public function __construct ($def)
   {
     if (is_array($def) || is_object($def))
@@ -497,6 +617,45 @@ abstract class Version
         }
       }
     }
+  }
+}
+
+class TableConfig extends ConfigProps
+{
+  public $table_versions;
+  public $row_versions;
+  public $needs;
+  public $wants;
+  public $vercolumn;
+  public $get_rows;
+  public $tags;
+  public $options;
+  public $replaced_by;
+  public $replaces;
+  public $replacement_sql;
+  public $replacement_pre_run;
+  public $replacement_post_run;
+
+  public function __construct ($configfile)
+  {
+    $def = json_decode(file_get_contents($configfile), true);
+    if (!$def)
+    {
+      throw new \Exception(__CLASS__.": could not load $configfile as JSON.");
+    }
+    parent::__construct($def);
+  }
+}
+
+abstract class Version extends ConfigProps
+{
+  public $version;
+  public $requires;
+  public $missing = false;
+
+  public function __construct ($def)
+  {
+    parent::__construct($def);
     if (!isset($this->version))
     {
       throw new \Exception("No version property was found in: ".json_encode($def));
@@ -561,5 +720,14 @@ class TableVersion extends Version
 class RowVersion extends Version
 {
   public $run;
+}
+
+class MissingVersion extends Version
+{
+  public function __construct ()
+  {
+    $this->version = '0';
+    $this->missing = true;
+  }
 }
 

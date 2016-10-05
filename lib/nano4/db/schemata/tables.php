@@ -39,6 +39,18 @@ class Tables
   public $sqlDir = 'sql';
 
   /**
+   * The sub-directory of $tablesDir/table where update SQL files are found.
+   * If not set, the SQL files must be in the $tablesDir/table folder.
+   */
+  public $tablesSQL;
+
+  /**
+   * The sub-directory of $tablesDir/table where update PHP scripts are found.
+   * If not set, the PHP files must be in the $tablesDir/table folder.
+   */
+  public $tablesPHP;
+
+  /**
    * The name of the table schema file.
    */
   public $schemaFile = 'schema.json';
@@ -214,7 +226,7 @@ class Tables
    *
    * The $schemaDir must contain a folder for for each table, and a schema.json
    * file within that, which at the very least must contain a property called 
-   * "table_versions" which must be set to an array.
+   * "table-versions" which must be set to an array.
    *
    * Each member of the array can be either a version string, 
    * or an object. If it is a string, we assume a file called 
@@ -246,7 +258,7 @@ class Tables
    *               if the pre-run or post-run PHP scripts perform all the
    *               changes required.)
    *
-   * In addition to "table_versions" the schema.json also supports the 
+   * In addition to "table-versions" the schema.json also supports the 
    * following optional properties:
    *
    *   "needs"         An array of tables required by this table.
@@ -254,7 +266,7 @@ class Tables
    *   "wants"         Similar to needs, but will continue if the table is
    *                   not found in the current set of tables.
    *
-   *   "row_versions"  Similar to the "table_versions" property, except instead
+   *   "row-versions"  Similar to the "table-versions" property, except instead
    *                   of being on a table basis, it's for individual rows.
    *                   It looks for a version column and compares it against
    *                   the versions in the "row_versions" array.
@@ -287,6 +299,27 @@ class Tables
    *
    *   "options"       An object of application-specific options.
    *
+   *   "replaced-by"   The name of the table which replaces this one.
+   *                   If this is set, then the table won't be created if
+   *                   it does not exist. The new table is expected to replace
+   *                   it entirely.
+   *
+   *   "replaces"      The name oa the table this replaced.
+   *
+   *  If "replaces" is set, then any of the following can be used:
+   *
+   *   "replacement-sql"    The name of a script to replace the old table.
+   *                        As with "sql-file" it can be set to false to skip
+   *                        the SQL step entirely. If not specified, the
+   *                        default name is: 'replace_$oldtable.sql' where
+   *                        $oldtable is the name of the old table.
+   *
+   *   "replacement-pre-run"  The same as "pre-run" in a version.
+   *
+   *   "replacement-post-run" The same as "post-run" in a version.
+   *
+   * Note: In any of the names above with a hyphen (-) the underscore (_)
+   *       can be used instead. So 'table_versions' == 'table-versions'.
    */
   public function addDir ($dir)
   {
