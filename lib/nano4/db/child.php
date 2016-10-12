@@ -238,6 +238,11 @@ abstract class Child implements \ArrayAccess
    */
   public function __isset ($name)
   {
+    $meth = "_isset_$name";
+    if (is_callable([$this, $meth]))
+    {
+      return $this->$meth();
+    }
     $name = $this->db_field($name, False);
     if (isset($name))
       return (isset($this->data[$name]) && $this->data[$name] != '');
@@ -250,6 +255,11 @@ abstract class Child implements \ArrayAccess
    */
   public function __unset ($name)
   {
+    $meth = "_unset_$name";
+    if (is_callable([$this, $meth]))
+    {
+      return $this->$meth();
+    }
     $name = $this->db_field($name);
     $this->modified_data[$name] = $this->data[$name];
     $this->data[$name] = null;
