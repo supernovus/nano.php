@@ -9,6 +9,8 @@ namespace Nano4\Controllers;
 
 trait Resources
 {
+  public $warn_on_missing_resources = true;
+
   /**
    * Resources represent external files, such as scripts, stylesheets, etc.
    * They are managed through a generic system that allows for easy future
@@ -90,6 +92,10 @@ trait Resources
           '#base64',
           'editor',
         ],
+      ],
+      'urls' => 
+      [
+        '@google_charts' => 'https://www.gstatic.com/charts/loader.js',
       ],
       'added' => [], 
     ],
@@ -191,11 +197,21 @@ trait Resources
       return true;
     }
 
-    $file = $this->find_resource($type, $name);
-    if (!isset($file))
+    $isURL = false;
+    if (isset($this->resources[$type]['urls'][$name]))
     {
-      error_log("Could not find $type file for: '$name'.");
-      return False;
+      $isURL = true;
+      $file = $this->resources[$type]['urls'][$name];
+    }
+    else
+    {
+      $file = $this->find_resource($type, $name);
+      if (!isset($file))
+      {
+        if ($this->warn_on_missing_resources)
+          error_log("Could not find $type file for: '$name'.");
+        return False;
+      }
     }
 
     $resname = $this->resources[$type]['name'];
@@ -207,7 +223,11 @@ trait Resources
       $this->data[$resname] = array();
     }
 
-    $this->data[$resname][] = $file;
+    if ($isURL)
+      $this->data[$resname][] = ['url'=>$file];
+    else
+      $this->data[$resname][] = $file;
+
     $this->resources[$type]['added'][$name] = $file;
     return True;
   }
