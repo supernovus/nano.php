@@ -1,4 +1,4 @@
-# Nano.php v4
+# Nano.php v5
 
 ## Summary
 
@@ -8,7 +8,7 @@ The core library is a small object that loads plugins which give it
 different abilities as required by your application needs.
 
 Several extendable abstract classes for controllers and models are included, 
-as well as a URL-based dispatch plugin, configuration plugin, and a set of
+as well as a flexible routing plugin, configuration plugin, and a set of
 simple helper libraries providing some useful functions for your applications.
 
 ## Requirements
@@ -30,6 +30,19 @@ finished. Feel free to browse the source for anything useful.
 Many parts of this library set are designed to work with the
 [Nano.js](https://github.com/supernovus/nano.js) libraries for client side
 scripting. In the future further Nano themed library sets may be released.
+
+## Changes
+
+Version 5 takes the foundation from version 4, and builds upon it.
+The namespace has become \Nano\ as going forward I don't want to have
+version specific namespaces. A few of the changes from v4 to v5:
+
+ * Optimized Web Service experience.
+ * Separated Application Context from Router plugin.
+ * Removed any unusued libraries and plugins.
+ * Cleaned up database libraries.
+ * Changed controller foundation to be more streamlined.
+ * Completely overhauled authentication/authorization related code.
 
 ## Author
 

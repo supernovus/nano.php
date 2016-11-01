@@ -1,6 +1,6 @@
-# TODO (in order of importance)
+# TODO
 
-## Before public release
+## UX Issues
 
 * Finish creating ./skel/flexible.d with the new app template and modules.
 * Make a new bin/user.php script for the new template(s).
@@ -10,7 +10,7 @@
 
 * Add nginx configuration examples.
 
-## After public release
+## Library issues
 
 * Write JSONRPC\Client\Socket library.
 * Finish writing JSON\Patch library.
