@@ -38,7 +38,6 @@ The namespace has become \Nano\ as going forward I don't want to have
 version specific namespaces. A few of the changes from v4 to v5:
 
  * Optimized Web Service experience.
- * Separated Application Context from Router plugin.
  * Removed any unusued libraries and plugins.
  * Cleaned up database libraries.
  * Changed controller foundation to be more streamlined.

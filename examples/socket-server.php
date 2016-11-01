@@ -1,10 +1,10 @@
 <?php
 
-require_once 'lib/nano4/init.php';
+require_once 'lib/nano/init.php';
 
-\Nano4\register();
+\Nano\register();
 
-$s = new \Nano4\Utils\SocketDaemon(array('port'=>2525));
+$s = new \Nano\Utils\SocketDaemon(array('port'=>2525));
 $_server_listening = true;
 
 while ($_server_listening)

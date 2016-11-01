@@ -1,17 +1,23 @@
 <?php
 
-require_once 'lib/nano4/init.php';
+require_once 'lib/nano/init.php';
 require_once 'lib/test.php';
 
-plan(1);
+plan(2);
 
 # TODO: more tests.
 
-$nano = \Nano4\initialize();
-$nano->controllers->addNS("\\Controllers");
-$nano->dispatch->addDefaultController('example');
+$nano = \Nano\initialize();
+$nano->controllers->addNS("\\TestApp\\Controllers");
+$nano->router->setDefault('example');
 
-$output = $nano->dispatch();
+$output = $nano->router->route();
 
-is($output, "Hello from example", "Output from Nano dispatch()");
+is($output, "Hello from example.", "Output from controller.");
+
+$_REQUEST['name'] = 'Bob';
+
+$output = $nano->router->route();
+
+is($output, "Hello from example, how are you Bob?", "Output with param.");
 

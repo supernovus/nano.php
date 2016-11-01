@@ -1,10 +1,10 @@
 <?php
 
-namespace Nano4\DB;
+namespace Nano\DB\PDO;
 
-require_once 'lib/nano4/init.php';
+require_once 'lib/nano/init.php';
 
-\Nano4\register();
+\Nano\register();
 
 $db = new Simple(['dsn'=>'fakedb:dbname=foo', 'noConnect'=>true]);
 $query = new Query();

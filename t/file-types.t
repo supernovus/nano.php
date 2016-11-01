@@ -1,13 +1,13 @@
 <?php 
 
-require_once "lib/nano4/init.php";
+require_once "lib/nano/init.php";
 require_once "lib/test.php";
 
 plan(2);
 
-\Nano4\register();
+\Nano\register();
 
-$ft = new \Nano4\Utils\File\Types;
+$ft = new \Nano\Utils\File\Types;
 
 is ($ft->get('xml'), 'text/xml', 'get a simple type');
 
