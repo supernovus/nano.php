@@ -15,11 +15,8 @@ trait Auth
 
   protected function __init_auth_controller ($opts)
   {
-    // Ensure that modelconf is loaded first.
-    $this->needs('modelconf', $opts);
-
-    // If the 'authusers' trait is available, load it first.
-    $this->wants('authusers', $opts);
+    // If Auth\Users trait is available, load it first.
+    $this->wants('authusers');
 
     // Some configurable settings, with appropriate defaults.
     $save_uri    = $this->get_prop('save_uri',        true);
@@ -119,7 +116,7 @@ trait Auth
       $this->go($login_page); 
     }
     $validate = $this->get_prop('validate_user',   true);
-    if ($validate && is_callable([$this, 'validate_user'])
+    if ($validate && is_callable([$this, 'validate_user']))
     {
       $valid = $this->validate_user($user);
       if (isset($valid))

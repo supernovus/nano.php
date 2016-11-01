@@ -23,14 +23,12 @@ namespace Nano\Controllers\Auth;
 
 trait Users
 {
-  // Force need_user, save_uri, and validate_user to off.
-  protected $need_user     = false;
-  protected $save_uri      = false;
-  protected $validate_user = false;
-
   protected function __init_authusers_controller ($opts)
   {
-    $this->need(['messages','mailer']);
+    $this->needs(['messages','mailer']);
+    $this->set_prop('need_user',     false);
+    $this->set_prop('save_uri',      false);
+    $this->set_prop('validate_user', false);
     if (is_callable([$this, 'setup_auth_users']))
     {
       $this->setup_auth_users($opts);
