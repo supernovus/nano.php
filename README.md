@@ -1,5 +1,11 @@
 # Nano.php v4
 
+## Notice
+
+Nano.php v4 is now deprecated. As a lot of applications I've written are 
+using it, I'm keeping it around for a while, but going forward everything 
+will be migrated to Nano.php v5.
+
 ## Summary
 
 Nano is a PHP toolkit for building web application frameworks.
