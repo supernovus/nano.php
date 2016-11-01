@@ -1,5 +1,11 @@
 # Nano.php v5
 
+## Notice
+
+Nano.php v5 is currently being implemented. Some things have not been finished.
+In particular, the bin/initapp.php and anything in skel/ are not updated to the
+new libraries yet. Don't use them.
+
 ## Summary
 
 Nano is a PHP toolkit for building web application frameworks.
