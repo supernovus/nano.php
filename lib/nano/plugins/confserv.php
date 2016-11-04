@@ -5,8 +5,6 @@
  *
  * Helps you build services which return information from a
  * Nano Conf registry in specific formats.
- *
- * TODO: use new Web Service helpers.
  */
 
 namespace Nano\Plugins;
@@ -67,40 +65,12 @@ class ConfServ
     }
   }
 
-  // Process a request. PHP value to encode.
-  // To send a pre-encoded value, pass 'encoded'=>True as an option.
-  public function sendJSON ($data, $opts=[])
-  {
-    $nano = \Nano\get_instance();
-    $nano->pragmas['json no-cache'];
-    if (isset($opts['encoded']) && $opts['encoded'])
-    {
-      echo $data;
-    }
-    else
-    {
-      if (is_object($data) && is_callable([$data, 'to_json']))
-      {
-        echo $data->to_json($opts);
-      }
-      else
-      {
-        $json_opts = 0;
-        if (isset($opts['fancy']) && $opts['fancy'])
-          $json_opts = JSON_PRETTY_PRINT;
-
-        echo json_encode($data, $json_opts);
-      }
-    }
-    exit;
-  }
-
   // A simple JSON-based request. If you need anything more complex
   // than this, you'll need to do it yourself.
   public function jsonRequest ($path, $full=False, $fancy=False)
   {
     $data = $this->getPath($path, $full);
-    $this->sendJSON($data, ['fancy'=>$fancy]);
+    return $this->send_json($data, ['fancy'=>$fancy]);
   }
 
 }
