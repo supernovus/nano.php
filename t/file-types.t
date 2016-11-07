@@ -1,3 +1,4 @@
+#!/usr/bin/env php
 <?php 
 
 require_once "lib/nano/init.php";

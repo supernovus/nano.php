@@ -22,7 +22,7 @@ simple helper libraries providing some useful functions for your applications.
 * A Unix-based operating system, or compatibility layer.
 * PHP 5.6 or higher. PHP 7.x is recommended.
 * A bourne compatible shell such as Bash for the .sh scripts in 'bin/'.
-* The Perl 5 'prove' utility for 'bin/test.sh'.
+* The Perl 5 'prove' utility for tests in 't'.
 * The 'rsync', 'find', 'xargs', and 'perl' utilities for 'bin/initapp.php'.
 * The phpDocumentor application if you want to build the API documents.
 
