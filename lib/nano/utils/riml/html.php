@@ -17,6 +17,9 @@ class HTML
   protected $inline_schema = true;
   protected $schema_link_uri = null;
   protected $schema_base_dir = '';
+  protected $output_dir;
+  protected $index_template = 'index';
+  protected $route_template = 'route';
 
   protected $route_data = [];
 
@@ -42,7 +45,18 @@ class HTML
 
   public function output ()
   {
-    // TODO: implement me.
+    if (!isset($this->output_dir))
+    {
+      throw new \Exception("Cannot output files, no directory specified");
+    }
+    $nano = \Nano\get_instance();
+    $vl = $this->view_loader;
+    $vl = $nano->$vl;
+    if (!file_exists($this->output_dir))
+    {
+      mkdir($this->output_dir, 0755, true);
+    }
+    // TODO: finish me.
     return;
   }
 

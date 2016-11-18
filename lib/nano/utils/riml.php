@@ -142,6 +142,8 @@ class RIML
 
   protected $sources = []; // Source files marked as .includePoly: true
 
+  public $auto_route_names = []; // Automatically generated route names.
+
   public function __construct ($source)
   {
     if (is_string($source))
@@ -353,8 +355,18 @@ class RIML
           }
         }
         if (isset($data['.traits']))
-        { // local traits always override template traits.
-          $template['.traits'] = $data['.traits'];
+        { // Local traits are added to template traits.
+          if (!isset($template['.traits']))
+            $template['.traits'] = $data['.traits'];
+          else
+          { // Merge local traits and template traits.
+            if (is_string($template['.traits']))
+              $template['.traits'] = [$template['.traits']];
+            if (is_string($data['.traits']))
+              $data['.traits'] = [$data['.traits']];
+            foreach ($data['.traits'] as $tname)
+              $template['.traits'][] = $tname;
+          }
         }
         $data = $template;
       }
@@ -532,10 +544,27 @@ class RimlRoute
         $rdef[$tname] = $this->$sname;
       }
     }
+    if (!isset($rdef['name']))
+    {
+      if (isset($rdef['controller']))
+        $name = $rdef['controller'];
+      else
+        $name = '';
+      if (isset($rdef['action']))
+      {
+        $name .= str_replace($this->root->method_prefix, '_', $rdef['action']);
+      }
+      if (!isset($this->root->auto_route_names[$name]))
+      {
+        $rdef['name'] = $name;
+        $this->root->auto_route_names[$name] = true;
+      }
+    }    
     if (!$this->virtual)
     {
       $compiled[] = [$rdef, $isDefault, $addIt];
     }
+    unset($rdef['name']);
     foreach ($this->routes as $route)
     {
       $route->compileConfig($opts, $compiled, $rdef);
