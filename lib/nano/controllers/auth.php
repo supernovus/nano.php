@@ -51,20 +51,26 @@ trait Auth
     }
   }
 
-  protected function get_auth ($opts)
+  protected function get_auth ($context, $aopts=[])
   {
     if (!isset($this->auth_config)) return false; 
 
     $conf = $this->auth_config;
 
-    if (isset($conf['userAccess']) && $conf['userAccess'])
+    $vmethod = isset($aopts['validationMethod'])
+      ? $aopts['validationMethod']
+      : 'validate_user';
+
+    $skipUsers = isset($aopts['skipUsers') ? $aopts['skipUsers'] : false;
+
+    if (isset($conf['userAccess']) && $conf['userAccess'] && !$skipUsers)
     {
       $user = $this->get_user(true);
       if ($user)
       {
-        if (isset($conf['validateUser']) && $conf['validateUser'] && is_callable([$this, 'validate_user']))
+        if (isset($conf['validateUser']) && $conf['validateUser'] && is_callable([$this, $vmethod]))
         {
-          return $this->validate_user($user);
+          return $this->$vmethod($user);
         }
         else
         { // Assume  validation is true.
@@ -80,7 +86,7 @@ trait Auth
         $classname = "\\Nano\\Controllers\\Auth\\$plugname";
         $plugin = new $classname(['parent'=>$this]);
         $options = $plugin->options($plugconf);
-        $plugopts = ['context'=>$opts];
+        $plugopts = ['context'=>$context];
         foreach ($options as $option)
         {
           if ($option == 'context') continue; // sanity check.

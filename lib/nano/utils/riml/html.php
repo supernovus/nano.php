@@ -5,6 +5,8 @@ namespace Nano\Utils\RIML;
 use const \Nano\Utils\RIML_COMMON_PROPS;
 use const \Nano\Utils\RIML_ROUTE_PROPS;
 use const \Nano\Utils\RIML_HTTP_PROPS;
+use const \Nano\Utils\RIML_CALL_PROPS;
+use const \Nano\Utils\RIML_EXAMPLE_PROPS;
 
 /**
  * Generate HTML documentation from RIML documents.
@@ -18,12 +20,16 @@ class HTML
   protected $schema_link_uri = null;
   protected $schema_base_dir = '';
   protected $output_dir;
+  protected $index_filename = 'index.html';
   protected $index_template = 'index';
-  protected $route_template = 'route';
+  protected $group_template = 'group';
+  protected $use_groups     = true;
 
-  protected $route_data = [];
+  protected $route_index; // The main RIML file for this document set.
+  protected $route_info;  // If using groups, a virtual route for each group.
+  protected $route_data;  // The route data for each route for rendering.
 
-  protected $schemata = []; // either inline schemata, or references.
+  protected $schemata = []; // inline schemata and/or URI references.
 
   public function __construct ($opts=[])
   {
@@ -34,35 +40,97 @@ class HTML
     }
   }
 
-  public function build ($riml)
+  public function compile ($riml)
   {
+    $this->route_index = $riml;
+    $this->route_data = [];
+    if ($this->use_groups)
+    { // There will be separate route info for each group.
+      $this->route_info = [];
+    }
     $routes = $riml->getRoutes();
     foreach ($routes as $route)
     {
-      $this->buildRoute($route);
+      if ($this->use_groups)
+      { // The top level route names are the group names.
+        $group = $route->route_name;
+        $this->route_info[$group] = $route; // the first route is the group.
+        $this->route_data[$group] = [];     // any non-virtual routes in here.
+      }
+      else
+      {
+        $group = null;
+      }
+      $this->compileRoute($route, $group);
     }
   }
 
-  public function output ()
+  public function write ($output_dir=null)
   {
-    if (!isset($this->output_dir))
+    if (!isset($output_dir))
     {
-      throw new \Exception("Cannot output files, no directory specified");
+      if (isset($this->output_dir))
+      {
+        $output_dir = $this->output_dir;
+      }
+      else
+      {
+        throw new \Exception("Cannot output files, no directory specified");
+      }
     }
+
     $nano = \Nano\get_instance();
     $vl = $this->view_loader;
     $vl = $nano->$vl;
-    if (!file_exists($this->output_dir))
+    $gt = $this->group_template;
+    $it = $this->index_template;
+
+    if (!file_exists($output_dir))
     {
       mkdir($this->output_dir, 0755, true);
     }
-    // TODO: finish me.
-    return;
+
+    if ($this->use_groups)
+    {
+      $index_data =
+      [
+        'info'   => $this->route_index,
+        'groups' => [],
+      ];
+
+      foreach ($this->route_info as $groupname => $groupinfo)
+      {
+        $group_routes = $this->route_data[$groupname];
+        $group_data =
+        [
+          'info'   => $groupinfo,
+          'routes' => $group_routes,
+        ];
+        $group_content = $vl->load($gt, $group_data);
+        $group_filename = $this->output_dir . "/$groupname.html";
+        file_put_contents($group_filename, $group_content);
+        $index_data['groups'][$groupname] = $groupinfo;
+      }
+      $index_content = $vl->load($it, $index_data);
+      $index_filename = $output_dir . '/' . $this->index_filename;
+      file_put_contents($index_filename, $index_content);
+    }
+    else
+    {
+      $index_data =
+      [
+        'info'   => $this->route_index,
+        'routes' => $this->route_data,
+      ];
+      $index_content = $vl->load($it, $index_data);
+      $index_filename = $output_dir . '/' . $this->index_filename;
+      file_put_contents($index_filename, $index_content);
+    }
   }
 
-  public function buildRoute ($route, $rdef=[])
+  protected function compileRoute ($route, $group=null, $rdef=[])
   {
-    foreach (RIML_COMMON_PROPS+RIML_ROUTE_PROPS as $pname)
+    foreach (array_merge(RIML_COMMON_PROPS,RIML_ROUTE_PROPS) as $pname)
     {
       if ($pname == 'path')
       { // Special handling for path.
@@ -97,24 +165,47 @@ class HTML
             $this->addSchema($rdef[$schemaProp]);
           }
         }
-        if (isset($rdef['tests']))
-        {
-          foreach (['request','expectedResponse'] as $exampleProp)
+        if (isset($rdef['examples']))
+        { // Standalone examples are the preferred documentation type.
+          foreach ($rdef['examples'] as $example)
           {
-            if (isset($rdef['tests'][$exampleProp]))
+            foreach (['request','response'] as $ep)
             {
-              $this->addSchema($rdef['tests'][$exampleProp]);
+              if (isset($example->$ep))
+              {
+                $this->addSchema($example->$ep);
+              }
+            }
+          }
+        }
+        elseif (isset($rdef['tests']))
+        { // Tests can be used as examples.
+          foreach ($rdef['tests'] as $test)
+          {
+            foreach (['request','expectedResposne'] as $tp)
+            {
+              if (isset($test->$tp))
+              {
+                $this->addSchema($test->$tp);
+              }
             }
           }
         }
       }
       if (!$route->virtual)
       {
-        $this->route_data[] = $route;
+        if ($this->use_groups)
+        {
+          $this->route_data[$group][] = $route;
+        }
+        else
+        {
+          $this->route_data[] = $route;
+        }
       }
       foreach ($route->getRoutes() as $subroute)
       {
-        $this->buildRoute($subroute, $rdef);
+        $this->compileRoute($subroute, $group, $rdef);
       }
     }
   }

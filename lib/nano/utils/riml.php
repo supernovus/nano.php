@@ -6,44 +6,107 @@ namespace Nano\Utils;
  * Routing Information Modeling Language
  *
  * A YAML-based format for describing routing information.
- * Can be used for several purposes:
+ * Can be used for several purposes. This libary is an implementation of the
+ * core specification. Look in the Nano\Utils\RAML\ namespace for libraries
+ * that perform actions based on an initialized RIML object.
  *
- *  - Generate JSON configuration files for Router plugin.
- *  - Generate friendly HTML documentation for routes (not yet implemented.)
- *
- * In addition to this PHP implementation, I am planning a Node.js one too.
+ * In addition to this PHP implementation, I am writing a Node.js one too.
  *
  * It's loosely inspired by RAML.
  */
 
+/**
+ * The RIML version.
+ */
+const RIML_VERSION = '1.0-DRAFT-4';
+
+/**
+ * The namespace RIML child classes are defined in.
+ */
+const RIML_NS = "\\Nano\\Utils\\";
+
+/**
+ * Properties allowed in root document, and Route documents.
+ */
 const RIML_COMMON_PROPS = 
 [
-  'title','description','controller','method','apiType','authType',
+  'title', 'description', 'controller', 'method', 'apiType', 'authType',
 ];
 
+/**
+ * Properties allowed in Route documents.
+ */
 const RIML_ROUTE_PROPS =
 [
-  'name','path','http','virtual','responseSchema','requestSchema','queryParams',
-  'headers','tests','defaultRoute','redirect','redirectRoute',
+  'name', 'path', 'http', 'responseSchema', 'requestSchema',
+  'pathParams', 'queryParams', 'headers', 'tests', 'examples',
+  'defaultRoute', 'redirect', 'redirectRoute',
+  'virtual', 'noPath',
 ];
 
+/**
+ * Route Properties that are a map of objects.
+ */
+const RIML_ROUTE_OBJECT_MAP =
+[
+  'pathParams'  => 'RimlParam',
+  'queryParams' => 'RimlParam',
+  'headers'     => 'RimlParam',
+];
+
+/**
+ * Route Properties that are an array of objects.
+ */
+const RIML_ROUTE_OBJECT_ARRAY =
+[
+  'tests'    => 'RimlTest',
+  'examples' => 'RimlExample',
+];
+
+/**
+ * Allowed HTTP methods as virtual properties.
+ */
 const RIML_HTTP_PROPS =
 [
   'GET', 'PUT', 'POST', 'DELETE', 'PATCH', 'HEAD'
 ];
 
-const RIML_ROUTER_PROPS =
+/**
+ * Properties allowed in Parameters (queryParams, pathParams, headers.)
+ */
+const RIML_PARAM_PROPS =
 [
-  'name'          => 'name',
-  'controller'    => 'controller',
-  'method'        => 'action',
-  'http'          => 'methods',
-  'path'          => 'uri',
-  'redirect'      => 'redirect',
-  'redirectRoute' => 'redirect_is_route',
+  'title', 'description', 'type', 'required', 'multiple',
 ];
 
-trait RimlCommon
+/**
+ * Properties allowed in RimlCall documents (RimlTest, RimlExample).
+ */
+const RIML_CALL_PROPS =
+[
+  'title', 'description', 'request', 'pathParams', 'queryParams', 'headers'
+];
+
+/**
+ * Properties allowed in RimlTest documents.
+ */
+const RIML_TEST_PROPS =
+[
+  'validateRequest', 'validateResponse', 'expectedResponse', 'responseClass',
+];
+
+/**
+ * Properties allowed in RimlExample documents.
+ */
+const RIML_EXAMPLE_PROPS =
+[
+  'response',
+];
+
+/**
+ * A trait for properties common to all RIML classes.
+ */
+trait RimlBase
 {
   /**
    * Human readable title for documentation.
@@ -61,6 +124,15 @@ trait RimlCommon
    * Root RIML object.
    */
   public $root;
+}
+
+/**
+ * A trait for properties common to the root RIML class, and RimlRoute class.
+ */
+trait RimlRouteInfo
+{
+  use RimlBase;
+
   /**
    * Controller name.
    */
@@ -110,7 +182,6 @@ trait RimlCommon
         continue;
       }
       $route = new RimlRoute($rname, $rdef, $this);
-      $built[] = $route;
       $this->routes[] = $route;
     }
   }
@@ -129,7 +200,7 @@ trait RimlCommon
 
 class RIML
 {
-  use RimlCommon;
+  use RimlRouteInfo;
 
   public $method_prefix = 'handle_';
   public $confdir;
@@ -141,8 +212,6 @@ class RIML
   protected $included = []; // A list of files we've included.
 
   protected $sources = []; // Source files marked as .includePoly: true
-
-  public $auto_route_names = []; // Automatically generated route names.
 
   public function __construct ($source)
   {
@@ -215,7 +284,11 @@ class RIML
     [
       '!include' => function ($value, $tag, $flags) use ($self)
       {
-        return $self->includeFile($value);
+        return $self->includeFile($value, true);
+      },
+      '!includePath' => function ($value, $tag, $flags) use ($self)
+      {
+        return $self->includeFile($value, false);
       },
       '!define' => function ($value, $tag, $flags) use ($self)
       {
@@ -242,7 +315,7 @@ class RIML
     ]);
   }
 
-  protected function includeFile ($value)
+  protected function includeFile ($value, $setNoPath)
   {
     if (strpos($value, '/') === false && isset($this->confdir))
     {
@@ -265,6 +338,8 @@ class RIML
     { // Included files are assumed to be virtual by default.
       if (!isset($yaml['virtual']))
         $yaml['virtual'] = true;
+      if ($setNoPath && !isset($yaml['noPath']))
+        $yaml['noPath'] = true;
       if (isset($yaml['.includePoly']) && $yaml['.includePoly'])
       {
         $mark = false;
@@ -407,21 +482,21 @@ class RIML
     }
   }
 
-  public function compileConfig ($opts=[], $compiled=[])
+  public function version ()
   {
-    foreach ($this->routes as $route)
-    {
-      $route->compileConfig($opts, $compiled);
-    }
-    return $compiled;
+    return RIML_VERSION;
   }
 
 }
 
 class RimlRoute
 {
-  use RimlCommon;
+  use RimlRouteInfo;
 
+  /**
+   * The internal identifier.
+   */
+  public $route_name;
   /**
    * The name of the route (used by the Router plugin.)
    */
@@ -443,6 +518,11 @@ class RimlRoute
    */
   public $virtual = false;
   /**
+   * If this is true, then we don't automatically derive a path name from
+   * the route identifier.
+   */
+  public $noPath = false;
+  /**
    * The return value should match this schema.
    */
   public $responseSchema;
@@ -451,21 +531,37 @@ class RimlRoute
    */
   public $requestSchema;
   /**
-   * Query string parameters. (TODO: to be implemented.)
+   * Path parameters.
+   */
+  public $pathParams;
+  /**
+   * Query string parameters.
    */
   public $queryParams;
   /**
-   * Custom headers (TODO: to be implemented.)
+   * Custom headers.
    */
   public $headers;
   /**
-   * Test definitions (TODO: to be implemented.)
+   * Test definitions.
    */
   public $tests;
+  /**
+   * Documentation examples.
+   */
+  public $examples;
   /**
    * This is the default route.
    */
   public $defaultRoute = false;
+  /**
+   * This route redirects here.
+   */
+  public $redirect;
+  /**
+   * The redirect is a Nano Route name.
+   */
+  public $redirectRoute = false;
 
   public function __construct ($rname, $rdef, $parent)
   {
@@ -473,15 +569,39 @@ class RimlRoute
     {
       $rdef = [];
     }
-    $this->parent = $parent;
-    $this->root   = $parent->root;
+
+    $this->parent     = $parent;
+    $this->root       = $parent->root;
+    $this->route_name = $rname;
+
     foreach ([RIML_COMMON_PROPS, RIML_ROUTE_PROPS] as $psrc)
     {
       foreach ($psrc as $pname)
       {
         if (isset($rdef[$pname]))
         {
-          $this->$pname = $rdef[$pname];
+          if (isset(RIML_ROUTE_OBJECT_MAP[$pname]))
+          {
+            $classname = RIML_NS . RIML_ROUTE_OBJECT_MAP[$pname];
+            $this->$pname = [];
+            foreach ($rdef[$pname] as $mapkey => $mapval)
+            {
+              $this->$pname[$mapkey] = new $classname($mapval, $this);
+            }
+          }
+          elseif (isset(RIML_ROUTE_OBJECT_ARRAY[$pname]))
+          {
+            $classname = RIML_NS . RIML_ROUTE_OBJECT_ARRAY[$pname];
+            $this->$pname = [];
+            foreach ($rdef[$pname] as $arrayval)
+            {
+              $this->$pname[] = new $classname($arrayval, $this);
+            }
+          }
+          else
+          {
+            $this->$pname = $rdef[$pname];
+          }
           unset($rdef[$pname]);
         }
       }
@@ -495,7 +615,7 @@ class RimlRoute
       $mname = str_replace('/', '', $rname);
       $this->method = $this->root->method_prefix.$mname;
     }
-    if (!isset($this->path) && !$this->virtual)
+    if (!isset($this->path) && !$this->noPath)
     {
       $this->path = $rname;
     }
@@ -513,62 +633,78 @@ class RimlRoute
     $this->addRoutes($rdef);
   }
 
-  public function compileConfig ($opts, &$compiled, $rdef=[])
+}
+
+/**
+ * A shared class for Query Parameters and HTTP Headers.
+ */
+class RimlParam
+{
+  use RimlBase;
+
+  public $type;
+  public $required = false;
+  public $multiple = false;
+
+  public function __construct ($data, $parent)
   {
-    $isDefault = $this->defaultRoute;
-    $addIt = $this->defaultRoute ? false : true;
-    foreach (RIML_ROUTER_PROPS as $sname => $tname)
+    $this->parent = $parent;
+    $this->root   = $parent->root;
+    foreach (RIML_PARAM_PROPS as $pname)
     {
-      if ($sname == 'path')
-      { // Special handling for path.
-        if (isset($this->path))
-        {
-          $path = $this->path;
-          if (strpos($path, '/') === false)
-          {
-            $path = "/$path/";
-          }
-          if (isset($rdef['path']))
-          {
-            $rdef['path'] .= $path;
-            $rdef['path'] = str_replace('//', '/', $rdef['path']);
-          }
-          else
-          {
-            $rdef['path'] = $path;
-          }
-        }
-      }
-      elseif (isset($this->$sname))
+      if (isset($data[$pname]))
       {
-        $rdef[$tname] = $this->$sname;
+        $this->$pname = $data[$pname];
       }
-    }
-    if (!isset($rdef['name']))
-    {
-      if (isset($rdef['controller']))
-        $name = $rdef['controller'];
-      else
-        $name = '';
-      if (isset($rdef['action']))
-      {
-        $name .= str_replace($this->root->method_prefix, '_', $rdef['action']);
-      }
-      if (!isset($this->root->auto_route_names[$name]))
-      {
-        $rdef['name'] = $name;
-        $this->root->auto_route_names[$name] = true;
-      }
-    }    
-    if (!$this->virtual)
-    {
-      $compiled[] = [$rdef, $isDefault, $addIt];
-    }
-    unset($rdef['name']);
-    foreach ($this->routes as $route)
-    {
-      $route->compileConfig($opts, $compiled, $rdef);
     }
   }
-
 }
+
+/**
+ * The base class for Tests and Examples.
+ */
+abstract class RimlCall
+{
+  use RimlBase;
+
+  public $request;
+  public $queryParams;
+  public $pathParams;
+  public $headers;
+
+  public function __construct ($data, $parent)
+  {
+    $this->parent = $parent;
+    $this->root   = $parent->root;
+    $props = array_merge(RIML_CALL_PROPS, self::call_props);
+    foreach ($props as $pname)
+    {
+      if (isset($data[$pname]))
+      {
+        $this->$pname = $data[$pname];
+      }
+    }
+  }
+}
+
+/**
+ * A Test for a Route.
+ */
+class RimlTest extends RimlCall
+{
+  const call_props = RIML_TEST_PROPS;
+  public $validateRequest  = false;
+  public $validateResposne = false;
+  public $expectedResponse;
+  public $responseClass;
+}
+
+/**
+ * An example of a Route.
+ */
+class RimlExample extends RimlCall
+{
+  const call_props = RIML_EXAMPLE_PROPS;
+  public $response;
+}
+
