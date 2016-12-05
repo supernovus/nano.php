@@ -18,7 +18,7 @@ namespace Nano\Utils;
 /**
  * The RIML version.
  */
-const RIML_VERSION = '1.0-DRAFT-4';
+const RIML_VERSION = '1.0-DRAFT-6';
 
 /**
  * The namespace RIML child classes are defined in.
@@ -38,7 +38,7 @@ const RIML_COMMON_PROPS =
  */
 const RIML_ROUTE_PROPS =
 [
-  'name', 'path', 'http', 'responseSchema', 'requestSchema',
+  'name', 'path', 'http', 'responseSchema', 'requestSchema', 'responseCodes',
   'pathParams', 'queryParams', 'headers', 'tests', 'examples',
   'defaultRoute', 'redirect', 'redirectRoute',
   'virtual', 'noPath',
@@ -49,9 +49,10 @@ const RIML_ROUTE_PROPS =
  */
 const RIML_ROUTE_OBJECT_MAP =
 [
-  'pathParams'  => 'RimlParam',
-  'queryParams' => 'RimlParam',
-  'headers'     => 'RimlParam',
+  'pathParams'    => 'RimlParam',
+  'queryParams'   => 'RimlParam',
+  'headers'       => 'RimlParam',
+  'responseCodes' => 'RimlResponseCodes',
 ];
 
 /**
@@ -72,6 +73,14 @@ const RIML_HTTP_PROPS =
 ];
 
 /**
+ * Allowed API types as virtual properties.
+ */
+const RIML_API_PROPS =
+[
+  'json', 'xml',
+];
+
+/**
  * Properties allowed in Parameters (queryParams, pathParams, headers.)
  */
 const RIML_PARAM_PROPS =
@@ -80,27 +89,52 @@ const RIML_PARAM_PROPS =
 ];
 
 /**
- * Properties allowed in RimlCall documents (RimlTest, RimlExample).
- */
-const RIML_CALL_PROPS =
-[
-  'title', 'description', 'request', 'pathParams', 'queryParams', 'headers'
-];
-
-/**
- * Properties allowed in RimlTest documents.
- */
-const RIML_TEST_PROPS =
-[
-  'validateRequest', 'validateResponse', 'expectedResponse', 'responseClass',
-];
-
-/**
  * Properties allowed in RimlExample documents.
  */
 const RIML_EXAMPLE_PROPS =
 [
-  'response',
+  'title', 'description', 'request', 'response',
+];
+
+/**
+ * Properties allowed in RimlTest documents (extension of RimlExample.)
+ */
+const RIML_TEST_PROPS =
+[
+  'validateRequest', 'validateResponse',
+];
+
+/**
+ * Example/Test properties that are nested objects.
+ */
+const RIML_EXAMPLE_OBJECTS =
+[
+  'request'  => 'RimlRequest',
+  'response' => 'RimlResponse',
+];
+
+/**
+ * Properties allowed in RimlResponseCodes.
+ */
+const RIML_RESPONSE_CODE_PROPS =
+[
+  'success', 'bodySchema',
+];
+
+/**
+ * Properties allowed in RimlRequest documents.
+ */
+const RIML_REQUEST_PROPS =
+[
+  'http', 'body', 'pathParams', 'queryParams', 'headers'
+];
+
+/**
+ * Properties allowed in RimlResponse documents.
+ */
+const RIML_REPSONSE_PROPS =
+[
+  'code', 'body', 'type', 'class',
 ];
 
 /**
@@ -626,8 +660,19 @@ class RimlRoute
         if (!is_array($rdef[$hname]))
           $rdef[$hname] = [];
         $rdef[$hname]['http'] = $hname;
-        if (!isset($hdef[$hname]['path']))
+        if (!isset($rdef[$hname]['path']))
           $rdef[$hname]['path'] = false; // Force parent path use.
+      }
+    }
+    foreach (RIML_API_PROPS as $aname)
+    {
+      if (isset($rdef[$aname]))
+      {
+        if (!is_array($rdef[$aname]))
+          $rdef[$aname] = [];
+        $rdef[$aname]['apiType'] = $aname;
+        if (!isset($rdef[$aname]['path']))
+          $rdef[$aname]['path'] = false;
       }
     }
     $this->addRoutes($rdef);
@@ -661,23 +706,20 @@ class RimlParam
 }
 
 /**
- * The base class for Tests and Examples.
+ * A response code.
  */
-abstract class RimlCall
+class RimlResponseCodes
 {
   use RimlBase;
-
-  public $request;
-  public $queryParams;
-  public $pathParams;
-  public $headers;
+  
+  public $success;
+  public $bodySchema;
 
   public function __construct ($data, $parent)
   {
     $this->parent = $parent;
-    $this->root   = $parent->root;
-    $props = array_merge(RIML_CALL_PROPS, self::call_props);
-    foreach ($props as $pname)
+    $this->root   = $root;
+    foreach (RIML_RESPONSE_CODE_PROPS as $pname)
     {
       if (isset($data[$pname]))
       {
@@ -688,23 +730,104 @@ abstract class RimlCall
 }
 
 /**
+ * Example routes.
+ */
+class RimlExample
+{
+  use RimlBase;
+
+  public $request;
+  public $queryParams;
+  public $pathParams;
+  public $headers;
+
+  protected function get_props ()
+  {
+    return RIML_EXAMPLE_PROPS;
+  }
+
+  public function __construct ($data, $parent)
+  {
+    $this->parent = $parent;
+    $this->root   = $parent->root;
+
+    $props = $this->get_props();
+
+    foreach ($props as $pname)
+    {
+      if (isset($data[$pname]))
+      {
+        if (isset(RIML_EXAMPLE_OBJECTS[$pname]))
+        {
+          $classname = RIML_NS . RIML_EXAMPLE_OBJECTS[$pname];
+          $this->$pname = new $classname($data[$pname], $this);
+        }
+        else
+        {
+          $this->$pname = $data[$pname];
+        }
+      }
+    }
+  }
+}
+
+/**
  * A Test for a Route.
  */
-class RimlTest extends RimlCall
+class RimlTest extends RimlExample
 {
-  const call_props = RIML_TEST_PROPS;
   public $validateRequest  = false;
   public $validateResposne = false;
   public $expectedResponse;
   public $responseClass;
+
+  protected function get_props ()
+  {
+    return array_merge(RIML_EXAMPLE_PROPS, RIML_TEST_PROPS);
+  }
 }
 
 /**
- * An example of a Route.
+ * A Request for an Example or Test
  */
-class RimlExample extends RimlCall
+class RimlRequest
 {
-  const call_props = RIML_EXAMPLE_PROPS;
-  public $response;
+  use RimlBase;
+
+  public function __construct ($data, $parent)
+  {
+    $this->parent = $parent;
+    $this->root   = $parent->root;
+
+    foreach (RIML_REQUEST_PROPS as $pname)
+    {
+      if (isset($data[$pname]))
+      {
+        $this->$pname = $data[$pname];
+      }
+    }
+  }
+}
+
+/**
+ * A Response for an Example or Test
+ */
+class RimlResponse
+{
+  use RimlBase;
+
+  public function __construct ($data, $parent)
+  {
+    $this->parent = $parent;
+    $this->root   = $parent->root;
+
+    foreach (RIML_RESPONSE_PROPS as $pname)
+    {
+      if (isset($data[$pname]))
+      {
+        $this->$pname = $data[$pname];
+      }
+    }
+  }
 }
 
