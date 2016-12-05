@@ -4,10 +4,10 @@ namespace Nano\Utils\JSONRPC;
 
 use Nano\Utils\JSONRPC\Client\Transport;
 
-define('JSONRPC_ID_RAND', 0);  // Use rand() to build id.
-define('JSONRPC_ID_TIME', 1);  // Use time() to build id.
-define('JSONRPC_ID_UUID', 2);  // Use UUID::v4() to build id.
-define('JSONRPC_ID_UNIQ', 3);  // Use uniqid() to build id.
+const JSONRPC_ID_RAND = 0;
+const JSONRPC_ID_TIME = 1;
+const JSONRPC_ID_UUID = 2;
+const JSONRPC_ID_UNIQ = 3;
 
 function EXCEPT ($message)
 {

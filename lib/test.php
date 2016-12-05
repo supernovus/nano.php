@@ -1,8 +1,10 @@
 <?php
 
-// An extremely minimal TAP-based testing framework.
-// Please use http://code.google.com/p/test-more-php/ for
-// serious testing.
+/**
+ * A simple TAP based testing library.
+ *
+ * @package test.php
+ */
 
 global $__test_cur;
 global $__test_plan;
@@ -11,12 +13,23 @@ $__test_cur = 1;
 $__test_plan = 0;
 $__test_fail = 0;
 
+/**
+ * Set how many tests we are planning to run.
+ *
+ * @param int $num The number of tests planned.
+ */
 function plan ($num)
 { global $__test_plan;
   $__test_plan = $num;
   echo "1..$num\n";
 }
 
+/**
+ * An internal function used by all of the other functions.
+ *
+ * @param string $desc The name of the test.
+ * @param boolean $test The result of the test.
+ */
 function __test ($desc, $test)
 { global $__test_cur;
   global $__test_fail;
@@ -40,11 +53,24 @@ function __test ($desc, $test)
   $__test_cur++;
 }
 
+/**
+ * See if a statement is true or false.
+ *
+ * @param boolean $stmt The statement to test.
+ * @param string $desc A description of the test (optional.)
+ */
 function ok ($stmt, $desc=Null)
 {
   __test($desc, $stmt);
 }
 
+/**
+ * Is a test value exactly equal to an expected value?
+ *
+ * @param mixed $got The value being tested.
+ * @param mixed $want The expected value.
+ * @param string $desc A description for the test (optional.)
+ */
 function is ($got, $want, $desc=Null)
 {
   $test = ($got === $want);
@@ -56,6 +82,11 @@ function is ($got, $want, $desc=Null)
   }
 }
 
+/**
+ * Show a diagnostic/debugging message as a TAP comment.
+ *
+ * @param string $msg The message to show.
+ */
 function diag ($msg)
 {
   $lines = explode("\n", $msg);
@@ -63,6 +94,9 @@ function diag ($msg)
     echo "# $line\n";
 }
 
+/**
+ * Signify that we are finished testing.
+ */
 function done_testing ()
 { global $__test_fail;
   global $__test_plan;

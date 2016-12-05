@@ -22,8 +22,7 @@
     </paths>
   </logging>
   <files>
-    <file>lib/css.php</file>
     <file>lib/test.php</file>
-    <directory>lib/nano4</directory>
+    <directory>lib/nano</directory>
   </files>
 </phpdoc>

@@ -2,6 +2,8 @@
 
 /** 
  * Nano initialization library and core object.
+ *
+ * @package init.php
  */
 
 namespace Nano;
