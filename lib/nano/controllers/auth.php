@@ -61,7 +61,7 @@ trait Auth
       ? $aopts['validationMethod']
       : 'validate_user';
 
-    $skipUsers = isset($aopts['skipUsers') ? $aopts['skipUsers'] : false;
+    $skipUsers = isset($aopts['skipUsers']) ? $aopts['skipUsers'] : false;
 
     if (isset($conf['userAccess']) && $conf['userAccess'] && !$skipUsers)
     {

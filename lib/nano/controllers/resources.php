@@ -103,7 +103,7 @@ trait Resources
     [
       'name'   => 'stylesheets',
       'path'   => ['style'],
-      'exts'   => ['.css'],
+      'exts'   => ['.min.css', '.css'],
       'groups' => [],
       'added'  => [],
     ],
