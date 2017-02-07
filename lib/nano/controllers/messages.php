@@ -72,9 +72,10 @@ trait Messages
     }
 
     // Process any messages that may be in the session.
-    if (isset($nano->sess->messages))
+    $sess = $nano->sess;
+    if (isset($sess->messages))
     {
-      $this->data['messages'] = $nano->sess->messages;
+      $this->data['messages'] = $sess->messages;
       unset($nano->sess->messages);
       $this->data['has_status'] = [];
       $status_keys = [];
