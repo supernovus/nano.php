@@ -71,10 +71,14 @@ trait Messages
       $this->data['title'] = $pagetitle;
     }
 
+#    error_log("about to process status messages");
+    $sess = $nano->sess;
+
     // Process any messages that may be in the session.
-    if (isset($nano->sess->messages))
+    if (isset($sess->messages))
     {
-      $this->data['messages'] = $nano->sess->messages;
+#      error_log("processing status messages");
+      $this->data['messages'] = $sess->messages;
       unset($nano->sess->messages);
       $this->data['has_status'] = [];
       $status_keys = [];
