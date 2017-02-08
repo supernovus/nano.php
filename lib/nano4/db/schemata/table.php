@@ -133,10 +133,13 @@ class Table
     }
 
     // Get the latest version of our table schema.
-    $versions = $this->tableVersions();
-    $latest = end($versions);
-    reset($versions);
-    $this->latest = $latest;
+    if (isset($this->parent->getVersions) && $this->parent->getVersions)
+    {
+      $versions = $this->tableVersions();
+      $latest = end($versions);
+      reset($versions);
+      $this->latest = $latest;
+    }
 
     if 
     (

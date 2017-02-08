@@ -81,6 +81,11 @@ class Tables
   public $defVer = '1.0';
 
   /**
+   * Get our current versions, requires a database.
+   */
+  public $getVersions = true;
+
+  /**
    * Force a check of updates on Table initialization?
    */
   public $checkUpdates = false;
@@ -142,6 +147,8 @@ class Tables
    *                      in whatever format is used by your update scripts.
    *                      See addDir() for details on row update scripts.
    *
+   *   "get_versions"     If set to false, we will not get the current versions.
+   *
    *   "check_updates"    If set to true, an update check will be forced
    *                      on each of the Tables for listing purposes.
    *
@@ -163,6 +170,10 @@ class Tables
       }
   
       $this->db = $db;
+    }
+    else
+    {
+      $this->getVersions = false;
     }
 
     if (isset($opts['tables_dir']))
@@ -200,6 +211,10 @@ class Tables
     if (isset($opts['check_updates']))
     {
       $this->checkUpdates = $opts['check_updates'];
+    }
+    if (isset($opts['get_versions']))
+    {
+      $this->getVersions = $opts['get_versions'];
     }
 
     if (isset($this->db) && !$this->tableExists($this->metaTable))
