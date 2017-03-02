@@ -504,7 +504,7 @@ abstract class Basic
    */
   public function has_route ($route)
   {
-    $nano = \Nano4\get_instance();
+    $nano = \Nano\get_instance();
     return $nano->router->has($route);
   }
 
