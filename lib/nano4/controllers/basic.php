@@ -466,6 +466,15 @@ abstract class Basic
   }
 
   /**
+   * Does a route exist?
+   */
+  public function has_route ($route)
+  {
+    $nano = \Nano4\get_instance();
+    return $nano->router->has($route);
+  }
+
+  /**
    * Go to a route.
    *
    * This will throw an Exception if the route does not exist.
