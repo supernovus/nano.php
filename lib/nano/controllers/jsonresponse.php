@@ -50,7 +50,7 @@ trait JsonResponse
     {
       if (property_exists($this, 'session_id') && isset($this->session_id))
       {
-        set_json_property($data, $this->session_id);
+        set_json_property($data, 'session_id', $this->session_id);
       }
     }
     return $this->send_json($data, $opts);

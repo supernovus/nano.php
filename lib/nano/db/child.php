@@ -142,6 +142,14 @@ abstract class Child implements \ArrayAccess
     }
   }
 
+  /**
+   * Get a list of column names.
+   */
+  public function column_names ()
+  {
+    return array_keys($this->data);
+  }
+
   /** 
    * Set a database field.
    *
