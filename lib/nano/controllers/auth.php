@@ -5,7 +5,7 @@ namespace Nano\Controllers;
 /**
  * A Controller Trait for Authentication and Authorization.
  *
- * This neesd the ModelConf trait.
+ * This needs the ModelConf trait.
  */
 
 trait Auth

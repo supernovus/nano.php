@@ -16,7 +16,7 @@ function set_json_property (&$data, $pname, $pval)
 
 function get_json_property ($data, $pname)
 {
-  if (is_array($data) && isset($data[$pname))
+  if (is_array($data) && isset($data[$pname]))
   {
     return $data[$pname];
   }

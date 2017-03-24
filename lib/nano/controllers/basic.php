@@ -114,9 +114,9 @@ abstract class Basic
   {
     $this->current_context = $context;
 
-    if (property_exists($this, 'constructors') && is_array($this->constructors))
+    if (property_exists($this, 'init_traits') && is_array($this->init_traits))
     {
-      $constructors = $this->constructors;
+      $constructors = $this->init_traits;
       $fullname = False;
     }
     else

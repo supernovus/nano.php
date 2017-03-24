@@ -102,7 +102,7 @@ class Translation implements \ArrayAccess
       }
     }
 
-    $lang = null;
+    $lang = 'en'; // Fallback to english.
     if (isset($opts['lang']))
     {
       $lang = $opts['lang'];
@@ -114,7 +114,6 @@ class Translation implements \ArrayAccess
     elseif (is_bool($this->default_lang) && $this->default_lang)
     {
       $langs = Language::accept();
-      $lang  = 'en'; // Fallback that we always define.
       foreach ($langs as $langkey => $weight)
       {
         if (isset($this->languages[$langkey]))

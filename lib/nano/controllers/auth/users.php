@@ -9,8 +9,7 @@
  * 
  *  It requires the Messages and Mailer traits.
  *
- * Expects pages with names of 'default' and 'login', either using the
- * old $nano["page.$name"] or newer Router-based dispatching (preferred.)
+ * Expects pages with names of 'default' and 'login'.
  *
  * The Users model must have a getUser($identifier, $column=null) method that
  * takes a user id, e-mail address, or other identifiers, with an optional
