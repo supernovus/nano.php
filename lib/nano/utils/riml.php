@@ -69,7 +69,7 @@ const RIML_ROUTE_OBJECT_ARRAY =
  */
 const RIML_HTTP_PROPS =
 [
-  'GET', 'PUT', 'POST', 'DELETE', 'PATCH', 'HEAD'
+  'GET', 'PUT', 'POST', 'DELETE', 'PATCH', 'HEAD', 'POKE',
 ];
 
 /**
@@ -344,6 +344,13 @@ class RIML
         if (!is_array($value))
           $value = [];
         $value['.method'] = true;
+        return $value;
+      },
+      '!virtual' => function ($value, $tag, $flags)
+      {
+        if (!is_array($value))
+          $value = [];
+        $value['virtual'] = true;
         return $value;
       },
     ]);

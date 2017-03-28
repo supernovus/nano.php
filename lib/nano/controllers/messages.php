@@ -25,6 +25,7 @@ trait Messages
 
   protected function __init_messages_controller ($opts)
   {
+    error_log("__init_messages_controller()");
     $nano = \Nano\get_instance();
 
     if (!isset($this->lang))
@@ -413,6 +414,18 @@ trait Messages
   public function add_json ($name, $data)
   {
     $this->data['json'][$name] = $data;
+  }
+
+  /**
+   * Change the current language.
+   */
+  public function set_lang ($lang)
+  {
+    $this->lang = $lang;
+    if (isset($this->text))
+    {
+      $this->text->default_lang = $lang;
+    }
   }
   
 }

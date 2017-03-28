@@ -135,9 +135,9 @@ trait Auth
     }
     $this->user = $user;
     $this->data['user'] = $user;
-    if (isset($user->lang) && $user->lang)
+    if (isset($user->lang) && $user->lang && is_callable([$this, 'set_lang']))
     {
-      $this->set_prop('lang', $user->lang);
+      $this->set_lang($user->lang);
     }
   }
 

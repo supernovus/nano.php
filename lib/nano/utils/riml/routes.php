@@ -46,6 +46,10 @@ class Routes
         if (isset($route->path))
         {
           $path = $route->path;
+          if ($path === false)
+          { // Directly using the parent path.
+            continue;
+          }
           if (strpos($path, '/') === false)
           {
             $path = "/$path/";
@@ -68,20 +72,22 @@ class Routes
         $rdef[$tname] = $route->$sname;
       }
     }
-    if (!isset($rdef['name']))
-    {
+    if (!$route->virtual && !isset($rdef['name']))
+    { // Auto-naming feature.
       if (isset($rdef['controller']))
         $name = $rdef['controller'];
       else
         $name = '';
       if (isset($rdef['action']))
       {
-        $name .= str_replace($route->root->method_prefix, '_', $rdef['action']);
+        $aname = str_replace($route->root->method_prefix, '_', $rdef['action']);
+        if ($aname != "_default")
+          $name .= $aname;
       }
       if (!isset($route->root->auto_route_names[$name]))
       {
         $rdef['name'] = $name;
-        $route->root->auto_route_names[$name] = true;
+        $this->auto_route_names[$name] = true;
       }
     }    
     if (!$route->virtual)
