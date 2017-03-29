@@ -12,6 +12,9 @@ trait Auth
 {
   protected $user; // This will be set on need_user pages.
   protected $auth_config; // This may be set if using auth_config option.
+  protected $auth_prefix = 'auth'; // For overriding options.
+
+  public $auth_errors = []; // A place to put error codes.
 
   protected function __init_auth_controller ($opts)
   {
@@ -81,19 +84,25 @@ trait Auth
 
     if (isset($conf['authPlugins']))
     {
+      $prefix = $this->auth_prefix;
       foreach ($conf['authPlugins'] as $plugname => $plugconf)
       {
         $classname = "\\Nano\\Controllers\\Auth\\$plugname";
         $plugin = new $classname(['parent'=>$this]);
         $options = $plugin->options($plugconf);
         $plugopts = ['context'=>$context];
+        $overrides = [$prefix.'_'.$plugname, $prefix];
         foreach ($options as $option)
         {
           if ($option == 'context') continue; // sanity check.
-          $value = $this->get_prop("webapi_$option");
-          if (isset($value))
+          foreach ($overrides as $override)
           {
-            $plugopts[$option] = $value;
+            $value = $this->get_prop($override.'_'.$option);
+            if (isset($value))
+            {
+              $plugopts[$option] = $value;
+              break; // We found an option, go onto next.
+            }
           }
         }
         $authed = $plugin->getAuth($plugconf, $plugopts);
@@ -133,12 +142,7 @@ trait Auth
         }
       }
     }
-    $this->user = $user;
-    $this->data['user'] = $user;
-    if (isset($user->lang) && $user->lang && is_callable([$this, 'set_lang']))
-    {
-      $this->set_lang($user->lang);
-    }
+    $this->set_user($user);
   }
 
   /**
@@ -160,6 +164,19 @@ trait Auth
       {
         return $users->getUser($userid);
       }
+    }
+  }
+
+  /**
+   * Set the user.
+   */
+  protected function set_user ($user)
+  {
+    $this->user = $user;
+    $this->data['user'] = $user;
+    if (isset($user->lang) && $user->lang && is_callable([$this, 'set_lang']))
+    {
+      $this->set_lang($user->lang);
     }
   }
 

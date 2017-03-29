@@ -18,7 +18,7 @@ namespace Nano\Utils;
 /**
  * The RIML version.
  */
-const RIML_VERSION = '1.0-DRAFT-6';
+const RIML_VERSION = '1.0-DRAFT-7';
 
 /**
  * The namespace RIML child classes are defined in.
