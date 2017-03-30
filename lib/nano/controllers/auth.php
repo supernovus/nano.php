@@ -87,11 +87,12 @@ trait Auth
       $prefix = $this->auth_prefix;
       foreach ($conf['authPlugins'] as $plugname => $plugconf)
       {
+        if ($plugconf === false) continue; // skip disabled plugins.
         $classname = "\\Nano\\Controllers\\Auth\\$plugname";
         $plugin = new $classname(['parent'=>$this]);
         $options = $plugin->options($plugconf);
         $plugopts = ['context'=>$context];
-        $overrides = [$prefix.'_'.$plugname, $prefix];
+        $overrides = [$prefix.'_'.strtolower($plugname), $prefix];
         foreach ($options as $option)
         {
           if ($option == 'context') continue; // sanity check.
