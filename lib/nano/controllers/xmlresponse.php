@@ -103,16 +103,25 @@ trait XMLResponse
     return $this->send_xml($data, $opts);
   }
 
-  public function xml_ok ($data, $opts=[])
+  public function xml_ok ($data=null, $opts=[])
   { // Boolean attribute.
+    if (is_null($data))
+    {
+      $data = new \SimpleXMLElement('<response/>');
+    }
     set_xml_attr($data, 'success', 'success');
+    return $this->xml_msg($data, $opts);
   }
 
-  public function xml_err ($errors, $data, $opts=[])
+  public function xml_err ($errors, $data=null, $opts=[])
   {
     if (!is_array($errors))
     {
       $errors = [$errors];
+    }
+    if (is_null($data))
+    {
+      $data = new \SimpleXMLElement('<response/>');
     }
     if (has_xml_attr($data, 'success'))
     {
@@ -134,5 +143,6 @@ trait XMLResponse
     {
       throw new \Exception("invalid XML sent to xml_err()");
     }
+    return $this->xml_msg($data, $opts);
   }
 }

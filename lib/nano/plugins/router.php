@@ -15,6 +15,9 @@ use Nano\Exception;
 // The recognized HTTP methods.
 const ROUTE_METHODS = ['GET','POST','PUT','DELETE','HEAD','PATCH','OPTIONS'];
 
+const JSON_TYPE = 'application/json';
+const XML_TYPE  = 'application/xml';
+
 class Router
 {
   protected $routes = [];  // A flat list of routes.
@@ -399,13 +402,22 @@ class Router
         }
 
         // Let's get the body params if applicable.
-        if (strtolower($_SERVER['CONTENT_TYPE']) == "application/json")
+        if ($this->isJSON())
         {
           $body_params = json_decode(file_get_contents("php://input"), true);
         }
         else
         {
           $body_params = [];
+        }
+
+        if ($this->isXML())
+        {
+          $body_text = file_get_contents("php://input");
+        }
+        else
+        {
+          $body_text = null;
         }
 
         $context = new RouteContext(
@@ -417,6 +429,7 @@ class Router
           'path_params'    => $routeinfo,
           'body_params'    => $body_params,
           'method'         => $method,
+          'body_text'      => $body_text,
         ]);
 
         return $context;
@@ -440,6 +453,21 @@ class Router
       return $context;
     }
   } // function match()
+
+  public function isJSON ()
+  {
+    return (strtolower($_SERVER['CONTENT_TYPE']) == JSON_TYPE);
+  }
+
+  public function isXML ()
+  {
+    return (strtolower($_SERVER['CONTENT_TYPE']) == XML_TYPE);
+  }
+
+  public function isContentType ($ctype)
+  {
+    return (strtolower($_SERVER['CONTENT_TYPE']) == strtolower($ctype));
+  }
 
   /**
    * The primary frontend function for starting the routing.
@@ -611,6 +639,9 @@ class Route
   public $view_loader = 'views';                     // Used with 'view'.
   public $view;                                      // A view to load.
   public $view_status;                               // HTTP status override.
+  public $content_type;                              // Only certain CT.
+  public $is_json     = false;                       // Only JSON content.
+  public $is_xml      = false;                       // Only XML content.
 
   public $methods = ['GET','POST'];                  // Supported methods.
 
@@ -643,6 +674,13 @@ class Route
 #    error_log("Checking $uri against " . $this->uri);
 
     if (! in_array($method, $this->methods)) return; // Doesn't match method.
+
+    if ($this->is_json && !$this->parent->isJSON()) return; // Not JSON.
+    if ($this->is_xml  && !$this->parent->isXML()) return;  // Not XML.
+
+    // If a specific content_type has been specified, make sure it matches.
+    if (isset($this->content_type) 
+      && !$this->parent->isContentType($this->content_type)) return;
 
 #    error_log("  -- our method matched.");
 
@@ -792,6 +830,7 @@ class RouteContext implements \ArrayAccess
   public $request_params = []; // The $_REQUEST, $_GET or $_POST data.
   public $path_params    = []; // Parameters specified in the URI.
   public $body_params    = []; // Params found in a JSON body, if applicable.
+  public $body_text;           // Body text (currently XML is supported.)
   public $method;              // The HTTP method used.
 
   // Convert this into a simple array structure.
@@ -850,6 +889,22 @@ class RouteContext implements \ArrayAccess
   public function offsetUnset ($offset)
   {
     throw new Exception ("Cannot unset a context parameter.");
+  }
+
+  public function jsonBody ()
+  {
+    if ($this->router->isJSON())
+    {
+      return $this->body_params;
+    }
+  }
+
+  public function xmlBody ()
+  {
+    if ($this->router->isXML())
+    {
+      return $this->body_text;
+    }
   }
 
 }

@@ -16,6 +16,8 @@ trait Auth
 
   public $auth_errors = []; // A place to put error codes.
 
+  public $interactive = false; // A user is accessing from a browser.
+
   protected function __init_auth_controller ($opts)
   {
     // If Auth\Users trait is available, load it first.
@@ -65,18 +67,21 @@ trait Auth
       : 'validate_user';
 
     $skipUsers = isset($aopts['skipUsers']) ? $aopts['skipUsers'] : false;
+    $interactive = isset($aopts['interactive']) ? $aopts['interactive'] : true;
 
     if (isset($conf['userAccess']) && $conf['userAccess'] && !$skipUsers)
     {
       $user = $this->get_user(true);
       if ($user)
       {
+        $valid = true;
         if (isset($conf['validateUser']) && $conf['validateUser'] && is_callable([$this, $vmethod]))
         {
-          return $this->$vmethod($user);
+          $valid = $this->$vmethod($user);
         }
-        else
-        { // Assume  validation is true.
+        if ($valid)
+        {
+          $this->set_user($user, $interactive);
           return true;
         }
       }
@@ -143,7 +148,7 @@ trait Auth
         }
       }
     }
-    $this->set_user($user);
+    $this->set_user($user, true);
   }
 
   /**
@@ -171,7 +176,7 @@ trait Auth
   /**
    * Set the user.
    */
-  protected function set_user ($user)
+  protected function set_user ($user, $interactive=false)
   {
     $this->user = $user;
     $this->data['user'] = $user;
@@ -179,6 +184,7 @@ trait Auth
     {
       $this->set_lang($user->lang);
     }
+    $this->interactive = $interactive;
   }
 
 }
