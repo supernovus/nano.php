@@ -177,7 +177,7 @@ trait Auth
   /**
    * Set the user.
    */
-  protected function set_user ($user, $interactive=false)
+  public function set_user ($user, $interactive=false)
   {
     $this->user = $user;
     $this->data['user'] = $user;

@@ -35,6 +35,7 @@ trait Auth_Token
     $user  = $users->getUser($this->$field);
     if (!$user)
     {
+      error_log("invalid user");
       $this->parent->errors[] = 'invalid_user';
       return;
     }
@@ -74,7 +75,7 @@ trait Auth_Token
     $efield = $this->parent->expire_field;
     if (is_string($value))
     {
-      $value = time() + $this->parent->expire_value($value);
+      $value = (time() + $this->parent->expire_value($value));
     }
     elseif (!is_numeric($value))
     {

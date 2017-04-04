@@ -51,7 +51,7 @@ class IPAccess extends Plugin
               }
               else
               { // Missing a required parameter.
-                error_log("WebAPI parameter '$param' missing.");
+                error_log("API parameter '$param' missing.");
                 return false;
               }
             }
@@ -73,15 +73,15 @@ class IPAccess extends Plugin
           }
         }
         else
-        {
-          error_log("No $header header found in: ".json_encode($headers));
-          return false;
+        { // No header, skip it.
+#          error_log("No $header header found in: ".json_encode($headers));
+          return;
         }
       }
       else
       {
         error_log("Remote IP '$ip' was not in access list.");
-        return false;
+        return;
       }
     }
   }

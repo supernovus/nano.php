@@ -212,7 +212,7 @@ trait UserTokens
     if ($includeModel)
       return [$tokens, $token];
     else
-      return $tokens->getUserToken($token);
+      return $token;
   }
 
   protected function get_token ($user, $opts)
@@ -239,7 +239,7 @@ trait UserTokens
     return $this->json_ok();
   }
 
-  protected function new_token ($user, $opts)
+  protected function new_token ($tokens, $user, $opts)
   {
     $newdef = ['user'=>$user];
     if (isset($opts['expire']))
@@ -257,7 +257,7 @@ trait UserTokens
     }
     else
     {
-      $token = $this->new_token($user, $opts);
+      $token = $this->new_token($tokens, $user, $opts);
       if (!$token)
       {
         return $this->json_err('could_not_create_token');
@@ -296,10 +296,10 @@ trait UserTokens
     $auth = $users->get_auth();
     if ($auth->check_credentials($usertoken, $pass, $userhash))
     { // The user authenticated, so let's get or generate a token.
-      $token = $this->get_user_token($user);
+      list($tokens, $token) = $this->get_user_token($user, true);
       if (!$token)
       { // No token, generate one.
-        $token = $this->new_token($user, $opts);
+        $token = $this->new_token($tokens, $user, $opts);
         if (!$token)
         {
           return $this->invalid('token_error', "Error creating token for '$login'.", $opts, $userlog, $user);

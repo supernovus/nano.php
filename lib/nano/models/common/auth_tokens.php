@@ -77,11 +77,13 @@ trait Auth_Tokens
     $row = $this->getToken($sid);
     if (!isset($row))
     {
+      error_log("invalid token sid");
       $this->errors[] = 'invalid_token_sid';
       return;
     }
     if ($row->expired())
     {
+      error_log("token expired");
       $this->errors[] = 'expired_token';
       return;
     }
@@ -95,6 +97,9 @@ trait Auth_Tokens
     }
     else
     {
+      error_log("invalid hash");
+      error_log(" > $uhash");
+      error_log(" < $chash");
       $this->errors[] = 'invalid_token_hash';
       return;
     }
@@ -133,7 +138,7 @@ trait Auth_Tokens
     { 
       if (is_string($def[$ecol]))
       { // Ensure the value is in the correct format.
-        $def[$ecol] = time() + $this->expire_value($def[$ecol]);
+        $def[$ecol] = (time() + $this->expire_value($def[$ecol]));
       }
       elseif (!is_numeric($def[$ecol]))
       {
@@ -159,31 +164,36 @@ trait Auth_Tokens
     return hash($this->hashType, uniqid('', true));
   }
 
-  public function expire_value ($exstr)
+  public function expire_value ($expstr)
   {
     if (strpos($expstr, 'm') !== false)
     { // number of minutes.
       $expval = intval(preg_replace('/\s*m/', '', $expstr));
+#      error_log("Setting expire to $expval minutes.");
       $expval *= 60;
     }
     elseif (strpos($expstr, 'h') !== false)
     { // number of hours.
       $expval = intval(preg_replace('/\s*h/', '', $expstr));
+#      error_log("Setting expire to $expval hours.");
       $expval *= 60 * 60;
     }
     elseif (strpos($expstr, 'd') !== false)
     { // number of days.
       $expval = intval(preg_replace('/\s*d/', '', $expstr));
+#      error_log("Setting expire to $expval days.");
       $expval *= 24 * 60 * 60;
     }
     elseif (strpos($expstr, 'w') !== false)
     { // number of weeks.
       $expval = intval(preg_replace('/\s*w/', '', $expstr));
+#      error_log("Setting expire to $expval weeks.");
       $expval *= 7 * 24 * 60 * 60;
     }
     elseif (strpos($expstr, 'M') !== false)
     { // number of months (30 days.)
       $expval = intval(preg_replace('/\s*M/', '', $expstr));
+#      error_log("Setting expire to $expval months.");
       $expval *= 30 * 24 * 60 * 60;
     }
     else

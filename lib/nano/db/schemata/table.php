@@ -185,7 +185,8 @@ class Table
     }
     elseif ($tableExists)
     { // The table exists, but there is no metadata. This is bad.
-      throw new \Exception(__CLASS__.": {$this->name} is not listed in $mdTable.");
+      error_log(__CLASS__.": {$this->name} exists, but is not listed in $mdTable.");
+      $this->current = new MissingVersion();
     }
     else
     { // This table is not created yet, we'll create it.

@@ -31,21 +31,24 @@ class Token extends Plugin
     $headers = \getallheaders();
     if (isset($headers[$header]))
     {
+#      error_log("Token header found, parsing.");
       $header = $headers[$header];
       $user = $model->getUser($header);
       if (isset($user))
       {
-        $this->set_user($user);
+#        error_log("Token validated.");
+        $this->parent->set_user($user, false);
         return true;
       }
       elseif (isset($model->errors))
       {
+#        error_log("Token did not validate, returning errors.");
         foreach ($model->errors as $error)
         {
           $this->parent->auth_errors[] = $error;
         }
+        return false;
       }
     }
-    return false;
   }
 }

@@ -17,6 +17,11 @@ const RIML_ROUTER_PROPS =
 ];
 
 /**
+ * Force an array in the case of scalar values.
+ */
+const RIML_ROUTER_ARRAY = ['methods'];
+
+/**
  * Take a RIML object, and generate a Nano Route configuration from it.
  */
 class Routes
@@ -69,7 +74,10 @@ class Routes
       }
       elseif (isset($route->$sname))
       {
-        $rdef[$tname] = $route->$sname;
+        if (in_array($tname, RIML_ROUTER_ARRAY) && !is_array($route->$sname))
+          $rdef[$tname] = [$route->$sname];
+        else
+          $rdef[$tname] = $route->$sname;
       }
     }
     if (!$route->virtual && !isset($rdef['name']))
