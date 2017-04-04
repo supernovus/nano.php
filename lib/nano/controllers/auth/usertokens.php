@@ -16,6 +16,15 @@ trait UserTokens
    * Depending on the content of the POST it can be either a regenerate
    * request from an already authenticated user, or a request to retreive
    * a token by passing login values. Determine which and do it.
+   *
+   * For login requests:
+   *
+   * POST /:appname/auth/token {"user":"email", "pass":"password"}
+   *
+   * For regenerate token requests:
+   *
+   * POST /:appname/auth/token {"expire":"1M"}
+   *
    */
   public function handle_post_token ($opts)
   { 
@@ -46,6 +55,8 @@ trait UserTokens
 
   /**
    * Get a token for the currently logged in user.
+   *
+   * GET /:appname/auth/token
    */
   public function handle_get_token ($opts)
   {
@@ -63,6 +74,8 @@ trait UserTokens
 
   /**
    * Expire a token for the currently logged in user.
+   *
+   * DELETE /:appname/auth/token
    */
   public function handle_expire_token ($opts)
   {
@@ -80,6 +93,8 @@ trait UserTokens
 
   /**
    * Get a token for a specified user (admin or ipaccess only.)
+   *
+   * GET /:appname/auth/token/:uid
    */
   public function handle_get_user_token ($opts)
   {
@@ -100,6 +115,8 @@ trait UserTokens
 
   /**
    * Expire a token for a specified user (admin or ipaccess only.)
+   *
+   * DELETE /:appname/auth/token/:uid
    */
   public function handle_expire_user_token ($opts)
   {
@@ -121,6 +138,8 @@ trait UserTokens
 
   /**
    * (Re)generate a token for a specified user (admin or ipaccess only.)
+   *
+   * POST /:appname/auth/token/:uid {"expire":"1M"}
    */
   public function handle_post_user_token ($opts)
   {
@@ -248,14 +267,29 @@ trait UserTokens
     return $this->json_ok(['token'=>$tstr]);
   }
 
+  protected function invalid ($ecode, $message, $context, $log, $user=null)
+  {
+    error_log($message);
+    if (isset($log))
+    {
+      $logopts = ['success'=>false, 'message'=>$message, 'context'=>$context];
+      if (isset($user))
+        $logopts['user'] = $user;
+      $log->log($logopts);
+    }
+    return $this->json_err($ecode);
+  }
+
   protected function login_token ($login, $pass, $opts)
   {
     $umodel = $this->get_prop('users_model', 'users');
+    $logm   = $this->get_prop('userlog_model');
     $users = $this->model($umodel);
     $user = $users->getUser($login);
+    $userlog = isset($logm) ? $this->model($logm) : null;
     if (!$user)
     {
-      return $this->json_err('invalid_user');
+      return $this->invalid('invalid_user', "Attempted token login by unknown user '$user'.", $opts, $userlog);
     }
     $userhash  = $user->hash;
     $usertoken = $user->token;
@@ -268,13 +302,15 @@ trait UserTokens
         $token = $this->new_token($user, $opts);
         if (!$token)
         {
-          return $this->json_err('could_not_create_token');
+          return $this->invalid('token_error', "Error creating token for '$login'.", $opts, $userlog, $user);
         }
       }
+      if (isset($userlog))
+        $userlog->log(['success'=>true, 'context'=>$opts, 'user'=>$user]);
       $tstr = $token->appToken($user);
       return $this->json_ok(['token'=>$tstr]);
     }
-    return $this->json_err('no_auth');
+    return $this->invalid('no_auth', "Invalid token login attempt for '$login'.", $opts, $userlog, $user);
   }
 
 }

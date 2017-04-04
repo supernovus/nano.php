@@ -168,22 +168,22 @@ trait Auth_Tokens
     }
     elseif (strpos($expstr, 'h') !== false)
     { // number of hours.
-      $expval = intval(preg_replace('\s*h', '', $expstr));
+      $expval = intval(preg_replace('/\s*h/', '', $expstr));
       $expval *= 60 * 60;
     }
     elseif (strpos($expstr, 'd') !== false)
     { // number of days.
-      $expval = intval(preg_replace('\s*d', '', $expstr));
+      $expval = intval(preg_replace('/\s*d/', '', $expstr));
       $expval *= 24 * 60 * 60;
     }
     elseif (strpos($expstr, 'w') !== false)
     { // number of weeks.
-      $expval = intval(preg_replace('\s*w', '', $expstr));
+      $expval = intval(preg_replace('/\s*w/', '', $expstr));
       $expval *= 7 * 24 * 60 * 60;
     }
-    elseif (strpos($expstr, 'm') !== false)
+    elseif (strpos($expstr, 'M') !== false)
     { // number of months (30 days.)
-      $expval = intval(preg_replace('\s*m', '', $expstr));
+      $expval = intval(preg_replace('/\s*M/', '', $expstr));
       $expval *= 30 * 24 * 60 * 60;
     }
     else
