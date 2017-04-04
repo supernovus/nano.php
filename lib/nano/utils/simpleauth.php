@@ -130,8 +130,7 @@ class SimpleAuth
       $this->accessed = time();
     }
 
-    $checkhash = $this->generate_hash($usertoken, $pass);
-    if (strcmp($userhash, $checkhash) == 0)
+    if ($this->check_credentials($usertoken, $pass, $userhash))
     { $this->userid = $userid;
       if ($this->log) error_log("User '$userid' logged in.");
       $this->update();
@@ -156,6 +155,12 @@ class SimpleAuth
       $nano = \Nano\get_instance();
       $nano->sess->kill($restart_session);
     }
+  }
+
+  public function check_credentials ($usertoken, $pass, $userhash)
+  {
+    $checkhash = $this->generate_hash($usertoken, $pass);
+    return (strcmp($userhash, $checkhash) == 0);
   }
 
 }

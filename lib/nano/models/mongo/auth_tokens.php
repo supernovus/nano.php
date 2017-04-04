@@ -23,6 +23,8 @@ abstract class Auth_Tokens extends \Nano\DB\Mongo\Model
 
   public function getUserToken ($uid)
   {
+    if (is_object($uid))
+      $uid = $uid->get_id();
     $cname = "user_$uid";
     if (isset($this->token_cache[$cname]))
     {

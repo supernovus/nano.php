@@ -22,6 +22,8 @@ abstract class Auth_Tokens extends \Nano\DB\PDO\Model
 
   public function getUserToken ($uid)
   {
+    if (is_object($uid))
+      $uid = $uid->get_id();
     $cname = "user_$uid";
     if (isset($this->token_cache[$cname]))
     {

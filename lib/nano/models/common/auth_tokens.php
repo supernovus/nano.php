@@ -8,7 +8,8 @@ trait Auth_Tokens
   abstract public function getUserToken ($uid);
   abstract public function newChild ($data=[], $opts=[]);
 
-  public $user_field = 'user';
+  public $key_field    = 'authkey';
+  public $user_field   = 'user';
   public $expire_field = 'expire';
 
   public $hashType   = 'sha256';
@@ -17,7 +18,7 @@ trait Auth_Tokens
 
   public $format_string = '01';
 
-  protected $default_expire = 0;
+  public $default_expire = 0;
 
   /**
    * Get an Auth Token for the given App Token.
@@ -39,29 +40,29 @@ trait Auth_Tokens
    */
   protected function authHash ($sid, $ahash)
   {
-    return hash($this->hashType, trim($sid, $ahash));
+    return hash($this->hashType, trim($sid.$ahash));
   }
 
   /**
    * Get the 'sid' and 'hash' from a token.
    */
-  public function parseToken ($appToken)
+  public function parseToken ($token)
   {
-    $format = substr($appToken, 0, 2);
+    $format = substr($token, 0, 2);
     if ($format != $this->format_string)
     {
       $this->errors[] = 'invalid_format';
       return;
     }
-    $len = intval(substr($appToken, 2, 2));
+    $len = intval(substr($token, 2, 2));
     if (!$len)
     {
       $this->errors[] = 'invalid_length';
       return;
     }
-    $sid = substr($appToken, 4, $len);
+    $sid = substr($token, 4, $len);
     $offset = $len + 4;
-    $hash = substr($appToken, $offset);
+    $hash = substr($token, $offset);
     return [$sid, $hash];
   }
 
@@ -79,16 +80,10 @@ trait Auth_Tokens
       $this->errors[] = 'invalid_token_sid';
       return;
     }
-    $ecol = $this->expire_field;
-    if (isset($row->$ecol) && $row->$ecol != 0)
+    if ($row->expired())
     {
-      $ctime = time();
-      $etime = $row->$ecol;
-      if ($ctime > $etime)
-      {
-        $this->errors[] = 'expired_token';
-        return;
-      }
+      $this->errors[] = 'expired_token';
+      return;
     }
     $user = $row->getUser();
     if (!isset($user)) return; // invalid user.
@@ -137,42 +132,8 @@ trait Auth_Tokens
     if (isset($def[$ecol]))
     { 
       if (is_string($def[$ecol]))
-      { // Parse the string.
-        $expstr = $def[$ecol];
-        if (strpos($expstr, 'm') !== false)
-        { // number of minutes.
-          $expval = intval(preg_replace('/\s*m/', '', $expstr));
-          $expval *= 60;
-          $def[$ecol] = $expval;
-        }
-        elseif (strpos($expstr, 'h') !== false)
-        { // number of hours.
-          $expval = intval(preg_replace('\s*h', '', $expstr));
-          $expval *= 60 * 60;
-          $def[$ecol] = $expval;
-        }
-        elseif (strpos($expstr, 'd') !== false)
-        { // number of days.
-          $expval = intval(preg_replace('\s*d', '', $expstr));
-          $expval *= 24 * 60 * 60;
-          $def[$ecol] = $expval;
-        }
-        elseif (strpos($expstr, 'w') !== false)
-        { // number of weeks.
-          $expval = intval(preg_replace('\s*w', '', $expstr));
-          $expval *= 7 * 24 * 60 * 60;
-          $def[$ecol] = $expval;
-        }
-        elseif (strpos($expstr, 'm') !== false)
-        { // number of months (30 days.)
-          $expval = intval(preg_replace('\s*m', '', $expstr));
-          $expval *= 30 * 24 * 60 * 60;
-          $def[$ecol] = $expval;
-        }
-        else
-        { // unknown format, assume seconds.
-          $def[$ecol] = intval($expstr);
-        }
+      { // Ensure the value is in the correct format.
+        $def[$ecol] = time() + $this->expire_value($def[$ecol]);
       }
       elseif (!is_numeric($def[$ecol]))
       {
@@ -181,11 +142,55 @@ trait Auth_Tokens
     }
     else
     { // Use the default expire value.
-      $def[$ecol] = $this->default_expire;
+      if (is_int($this->default_expire))
+        $def[$ecol] = $this->default_expire;
+      elseif (is_string($this->default_expire))
+        $def[$ecol] = $this->expire_value($this->default_expire);
     }
+    $kcol = $this->key_field;
+    $def[$kcol] = $this->generate_key();
     $token = $this->newChild($def);
     $token->save();
     return $token;
+  }
+
+  public function generate_key ()
+  {
+    return hash($this->hashType, uniqid('', true));
+  }
+
+  public function expire_value ($exstr)
+  {
+    if (strpos($expstr, 'm') !== false)
+    { // number of minutes.
+      $expval = intval(preg_replace('/\s*m/', '', $expstr));
+      $expval *= 60;
+    }
+    elseif (strpos($expstr, 'h') !== false)
+    { // number of hours.
+      $expval = intval(preg_replace('\s*h', '', $expstr));
+      $expval *= 60 * 60;
+    }
+    elseif (strpos($expstr, 'd') !== false)
+    { // number of days.
+      $expval = intval(preg_replace('\s*d', '', $expstr));
+      $expval *= 24 * 60 * 60;
+    }
+    elseif (strpos($expstr, 'w') !== false)
+    { // number of weeks.
+      $expval = intval(preg_replace('\s*w', '', $expstr));
+      $expval *= 7 * 24 * 60 * 60;
+    }
+    elseif (strpos($expstr, 'm') !== false)
+    { // number of months (30 days.)
+      $expval = intval(preg_replace('\s*m', '', $expstr));
+      $expval *= 30 * 24 * 60 * 60;
+    }
+    else
+    { // unknown format, assume seconds.
+      $expval = intval($expstr);
+    }
+    return $expval;
   }
 
 }

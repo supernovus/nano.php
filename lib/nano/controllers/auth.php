@@ -33,7 +33,8 @@ trait Auth
     {
       if (!is_string($auth_config))
         $auth_config = 'auth';
-      $auth_config = $nano->conf[$auth_config];
+#      error_log("using auth_config '$auth_config'");
+      $auth_config = $nano->conf->$auth_config;
     }
 
     if (is_callable([$this, 'setup_auth']))

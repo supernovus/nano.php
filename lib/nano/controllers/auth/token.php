@@ -4,7 +4,7 @@ namespace Nano\Controllers\Auth;
 
 class Token extends Plugin
 {
-  public options ($conf)
+  public function options ($conf)
   {
     return ['header','model'];
   }
