@@ -17,6 +17,10 @@ function load_opts_from ($file, &$opts)
   if (file_exists($file))
   {
     $conf = json_decode(file_get_contents($file), true);
+    if (!isset($conf))
+    {
+      throw new Exception("Invalid JSON in '$file', cannot continue.");
+    }
     foreach ($conf as $ckey => $cval)
     {
       $opts[$ckey] = $cval;
