@@ -67,10 +67,14 @@ class ConfServ
 
   // A simple JSON-based request. If you need anything more complex
   // than this, you'll need to do it yourself.
-  public function jsonRequest ($path, $full=False, $fancy=False)
+  public function getJSON ($path, $full=False, $opts=[])
   {
+    $send = isset($opts['send_json']) ? $opts['send_json'] : false;
     $data = $this->getPath($path, $full);
-    return $this->send_json($data, ['fancy'=>$fancy]);
+    if ($send)
+      return $this->send_json($data, $opts);
+    else
+      return $this->json_ok($data, $opts);
   }
 
 }
