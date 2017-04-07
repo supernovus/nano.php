@@ -145,7 +145,7 @@ trait Auth
       { // Only process further if it returned a defined result.
         if (!$valid)
         {
-          $this->go_err('invalid_user', $login_page);
+          $this->go_error('invalid_user', $login_page);
         }
       }
     }
