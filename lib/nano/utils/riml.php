@@ -69,7 +69,7 @@ const RIML_ROUTE_OBJECT_ARRAY =
  */
 const RIML_HTTP_PROPS =
 [
-  'GET', 'PUT', 'POST', 'DELETE', 'PATCH', 'HEAD', 'POKE',
+  'GET', 'PUT', 'POST', 'DELETE', 'PATCH', 'HEAD', 'POKE', 'OPTIONS',
 ];
 
 /**

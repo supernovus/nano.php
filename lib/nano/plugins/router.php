@@ -13,7 +13,7 @@ use Nano\Exception;
  */
 
 // The recognized HTTP methods.
-const ROUTE_METHODS = ['GET','POST','PUT','DELETE','HEAD','PATCH','OPTIONS'];
+const ROUTE_METHODS = ['GET','POST','PUT','DELETE','HEAD','PATCH','POKE','OPTIONS'];
 
 const JSON_TYPE = 'application/json';
 const XML_TYPE  = 'application/xml';
