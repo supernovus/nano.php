@@ -415,7 +415,9 @@ class Conf extends \Nano\Data\Arrayish
     return array_keys($this->data);
   }
 
-  // A query. Return a section of data based on a query.
+  /**
+   * Get a section of data based on a path string.
+   */
   public function getPath ($path)
   {
     $paths = explode('/', trim($path, '/'));
@@ -435,42 +437,63 @@ class Conf extends \Nano\Data\Arrayish
   }
 
   /**
-   * Returns a closure that stores the result of the closure
-   * for uniqueness in the scope of the Conf object.
+   * Get a section of data based on a path string, and convert it
+   * to a PHP array and/or string value.
    *
-   * @param Closure $callable  A closure to wrap for uniqueness.
+   * @param bool $full   If true, return a full array, otherwise return keys.
    *
-   * @return Closure The wrapped closure.
    */
-  public function share (Closure $callable)
+  public function getPathValues ($path, $full=False)
   {
-    return function ($c) use ($callable)
+    $section = $this->getPath($path);
+    if ($full)
     {
-      static $object;
-      if (is_null($object))
+      if (is_object($section))
       {
-        $object = $callable($c);
+        if (is_callable([$section, 'to_array']))
+        {
+          return $section->to_array();
+        }
+        else
+        {
+          return Null;
+        }
       }
-      return $object;
-    };
+      else
+      {
+        return $section;
+      }
+    }
+    else
+    { // Get a summary, consisting of the keys.
+      $keys = Null;
+      if (is_object($section))
+      {
+        if (is_callable([$section, 'scanDir']))
+        { // Pre-load all known entities.
+          $section->scanDir();
+        }
+        if (is_callable([$section, 'array_keys']))
+        {
+          $keys = $section->array_keys();
+        }
+        else
+        {
+          return Null;
+        }
+      }
+      elseif (is_array($section))
+      {
+        $keys = array_keys($section);
+      }
+      elseif (is_string($section) || is_numeric($section))
+      {
+        return $section;
+      }
+      return $keys;
+    }
   }
-
-  /**
-   * Protect a callable from being interpreted as a service.
-   * This lets you store a callable as a parameter.
-   *
-   * @param Closure $callable  A closure to protect.
-   *
-   * @return Closure  The protected closure.
-   */
-  function protect(Closure $callable)
-  {
-    return function ($c) use ($callable)
-    {
-      return $callable;
-    };
-  }
-
+  
   /**
    * Gets the raw parameters.
    *
