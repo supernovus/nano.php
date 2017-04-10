@@ -469,6 +469,11 @@ class Router
     return (strtolower($_SERVER['CONTENT_TYPE']) == strtolower($ctype));
   }
 
+  public function contentType ()
+  {
+    return strtolower($_SERVER['CONTENT_TYPE']);
+  }
+
   /**
    * The primary frontend function for starting the routing.
    */
@@ -889,6 +894,26 @@ class RouteContext implements \ArrayAccess
   public function offsetUnset ($offset)
   {
     throw new Exception ("Cannot unset a context parameter.");
+  }
+
+  public function isJSON ()
+  {
+    return $this->router->isJSON();
+  }
+
+  public function isXML ()
+  {
+    return $this->router->isXML();
+  }
+
+  public function isContentType ($contentType)
+  {
+    return $this->router->isContentType($contentType);
+  }
+
+  public function contentType ()
+  {
+    return $this->router->contentType();
   }
 
   public function jsonBody ()
