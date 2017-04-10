@@ -18,7 +18,7 @@ namespace Nano\Utils;
 /**
  * The RIML version.
  */
-const RIML_VERSION = '1.0-DRAFT-7';
+const RIML_VERSION = '1.0-DRAFT-8';
 
 /**
  * The namespace RIML child classes are defined in.
@@ -101,7 +101,7 @@ const RIML_EXAMPLE_PROPS =
  */
 const RIML_TEST_PROPS =
 [
-  'validateRequest', 'validateResponse',
+  'validateRequest', 'validateResponse', 'authOptions',
 ];
 
 /**
@@ -118,7 +118,7 @@ const RIML_EXAMPLE_OBJECTS =
  */
 const RIML_RESPONSE_CODE_PROPS =
 [
-  'success', 'bodySchema',
+  'description', 'success', 'bodySchema',
 ];
 
 /**
@@ -126,7 +126,7 @@ const RIML_RESPONSE_CODE_PROPS =
  */
 const RIML_REQUEST_PROPS =
 [
-  'http', 'body', 'pathParams', 'queryParams', 'headers'
+  'http', 'body', 'pathParams', 'queryParams', 'headers', 'apiType', 'authType'
 ];
 
 /**
@@ -181,14 +181,19 @@ trait RimlRouteInfo
    *  false   Not used as an API.
    *  'json'  Uses JSON for API calls.
    *  'xml'   Uses XML for API calls.
+   *  'text'  Uses and/or expects plain text for API calls.
+   *  true    Uses Content-Type header to determine format.
    */
   public $apiType;
   /**
    * Authentication type
    *
-   *  false       Doesn't require authentication.
-   *  'user'      Uses SimpleAuth users.
-   *  'ipAccess'  Uses ipAccess Authentication plugin.
+   *  false        Doesn't require authentication.
+   *  'userOnly'   Uses SimpleAuth users only (default if apiType false)
+   *  'userAccess' Uses SimpleAuth passthrough.
+   *  'ipAccess'   Uses ipAccess Authentication plugin.
+   *  'token'      Uses App/Auth tokens plugin.
+   *  true         Same as setting ["userAccess","ipAccess","token"]
    *
    * Use an array for multiple types if more than one is supported.
    */
@@ -744,9 +749,7 @@ class RimlExample
   use RimlBase;
 
   public $request;
-  public $queryParams;
-  public $pathParams;
-  public $headers;
+  public $response;
 
   protected function get_props ()
   {
@@ -785,8 +788,7 @@ class RimlTest extends RimlExample
 {
   public $validateRequest  = false;
   public $validateResposne = false;
-  public $expectedResponse;
-  public $responseClass;
+  public $authOptions;
 
   protected function get_props ()
   {
@@ -800,6 +802,13 @@ class RimlTest extends RimlExample
 class RimlRequest
 {
   use RimlBase;
+  public $http;
+  public $body;
+  public $queryParams;
+  public $pathParams;
+  public $headers;
+  public $authType;
+  public $apiType;
 
   public function __construct ($data, $parent)
   {
@@ -822,6 +831,10 @@ class RimlRequest
 class RimlResponse
 {
   use RimlBase;
+  public $code;
+  public $body;
+  public $type;
+  public $class;
 
   public function __construct ($data, $parent)
   {
