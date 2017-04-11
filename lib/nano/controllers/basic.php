@@ -470,9 +470,9 @@ abstract class Basic
    *
    * @param String $fieldname  The upload field to look for.
    */
-  public function has_upload ($fieldname)
+  public function has_upload ($fieldname, $context=null)
   {
-    return \Nano\Utils\File::hasUpload($fieldname);
+    return \Nano\Utils\File::hasUpload($fieldname, $context);
   }
 
   /** 
@@ -482,9 +482,9 @@ abstract class Basic
    *
    * @param String $fieldname   The upload field to get.
    */
-  public function get_upload ($fieldname)
+  public function get_upload ($fieldname, $context=null)
   {
-    return \Nano\Utils\File::getUpload($fieldname);
+    return \Nano\Utils\File::getUpload($fieldname, $context);
   }
 
   /**
@@ -643,55 +643,6 @@ abstract class Basic
       return True;
     }
     return False;
-  }
-
-  /**
-   * Get a list of accept headers.
-   */
-  public function accept ($mimeTypes=null)
-  {
-    // No header, return null.
-    if (!isset($_SERVER['HTTP_ACCEPT'])) return null;
-
-    $acceptTypes = [];
-    $acceptRaw = strtolower(str_replace(' ', '', $_SERVER['HTTP_ACCEPT']));
-    $acceptRaw = explode(',', $acceptRaw);
-
-    foreach ($acceptRaw as $a)
-    {
-      $q = 1;
-      if (strpos($a, ';q='))
-      {
-        list($a, $q) = explode(';q=', $a);
-      }
-      $acceptTypes[$a] = $q;
-    }
-    arsort($acceptTypes);
-    
-    // No desired mime type(s), return the full list.
-    if (!$mimeTypes) return $acceptTypes;
-
-    if (is_string($mimeTypes))
-    { // Search for a single mime type.
-      $mimeTypes = strtolower($mimeTypes);
-      foreach ($acceptTypes as $mime => $q)
-      {
-        if ($q && $mimeTypes == $mime) return true; // was found, return true.
-      }
-      // String wasn't found, return false.
-      return false;
-    }
-
-    // Search for one of several mime types.    
-    $mimeTypes = array_map('strtolower', (array)$mimeTypes);
-    
-    foreach  ($acceptTypes as $mime => $q)
-    {
-      if ($q && in_array($mime, $mimeTypes)) return $mime;
-    }
-
-    // Nothing matched.
-    return null;
   }
 
 }

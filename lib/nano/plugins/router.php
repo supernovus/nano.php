@@ -37,6 +37,10 @@ class Router
 
   public $current; // The most recently matched route context.
 
+  public $populate_put_files = false; // PUT files added to _FILES global.
+
+  public $populate_put_global = false; // Add _PUT global.
+
   public function known_routes ($showAll=false)
   {
     if ($showAll)
@@ -54,6 +58,15 @@ class Router
     elseif (isset($opts['auto_prefix']) && $opts['auto_prefix'])
     {
       $this->auto_prefix();
+    }
+
+    if (isset($opts['populate_put_files']))
+    {
+      $this->populate_put_files = (bool)$opts['populate_put_files'];
+    }
+    if (isset($opts['populate_put_global']))
+    {
+      $this->populate_put_global = (bool)$opts['populate_put_global'];
     }
 
     if (isset($opts['extend']) && $opts['extend'])
@@ -332,6 +345,7 @@ class Router
 
       if (isset($routeinfo))
       {
+        $files = $request = null;
         $ct = trim(explode(';', $_SERVER['CONTENT_TYPE'])[0]);
 #        error_log("ct: $ct");
         $form1 = "application/x-www-form-urlencoded";
@@ -345,21 +359,42 @@ class Router
           }
           else
           {
-            throw new \Exception("multipart/form-data PUT not implemented");
+            list($request, $files) = $this->parse_multipart($body);
+            if ($this->populate_put_global)
+            {
+              $GLOBALS['_PUT'] = $request;
+            }
+            if ($this->populate_put_files)
+            {
+              foreach ($files as $name => $spec)
+              {
+                if (!isset($_FILES[$name]))
+                  $_FILES[$name] = $spec;
+              }
+            }
           }
         }
         elseif ($route->strict)
         {
           if ($method == 'GET' && isset($_GET))
+          {
             $request = $_GET;
+          }
           elseif ($method == 'POST' && isset($_POST))
+          {
             $request = $_POST;
+            $files   = $_FILES;
+          }
           else
+          {
             $request = $_REQUEST;
+            $files   = $_FILES;
+          }
         }
         else
         {
           $request = $_REQUEST;
+          $files   = $_FILES;
         }
 
         /**
@@ -430,6 +465,7 @@ class Router
           'body_params'    => $body_params,
           'method'         => $method,
           'body_text'      => $body_text,
+          'files'          => $files,
         ]);
 
         return $context;
@@ -454,24 +490,188 @@ class Router
     }
   } // function match()
 
+  public function parse_multipart ($raw_body)
+  {
+    $data = $files = [];
+    $boundary = substr($body, 0, strpos($raw_body, "\r\n"));
+    if (empty($boundary))
+    { // No boundary, parse as x-www-form-urlencoded instead.
+      parse_str($raw_body, $data);
+      return [$data, $files];
+    }
+
+    // There was a boundary, let's get the parts.
+    $parts = array_splice(explode($boundary, $raw_body), 1);
+
+    foreach($parts as $part)
+    {
+      if ($part == "--\r\n") break; // last part.
+      $part = ltrim($part, "\r\n");
+      list($raw_headers, $body) = explode("\r\n\r\n", $part, 2);
+
+      // Parse the headers.
+      $raw_headers = explode("\r\n", $raw_headers);
+      $headers = [];
+      foreach ($raw_headers as $header)
+      {
+        list($name, $value) = explode(':', $header);
+        $headers[strtolower($name)] = ltrim($value, ' ');
+      }
+      if (isset($headers['content-disposition']))
+      { // Let's parse this as either a file or a form value.
+        $filename = $tmp_name = null;
+        preg_match(
+          '/^(.+); *name="([^"]+)"(; *filename="([^"]+")?/',
+          $headers['content-disposition'],
+          $matches
+        );
+        list(,$ftype, $name) = $matches;
+        if (isset($matches[4]))
+        { // It's a file.
+          if (isset($files[$name])) continue; // skip duplicates.
+          $filename = $matches[4];
+          $filename_parts = pathinfo($filename);
+          $output = $filename_parts['filename'];
+          $tmp_name = tempnam(ini_get('upload_tmp_dir'), $outname);
+
+          if (isset($headers['content-type']))
+            $type = strtolower($headers['content-type']);
+          else
+            $type = $ftype;
+
+          $files[$name] =
+          [
+            'error'    => 0,
+            'name'     => $filename,
+            'tmp_name' => $tmp_name,
+            'size'     => strlen($body),
+            'type'     => $type,
+          ];
+
+          file_put_contents($tmp_name, $body);
+        }
+        else
+        { // It's not a file, add it to the data.
+          $data[$name] = substr($body, 0, strlen($body) - 2);
+        }
+      }
+    }
+    return [$data, $files];
+  }
+
   public function isJSON ()
   {
-    return (strtolower($_SERVER['CONTENT_TYPE']) == JSON_TYPE);
+    return $this->isContentType(JSON_TYPE, false);
   }
 
   public function isXML ()
   {
-    return (strtolower($_SERVER['CONTENT_TYPE']) == XML_TYPE);
+    return $this->isContentType(XML_TYPE, false);
   }
 
-  public function isContentType ($ctype)
+  public function isContentType ($wanttype, $forcelc=true)
   {
-    return (strtolower($_SERVER['CONTENT_TYPE']) == strtolower($ctype));
+    if ($forcelc)
+      $wanttype = strtolower($wanttype);
+    $havetype = $this->contentType(false);
+    return ($wanttype == $havetype);
   }
 
-  public function contentType ()
+  public function contentType ($withOpts=false)
   {
-    return strtolower($_SERVER['CONTENT_TYPE']);
+    $ctypedef = explode(';', $_SERVER['CONTENT_TYPE']);
+    $ctype = strtolower(array_shift($ctypedef));
+    if ($withOpts)
+    {
+      $opts = [];
+      foreach ($ctypedef as $optstr)
+      {
+        $optdef  = explode('=', $optstr, 2);
+        // the option name should be in lowercase.
+        $optname = strtolower($optdef[0]);
+        // strip whitespace and " characters from the values.
+        $optval  = trim($opdef[1], " \t\n\r\0\x0B\"");
+        $opts[$optname] = $optval;
+      }
+      return [$ctype, $opts];
+    }
+    return $ctype;
+  }
+
+  /**
+   * Return the accept header itself.
+   */
+  public function accept ()
+  {
+    return strtolower($_SERVER['HTTP_ACCEPT']);
+  }
+
+  /**
+   * Get a list of accept headers.
+   */
+  public function accepts ($mimeTypes=null)
+  {
+    // No header, return null.
+    if (!isset($_SERVER['HTTP_ACCEPT'])) return null;
+
+    $acceptTypes = [];
+    $acceptRaw = strtolower(str_replace(' ', '', $_SERVER['HTTP_ACCEPT']));
+    $acceptRaw = explode(',', $acceptRaw);
+
+    foreach ($acceptRaw as $a)
+    {
+      $q = 1;
+      if (strpos($a, ';q='))
+      {
+        list($a, $q) = explode(';q=', $a);
+      }
+      $acceptTypes[$a] = $q;
+    }
+    arsort($acceptTypes);
+    
+    // No desired mime type(s), return the full list.
+    if (!$mimeTypes) return $acceptTypes;
+
+    if (is_string($mimeTypes))
+    { // Search for a single mime type.
+      $mimeTypes = strtolower($mimeTypes);
+      foreach ($acceptTypes as $mime => $q)
+      {
+        if ($q && $mimeTypes == $mime) return true; // was found, return true.
+      }
+      // String wasn't found, return false.
+      return false;
+    }
+
+    // Search for one of several mime types.    
+    $mimeTypes = array_map('strtolower', (array)$mimeTypes);
+    
+    foreach  ($acceptTypes as $mime => $q)
+    {
+      if ($q && in_array($mime, $mimeTypes)) return $mime;
+    }
+
+    // Nothing matched.
+    return null;
+  }
+  
+  /**
+   * We accept JSON
+   */
+  public function acceptsJSON ()
+  {
+    return $this->accepts(JSON_TYPE);
+  }
+
+  /**
+   * We accept XML
+   * Note: several browsers send application/xml in the default
+   * Accept header, so this may not be the best way to determine
+   * if XML is the desired format. Reality sucks.
+   */
+  public function acceptsXML ()
+  {
+    return $this->accepts(XML_TYPE);
   }
 
   /**
@@ -647,6 +847,9 @@ class Route
   public $content_type;                              // Only certain CT.
   public $is_json     = false;                       // Only JSON content.
   public $is_xml      = false;                       // Only XML content.
+  public $accepts;                                   // Only certain Accept.
+  public $want_json   = false;                       // Only Accept JSON.
+  public $want_xml    = false;                       // Only accept XML.
 
   public $methods = ['GET','POST'];                  // Supported methods.
 
@@ -682,10 +885,16 @@ class Route
 
     if ($this->is_json && !$this->parent->isJSON()) return; // Not JSON.
     if ($this->is_xml  && !$this->parent->isXML()) return;  // Not XML.
+    if ($this->want_json && !$this->parent->acceptsJSON()) return;
+    if ($this->want_xml && !$this->parent->acceptsXML()) return;
 
     // If a specific content_type has been specified, make sure it matches.
     if (isset($this->content_type) 
       && !$this->parent->isContentType($this->content_type)) return;
+
+    // If a specific Accept type has been specified, make sure it matches.
+    if (isset($this->accepts)
+      && !$this->parent->accepts($this->accepts)) return;
 
 #    error_log("  -- our method matched.");
 
@@ -837,11 +1046,15 @@ class RouteContext implements \ArrayAccess
   public $body_params    = []; // Params found in a JSON body, if applicable.
   public $body_text;           // Body text (currently XML is supported.)
   public $method;              // The HTTP method used.
+  public $files;               // Any files uploaded.
+  public $offset_files = true; // Include files in offset* methods.
 
   // Convert this into a simple array structure.
   public function to_array ($opts=[])
   {
     $array =  $this->path_params + $this->body_params + $this->request_params;
+    if (isset($opts['files']) && $opts['files'] && isset($this->files))
+      $array = $array + $this->files;
     $array['_context'] = $this;
     return $array;
   }
@@ -859,6 +1072,10 @@ class RouteContext implements \ArrayAccess
     elseif (array_key_exists($offset, $this->request_params))
     {
       return $this->request_params[$offset];
+    }
+    elseif ($this->offset_files && isset($this->files, $this->files[$offset]))
+    {
+      return $this->getFile($offset);
     }
     else
     {
@@ -885,6 +1102,10 @@ class RouteContext implements \ArrayAccess
     {
       return True;
     }
+    elseif ($this->offset_files && isset($this->files, $this->files[$offset]))
+    {
+      return True;
+    }
     else
     {
       return False;
@@ -894,6 +1115,11 @@ class RouteContext implements \ArrayAccess
   public function offsetUnset ($offset)
   {
     throw new Exception ("Cannot unset a context parameter.");
+  }
+
+  public function getFile ($name)
+  {
+    return \Nano\Utils\File::getUpload($name, $this);
   }
 
   public function isJSON ()
@@ -906,14 +1132,29 @@ class RouteContext implements \ArrayAccess
     return $this->router->isXML();
   }
 
+  public function acceptsJSON ()
+  {
+    return $this->router->acceptsJSON();
+  }
+
+  public function acceptsXML ()
+  {
+    return $this->router->acceptsXML();
+  }
+
+  public function accepts ($mimetype=null)
+  {
+    return $this->router->accepts($mimetype);
+  }
+
   public function isContentType ($contentType)
   {
     return $this->router->isContentType($contentType);
   }
 
-  public function contentType ()
+  public function contentType ($withOpts=false)
   {
-    return $this->router->contentType();
+    return $this->router->contentType($withOpts);
   }
 
   public function jsonBody ()

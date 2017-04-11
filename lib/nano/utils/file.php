@@ -36,8 +36,17 @@ class File
   /**
    * See if a standard HTTP upload of a set name exists.
    */
-  public static function hasUpload ($name)
+  public static function hasUpload ($name, $context=null)
   {
+    if (isset($context))
+    {
+      if (isset($context->files[$name]) 
+        && $context->files[$name]['error'] === UPLOAD_ERR_OK)
+      {
+        return True;
+      }
+      return False;
+    }
     if (isset($_FILES[$name]) && $_FILES[$name]['error'] === UPLOAD_ERR_OK)
     {
       return True;
@@ -48,11 +57,12 @@ class File
   /**
    * Create a File object from a standard HTTP upload.
    */
-  public static function getUpload ($name)
+  public static function getUpload ($name, $context=null)
   {
-    if (isset($_FILES[$name]))
+    $files = isset($context) ? $context->files : $_FILES;
+    if (isset($files, $files[$name]))
     {
-      $file = $_FILES[$name];
+      $file = $files[$name];
       if ($file['error'] === UPLOAD_ERR_OK)
       {
         $class = __CLASS__;
