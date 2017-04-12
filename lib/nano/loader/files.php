@@ -13,6 +13,9 @@ trait Files
   // If you are loading a class/instance you need to specify a naming pattern.
   public $class_naming = '%s';
 
+  public $nested_names = true;    // 'name.subname' => 'name/subname'.
+  public $index_files  = 'index'; // Allow views/screens/$name/index.php files.
+
   public function __construct ($opts=[])
   {
     $this->__construct_files($opts);
@@ -27,6 +30,14 @@ trait Files
     if (isset($opts['ext']))
     {
       $this->ext = $opts['ext'];
+    }
+    if (isset($opts['nested']))
+    {
+      $this->nested_names = (bool)$opts['nested'];
+    }
+    if (isset($opts['index']))
+    { // set to false to disable index files.
+      $this->index_files = $opts['index'];
     }
   }
 
@@ -48,14 +59,37 @@ trait Files
    *
    * @param string $classname   The class name to look for.
    */
-  public function find_file ($filename)
+  public function find_file ($raw_filename)
   {
+    $search_names = [$raw_filename];
+    if ($this->nested_names)
+    {
+      $nested_filename = str_replace('.', '/', $raw_filename);
+      if ($nested_filename != $raw_filename)
+      { // It's different insert it at the top.
+        array_unshift($search_names, $nested_filename);
+      }
+    }
+    if ($this->index_files)
+    {
+      $index_name = $this->index_files;
+      if ($this->nested_names && count($search_names) == 2)
+      { // Add a nested index name.
+        $nested_index = $nested_filename . '/' . $index_name;
+        $search_names[] = $nested_index;
+      }
+      $raw_index = $raw_filename . '/' . $index_name;
+      $search_names[] = $raw_index;
+    }
     foreach ($this->dirs as $dir)
     {
-      $file = $dir . '/' . $filename . $this->ext;
-      if (file_exists($file))
+      foreach ($search_names as $filename)
       {
-        return $file;
+        $file = $dir . '/' . $filename . $this->ext;
+        if (file_exists($file))
+        {
+          return $file;
+        }
       }
     }
   }
