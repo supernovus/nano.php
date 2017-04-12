@@ -18,7 +18,7 @@ namespace Nano\Utils;
 /**
  * The RIML version.
  */
-const RIML_VERSION = '1.0-DRAFT-8';
+const RIML_VERSION = '1.0-DRAFT-10';
 
 /**
  * The namespace RIML child classes are defined in.
@@ -244,8 +244,6 @@ class RIML
   public $method_prefix = 'handle_';
   public $confdir;
 
-  protected $templates = []; // Templates for later use.
-
   protected $traits = []; // Traits for later use.
 
   protected $included = []; // A list of files we've included.
@@ -400,13 +398,7 @@ class RIML
   protected function defineMetadata ($data)
   {
 #    error_log("RIML::defineMetadata(".json_encode($data).")");
-    if (is_array($data) && isset($data['.template']))
-    {
-      $name = $data['.template'];
-      unset($data['.template']);
-      $this->templates[$name] = $data;
-    }
-    elseif (is_array($data) && isset($data['.trait']))
+    if (is_array($data) && isset($data['.trait']))
     {
       $name = $data['.trait'];
       unset($data['.trait']);
@@ -417,99 +409,10 @@ class RIML
   protected function useMetadata ($data)
   {
 #    error_log("RIML::useMetadata(".json_encode($data).")");
-    $this->applyTraits($data, '.templateTraits');
-    if (is_array($data) && isset($data['.template']))
+    if (is_array($data) && isset($data['.traits']))
     {
-      $name = $data['.template'];
-      unset($data['.template']);
-      if (isset($this->templates[$name]))
-      {
-        $template = $this->templates[$name];
-        if (isset($template['.vars']))
-        { // Expand variables.
-          $vars = $template['.vars'];
-          unset($template['.vars']);
-          foreach ($vars as $varname => $varpathspec)
-          {
-            if (isset($data[$varname]))
-            {
-              $value = $data[$varname];
-  
-              if (is_string($varpathspec))
-                $varpathspec = [$varpathspec];
-  
-              foreach ($varpathspec as $varpath)
-              {
-                $varpaths = explode('/', trim($varpath, '/'));
-                $tdata = &$template;
-                $lastitem = array_pop($varpaths);
-                $textitem = null;
-                foreach ($varpaths as $vp)
-                {
-                  if (is_array($tdata) && isset($tdata[$vp]))
-                  {
-                    if (is_array($tdata[$vp]))
-                    {
-                      $tdata = &$vp;
-                    }
-                    elseif (is_string($tdata[$vp]))
-                    {
-                      $textitem = $vp;
-                      break;
-                    }
-                  }
-                  else
-                  {
-                    throw new \Exception("Invalid variable path '$varpath'");
-                  }
-                }
-                if (isset($textitem))
-                {
-                  $tdata[$textitem] = str_replace($lastitem, $value, $tdata[$textitem]);
-                }
-                elseif (is_array($tdata) && isset($tdata[$lastitem]))
-                {
-                  $tdata[$lastitem] = $value;
-                }
-              }
-            }
-            else
-            {
-              throw new \Exception("Unfulfilled variable '$varname' in use statement.");
-            }
-          }
-        }
-        if (isset($data['.traits']))
-        { // Local traits are added to template traits.
-          if (!isset($template['.traits']))
-            $template['.traits'] = $data['.traits'];
-          else
-          { // Merge local traits and template traits.
-            if (is_string($template['.traits']))
-              $template['.traits'] = [$template['.traits']];
-            if (is_string($data['.traits']))
-              $data['.traits'] = [$data['.traits']];
-            foreach ($data['.traits'] as $tname)
-              $template['.traits'][] = $tname;
-          }
-        }
-        $data = $template;
-      }
-      else
-      {
-        throw new \Exception("Template '$name' not found.");
-      }
-    }
-    $this->applyTraits($data);
-    return $data;
-  }
-
-  protected function applyTraits (&$data, $tprop='.traits')
-  {
-    if (is_array($data) && isset($data[$tprop]))
-    {
-      $traits = $data[$tprop];
-      unset($data[$tprop]);
+      $traits = $data['.traits'];
+      unset($data['.traits']);
       if (!is_array($traits))
         $traits = [$traits];
       foreach ($traits as $tname)
@@ -519,14 +422,103 @@ class RIML
           $trait = $this->traits[$tname];
           if (is_array($trait))
           {
+            $consumed = [];
             foreach ($trait as $tpname => $tpval)
             {
-              if (!isset($data[$tpname]))
+              if ($tpname == '.placeholders') continue; // skip placeholders.
+              if ($tpname == '.vars' && is_array($tpval))
               {
-                $data[$tpname] = $tpval;
+                if (isset($data[$tpname]) && is_array($data[$tpname]))
+                {
+                  $data[$tpname] += $tpval;
+                }
+                else
+                {
+                  $data[$tpname] = $tpval;
+                }
+              }
+              else
+              {
+                if (!isset($data[$tpname]))
+                {
+                  $data[$tpname] = $tpval;
+                  $consumed[$tpname] = true;
+                }
+                else
+                {
+                  $consumed[$tpname] = false;
+                }
               }
             }
+            $this->handlePlaceholders($data, $trait, $consumed);
           }
+        }
+      }
+    }
+    return $data;
+  }
+
+  protected function handlePlaceholders (&$data, $trait, $consumed)
+  {
+    if (isset($trait['.placeholders']))
+    { // Expand variables.
+      $vars = $trait['.placeholders'];
+      foreach ($vars as $varname => $varpathspec)
+      {
+        if ($varname == '.vars') continue; // sanity check.
+        if (isset($data['.vars'], $data['.vars'][$varname]))
+        {
+          $value = $data['.vars'][$varname];
+  
+          if (is_string($varpathspec))
+            $varpathspec = [$varpathspec];
+  
+          foreach ($varpathspec as $varpath)
+          {
+            $varpaths = explode('|', trim($varpath, '|'));
+#            error_log("varpaths: ".json_encode($varpaths));
+            // A quick sanity check.
+            $firstitem = $varpaths[0];
+            if (isset($consumed[$firstitem]) && !$consumed[$firstitem])
+            { // This path was seen, but not consumed, skip it.
+              continue;
+            }
+            $tdata = &$data;
+            $lastitem = array_pop($varpaths);
+            $textitem = null;
+            foreach ($varpaths as $vp)
+            {
+#              error_log("tdata: ".json_encode($tdata));
+              if (is_array($tdata) && isset($tdata[$vp]))
+              {
+                if (is_array($tdata[$vp]))
+                {
+                  $tdata = &$tdata[$vp];
+                }
+                elseif (is_string($tdata[$vp]))
+                {
+                  $textitem = $vp;
+                  break;
+                }
+              }
+              else
+              {
+                throw new \Exception("Invalid variable path '$varpath', '$vp' is missing.");
+              }
+            }
+            if (isset($textitem))
+            {
+              $tdata[$textitem] = str_replace($lastitem, $value, $tdata[$textitem]);
+            }
+            elseif (is_array($tdata) && isset($tdata[$lastitem]))
+            {
+              $tdata[$lastitem] = $value;
+            }
+          }
+        }
+        else
+        {
+          throw new \Exception("Unfulfilled variable '$varname' in use statement.");
         }
       }
     }
