@@ -363,6 +363,7 @@ class RIML
 
   protected function includeFile ($value, $setNoPath)
   {
+#    error_log("RIML::includeFile(\"$value\", ".($setNoPath?'true':'false').')');
     if (strpos($value, '/') === false && isset($this->confdir))
     {
       $file = $this->confdir . '/' . $value;
@@ -398,8 +399,8 @@ class RIML
 
   protected function defineMetadata ($data)
   {
-//    error_log("defineMetadata(".json_encode($data).")");
-    if (is_array($data) && isset($data['.template'], $data['.vars']))
+#    error_log("RIML::defineMetadata(".json_encode($data).")");
+    if (is_array($data) && isset($data['.template']))
     {
       $name = $data['.template'];
       unset($data['.template']);
@@ -415,7 +416,7 @@ class RIML
 
   protected function useMetadata ($data)
   {
-//    error_log("useMetadata(".json_encode($data).")");
+#    error_log("RIML::useMetadata(".json_encode($data).")");
     $this->applyTraits($data, '.templateTraits');
     if (is_array($data) && isset($data['.template']))
     {
@@ -424,55 +425,58 @@ class RIML
       if (isset($this->templates[$name]))
       {
         $template = $this->templates[$name];
-        $vars = $template['.vars'];
-        unset($template['.vars']);
-        foreach ($vars as $varname => $varpathspec)
-        {
-          if (isset($data[$varname]))
+        if (isset($template['.vars']))
+        { // Expand variables.
+          $vars = $template['.vars'];
+          unset($template['.vars']);
+          foreach ($vars as $varname => $varpathspec)
           {
-            $value = $data[$varname];
-
-            if (is_string($varpathspec))
-              $varpathspec = [$varpathspec];
-
-            foreach ($varpathspec as $varpath)
+            if (isset($data[$varname]))
             {
-              $varpaths = explode('/', trim($varpath, '/'));
-              $tdata = &$template;
-              $lastitem = array_pop($varpaths);
-              $textitem = null;
-              foreach ($varpaths as $vp)
+              $value = $data[$varname];
+  
+              if (is_string($varpathspec))
+                $varpathspec = [$varpathspec];
+  
+              foreach ($varpathspec as $varpath)
               {
-                if (is_array($tdata) && isset($tdata[$vp]))
+                $varpaths = explode('/', trim($varpath, '/'));
+                $tdata = &$template;
+                $lastitem = array_pop($varpaths);
+                $textitem = null;
+                foreach ($varpaths as $vp)
                 {
-                  if (is_array($tdata[$vp]))
+                  if (is_array($tdata) && isset($tdata[$vp]))
                   {
-                    $tdata = &$vp;
+                    if (is_array($tdata[$vp]))
+                    {
+                      $tdata = &$vp;
+                    }
+                    elseif (is_string($tdata[$vp]))
+                    {
+                      $textitem = $vp;
+                      break;
+                    }
                   }
-                  elseif (is_string($tdata[$vp]))
+                  else
                   {
-                    $textitem = $vp;
-                    break;
+                    throw new \Exception("Invalid variable path '$varpath'");
                   }
                 }
-                else
+                if (isset($textitem))
                 {
-                  throw new \Exception("Invalid variable path '$varpath'");
+                  $tdata[$textitem] = str_replace($lastitem, $value, $tdata[$textitem]);
                 }
-              }
-              if (isset($textitem))
-              {
-                $tdata[$textitem] = str_replace($lastitem, $value, $tdata[$textitem]);
-              }
-              elseif (is_array($tdata) && isset($tdata[$lastitem]))
-              {
-                $tdata[$lastitem] = $value;
+                elseif (is_array($tdata) && isset($tdata[$lastitem]))
+                {
+                  $tdata[$lastitem] = $value;
+                }
               }
             }
-          }
-          else
-          {
-            throw new \Exception("Unfulfilled variable '$varname' in use statement.");
+            else
+            {
+              throw new \Exception("Unfulfilled variable '$varname' in use statement.");
+            }
           }
         }
         if (isset($data['.traits']))
@@ -493,7 +497,7 @@ class RIML
       }
       else
       {
-        throw new \Exception("Template $name not found.");
+        throw new \Exception("Template '$name' not found.");
       }
     }
     $this->applyTraits($data);
