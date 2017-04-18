@@ -302,7 +302,7 @@ abstract class Basic
    *
    * Anything else will fail and throw an Exception.
    */
-  public function send_json ($data, $opts=array())
+  public function send_json ($data, $opts=[])
   { 
     $nano = \Nano\get_instance();
     $nano->pragmas['json no-cache'];    // Don't cache this.
@@ -360,7 +360,7 @@ abstract class Basic
    *
    * Anything else will throw an Exception.
    */
-  public function send_xml ($data, $opts=Null)
+  public function send_xml ($data, $opts=[])
   {
     $nano = \Nano\get_instance();
     $nano->pragmas['xml no-cache'];
@@ -371,14 +371,24 @@ abstract class Basic
     elseif (is_object($data))
     {
       $method = $this->to_xml_method;
+
+      $fancy = isset($opts['fancy']) 
+             ? (bool)$opts['fancy'] 
+             : isset($opts['reformat'])
+             ? (bool)$opts['reformat']
+             : false;
+
       if ($data instanceof \SimpleXMLElement)
         $xml = $data->asXML();
       elseif ($data instanceof \DOMDocument)
         $xml = $data->saveXML();
       elseif ($data instanceof \DOMElement)
         $xml = $data->ownerDocument->saveXML();
-      elseif (is_callable(array($data, $method)))
+      elseif (is_callable([$data, $method]))
+      {
         $xml = $data->$method($opts);
+        $fancy = false; // the method must do the formatting.
+      }
       else
         throw new Exception('Unsupported object sent to send_xml()');
     }
@@ -386,6 +396,16 @@ abstract class Basic
     {
       throw new Exception('Unsupported data type sent to send_xml()');
     }
+
+    if ($fancy)
+    { // Reformat the output.
+      $dom = new \DOMDocument('1.0');
+      $dom->preserveWhiteSpace = false;
+      $dom->formatOutput = true;
+      $dom->loadXML($xml);
+      $xml = $dom->saveXML();
+    }
+
     return $xml;
   }
 

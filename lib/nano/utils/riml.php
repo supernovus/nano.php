@@ -302,6 +302,7 @@ class RIML
 
   protected function loadFile ($filename)
   {
+#    error_log("RIML::loadFile($filename)");
     if (file_exists($filename))
     {
       if (!isset($this->confdir))

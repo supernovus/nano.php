@@ -449,7 +449,7 @@ abstract class Object implements \JsonSerializable
   {
     $simplexml = $this->to_simple_xml($opts);
     $xmlstring = $simplexml->asXML();
-    if (isset($opts['reformat']) && $opts['reformat'])
+    if (isset($opts, $opts['reformat']) && $opts['reformat'])
     {
       $dom = new \DOMDocument('1.0');
       $dom->preserveWhiteSpace = False;
