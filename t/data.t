@@ -5,16 +5,13 @@ namespace Test;
 
 require_once 'lib/nano/init.php';
 require_once 'lib/test.php';
-$simpleDOM=false;
-if (file_exists('lib/SimpleDOM.php'))
-{
-  $simpleDOM=true;
-  require_once 'lib/SimpleDOM.php';
-}
+
+$nano = \Nano\initialize();
+$nano->pragmas->simpledom;
+
+$simpleDOM = function_exists('simpledom_import_simplexml');
 
 plan(12);
-
-\Nano\register();
 
 class Foo extends \Nano\Data\Arrayish
 {
@@ -121,3 +118,4 @@ else
     skip($smsg, $stest);
   }
 }
+
