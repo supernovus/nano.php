@@ -245,7 +245,11 @@ abstract class Object implements \JsonSerializable
     }
     elseif (is_object($data))
     {
-      if ($data instanceof \SimpleXMLElement)
+      if ($data instanceof \SimpleDOM)
+      {
+        return 'simple_dom';
+      }
+      elseif ($data instanceof \SimpleXMLElement)
       {
         return 'simple_xml';
       }
@@ -428,6 +432,12 @@ abstract class Object implements \JsonSerializable
     return $this->load_simple_xml($simplexml);
   }
 
+  // Load a SimpleDOM object.
+  public function load_simple_dom ($simpledom, $opts=null)
+  { // SimpleDOM is an extension of SimpleXML, so just do it right.
+    return $this->load_simple_xml($simpledom, $opts);
+  }
+
   // Return a DOMElement
   public function to_dom_element ($opts=Null)
   {
@@ -442,6 +452,16 @@ abstract class Object implements \JsonSerializable
     $dom_element = $this->to_dom_element($opts);
     $dom_document = $dom_element->ownerDocument;
     return $dom_document;
+  }
+
+  // Return a SimpleDOM object, must have SimpleDOM library loaded first.
+  public function to_simple_dom ($opts=null)
+  {
+    if (function_exists('simpledom_import_simplexml'))
+    {
+      $simplexml = $this->to_simple_xml($opts);
+      return simpledom_import_simplexml($simplexml);
+    }
   }
 
   // Return an XML string.

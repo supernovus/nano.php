@@ -1,5 +1,6 @@
-*.swp
-sync*
-.sync/*
-build/*
-doc/api/*
+/*.swp
+/sync*
+/.sync/*
+/build/*
+/doc/api/*
+/lib/SimpleDOM.php

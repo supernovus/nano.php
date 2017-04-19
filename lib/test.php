@@ -30,7 +30,7 @@ function plan ($num)
  * @param string $desc The name of the test.
  * @param boolean $test The result of the test.
  */
-function __test ($desc, $test)
+function __test ($desc, $test, $directive=null)
 { global $__test_cur;
   global $__test_fail;
   if ($test)
@@ -47,6 +47,9 @@ function __test ($desc, $test)
 
   if (isset($desc))
     echo " - $desc";
+
+  if (isset($directive))
+    echo " # $directive";
 
   echo "\n";
 
@@ -80,6 +83,14 @@ function is ($got, $want, $desc=Null)
     echo "#       got: $got\n";
     echo "#  expected: $want\n";
   }
+}
+
+/**
+ * Skip a test
+ */
+function skip ($reason, $desc=null)
+{
+  __test($desc, true, "SKIP $reason");
 }
 
 /**
