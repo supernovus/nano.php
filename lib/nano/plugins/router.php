@@ -29,7 +29,14 @@ class Router
   public $base_uri = '';
 
   public $log   = False;   // Basic logging, tracks routing.
-  public $debug = 0;       // Advanced logging levels for debugging.
+  // Advanced debugging log settings.
+  public $debug =
+  [
+    'init'     => 0,
+    'matching' => 0,
+    'routing'  => 0,
+    'building' => 0,
+  ];
 
   public $fix_request_data = false; // Set to true to fix broken requests.
 
@@ -107,6 +114,23 @@ class Router
    */
   public function add ($route, $is_default=False, $add_it=True, $chain=null)
   {
+    if ($this->log && $this->debug['init'] > 0)
+    {
+      $msg = 'Router::add(';
+      if ($this->debug['init'] > 1)
+        $msg .= json_encode($route);
+      elseif (isset($route->name))
+        $msg .= json_encode($route->name);
+      else
+        $msg .= json_encode($route->uri);
+      $msg .= ', ' . json_encode($is_default)
+        . ', ' . json_encode($add_it);
+      if ($this->debug['init'] > 1)
+        $msg .= ', ' . json_encode($chain);
+      $msg .= ')';
+      error_log($msg);
+    }
+
     if ($route instanceof Route)
     { // It's a route object.
 
@@ -127,7 +151,8 @@ class Router
 
       if (isset($chain) && is_array($chain))
       {
-//        error_log("chaining: ".$route->uri);
+        if ($this->log && $this->debug['init'] > 1)
+          error_log(" :chaining => ".$route->uri);
         $this->load($chain, $route);
       }
 
@@ -214,13 +239,33 @@ class Router
     }
   }
 
+  public function initDebugging ()
+  { // Compatibility with the old debug values.
+    if (is_int($this->debug))
+    {
+      $debug_r = $this->debug;
+      $debug_o = $debug_r - 1;
+      $this->debug =
+      [
+        'init'     => $debug_o,
+        'matching' => $debug_o,
+        'routing'  => $debug_r,
+        'building' => $debug_o,
+      ];
+    }
+  }
+
   public function load (Array $routes, $parent=null)
   {
-/*    $msg = 'load('.json_encode($routes);
-    if (isset($parent))
-      $msg .= ', '.$parent->uri;
-    $msg .= ')';
-    error_log($msg); */
+    $this->initDebugging();
+    if ($this->log && $this->debug['init'] > 1)
+    {
+      $msg = 'load('.json_encode($routes);
+      if (isset($parent))
+        $msg .= ', '.$parent->uri;
+      $msg .= ')';
+      error_log($msg);
+    }
 
     if (!isset($parent))
       $parent = $this;
@@ -692,7 +737,7 @@ class Router
       if ($route->redirect)
       { // Whether we redirect to a URL, or go to a known route,
         // depends on the redirect_is_route setting.
-        if ($this->log && $this->debug > 0)
+        if ($this->log && $this->debug['routing'] > 0)
           error_log(" :redirect => ".$route->redirect);
         if ($route->redirect_is_route)
         {
@@ -705,7 +750,7 @@ class Router
       }
       elseif ($route->view)
       { // We're loading a view.
-        if ($this->log && $this->debug > 0)
+        if ($this->log && $this->debug['routing'] > 0)
           error_log(" :view => ".$route->view);
         if (isset($route->view_status))
         {
@@ -716,7 +761,7 @@ class Router
       }
       elseif ($route->controller)
       {
-        if ($this->log && $this->debug > 0)
+        if ($this->log && $this->debug['routing'] > 0)
           error_log(" :controller => ".$route->controller);
         // We consider it a fatal error if the controller doesn't exist.
         $controller = $nano->controllers->load($route->controller);
@@ -729,7 +774,7 @@ class Router
         $action = $route->action;
         if (is_callable([$controller, $action]))
         {
-          if ($this->log && $this->debug > 0)
+          if ($this->log && $this->debug['routing'] > 0)
             error_log(" :action => $action");
           return $controller->$action($context);
         }
@@ -754,7 +799,7 @@ class Router
    */
   public function build ($routeName, $params=[], $opts=[])
   {
-    if ($this->log && $this->debug > 1)
+    if ($this->log && $this->debug['building'] > 1)
     {
       $call = "Router::build($routeName";
       if ($this->debug > 2) 
@@ -782,12 +827,19 @@ class Router
    */
   public function go ($routeName, $params=[], $ropts=[], $bopts=[])
   {
-    if ($this->log && $this->debug > 2)
-      error_log("Router::go($routeName, " .
-        json_encode($params) . ', ' .
-        json_encode($ropts)  . ', ' .
-        json_encode($bopts)  . ')'
-      );
+    if ($this->log && $this->debug['routing'] > 1)
+    {
+      $call = "Router::go($routeName";
+      if ($this->debug > 2)
+      {
+        $call .= ', '
+        . json_encode($params) . ', '
+        . json_encode($ropts)  . ', '
+        . json_encode($bopts);
+      }
+      $call .= ')';
+      error_log($call);
+    }
     $uri  = $this->build($routeName, $params, $bopts);
     $nano = \Nano\get_instance();
     $nano->url->redirect($uri, $ropts);
@@ -878,25 +930,38 @@ class Route
 
   public function match ($uri, $method)
   {
-
-#    error_log("Checking $uri against " . $this->uri);
+    $debug = $this->parent->log ? $this->parent->debug['matching'] : 0;
+    if ($debug > 0)
+    {
+      error_log("Route[{$this->uri}]::match($uri)");
+    }
 
     if (! in_array($method, $this->methods)) return; // Doesn't match method.
+
+    if ($debug > 1)
+      error_log(" -- HTTP method matched.");
 
     if ($this->is_json && !$this->parent->isJSON()) return; // Not JSON.
     if ($this->is_xml  && !$this->parent->isXML()) return;  // Not XML.
     if ($this->want_json && !$this->parent->acceptsJSON()) return;
     if ($this->want_xml && !$this->parent->acceptsXML()) return;
 
+    if ($debug > 1)
+      error_log(" -- is/want tests matched.");
+
     // If a specific content_type has been specified, make sure it matches.
     if (isset($this->content_type) 
       && !$this->parent->isContentType($this->content_type)) return;
+
+    if ($debug > 1)
+      error_log(" -- Content Type matched.");
 
     // If a specific Accept type has been specified, make sure it matches.
     if (isset($this->accepts)
       && !$this->parent->accepts($this->accepts)) return;
 
-#    error_log("  -- our method matched.");
+    if ($debug > 1)
+      error_log(" -- Accepts matched.");
 
     if ($this->parent->base_uri || $this->uri_regex())
     {
@@ -905,12 +970,14 @@ class Route
              . $this->uri_regex()
              . "*$@i";
 
-#    error_log("searching with regex: $match");
+      if ($debug > 2)
+        error_log(" :regex => $match");
 
       if (! preg_match($match, $uri, $matches)) return; // Doesn't match URI.
     }
 
-#    error_log(" -- It matched!");
+    if ($debug > 0)
+      error_log(" -- Route matched.");
 
     $params = [];
 
@@ -925,6 +992,9 @@ class Route
         }
       }
     }
+
+    if ($debug > 2)
+      error_log(" :params => ".json_encode($params));
 
     return $params;
 
