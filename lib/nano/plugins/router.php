@@ -1172,7 +1172,7 @@ class RouteContext implements \ArrayAccess
     {
       return True;
     }
-    elseif ($this->offset_files && isset($this->files, $this->files[$offset]))
+    elseif ($this->offset_files && \Nano\Utils\File::hasUpload($offset, $this))
     {
       return True;
     }
