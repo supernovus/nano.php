@@ -253,6 +253,17 @@ class RouterMenu
           if ($croute->name == $mroute)
             $current = True;
         }
+        elseif (isset($url, $def['matchPath']) 
+          && is_array($def['matchPath'])
+          && count($def['matchPath']) == 2)
+        {
+          $offset   = $def['matchPath'][0];
+          $findpath = $def['matchPath'][1];
+          if ($context->path[$offset] == $findpath)
+          {
+            $current = true;
+          }
+        }
 
         // Get our item name/label.
         if (isset($def['name']))
