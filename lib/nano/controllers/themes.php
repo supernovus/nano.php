@@ -10,6 +10,11 @@ trait Themes
 {
   protected $currentTheme;
 
+  public function getTheme ()
+  {
+    return $this->currentTheme;
+  }
+
   public function setTheme ($themeName, $override=true)
   {
     if (isset($this->currentTheme) && !$override)
