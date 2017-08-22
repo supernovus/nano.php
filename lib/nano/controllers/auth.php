@@ -120,7 +120,7 @@ trait Auth
       }
     }
 
-    error_log("No auth methods succeeded for $confname.");
+    error_log("No auth methods succeeded.");
     return false;
   }
 
