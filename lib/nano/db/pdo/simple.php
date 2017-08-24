@@ -465,8 +465,11 @@ class Simple
       $fetch_mode = \PDO::FETCH_ASSOC;
     }
 
-#    error_log("SQL: $sql");
-#    error_log("Data: ".json_encode($data));
+    if (isset($opts['debug']) && $opts['debug'])
+    {
+      error_log("SQL: $sql");
+      error_log("Data: ".json_encode($data));
+    }
 
     if (!isset($this->db))
       return [$sql, $data];
