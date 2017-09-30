@@ -4,13 +4,13 @@
 /**
  * Command line script to create a new application skeleton from a template.
  *
- * Run it from the main Nano4 directory, as in:
+ * Run it from the main Nano directory, as in:
  *
  *   ./bin/initapp.php
  *
  */
 
-namespace Nano4;
+namespace Nano;
 
 // Even though I personally use gulp 4, gulp 3 is still considered the 'stable'
 // version, so it's going to be the default if the template doesn't specify one.
@@ -72,7 +72,7 @@ if (isset($opts['A']) && !isset($opts['t']))
 	usage("when using -A, the -t option is mandatory.");
 }
 
-require_once 'lib/nano4/init.php';
+require_once 'lib/nano/init.php';
 
 $nano = initialize();
 
