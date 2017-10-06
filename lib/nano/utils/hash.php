@@ -6,25 +6,43 @@ use Nano\Exception;
 /**
  * A very simplistic wrapper for the PHP Hash library.
  *
- * In addition to the normal hash methods, it provides a base64() method which
- * will return a base64 representation of the binary Hash digest.
- *
  * Usage:
  *
  *  $hash = new Hash('sha256');
  *  $hash->update('Hello');
  *  $hash->update('World');
- *  $str = $hash->final();
+ *  $bitstr = $hash->final();
  *
  */
 
 class Hash
 {
+  /**
+   * The internal hash object returned from PHP's hash_init().
+   */
   protected $hash;
+
+  /**
+   * Create a new Hash object.
+   *
+   * @param str   $algorithm  The hashing algorithm to use.
+   * @param int   $options    Any PHP hash() options to use.
+   * @param mixed $key        Optional hash key to use.
+   */
+
   public function __construct ($algorithm, $options=0, $key=Null)
   {
     $this->hash = hash_init($algorithm, $options, $key);
   }
+
+  /**
+   * Call a hash function.
+   *
+   * Basically any method not locally defined in this class will call:
+   *
+   *  hash_{function}($hash, $arg1, ...);
+   *
+   */
   public function __call ($name, $arguments)
   {
     $func = "hash_$name";
@@ -38,17 +56,34 @@ class Hash
       throw new Exception("No such method '$name' in Hash class.");
     }
   }
+
+  /**
+   * Return a base64 encoded string. This finalizes the hash object.
+   */
   public function base64 ()
   {
     $binary = $this->final(True);
     $base64 = base64_encode($binary);
     return $base64;
   }
+
+  /**
+   * Return a base91 encoded string. This finalizes the hash object.
+   */
+  public function base91 ()
+  {
+    $binary = $this->final(True);
+    $base91 = Base91::encode($binary);
+    return $base91;
+  }
+
+  /**
+   * Return a binary string (bit string). This finalizes the hash object.
+   */
   public function __toString ()
   {
     return $this->final();
   }
 
 } // end of class Nano\Utils\Hash
-
 
