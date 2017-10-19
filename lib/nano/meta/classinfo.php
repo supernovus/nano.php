@@ -11,13 +11,21 @@ Trait ClassInfo
     if (is_null($object))
       $object = $this;
 
+#    error_log("get_classname(".get_class($object).")");
+
     if (is_callable([$object, 'class_id']))
     {
-      return $object->class_id();
+      $classid = $object->class_id();
+      if (isset($classid))
+      {
+#        error_log("returning classid '$classid'");
+        return $classid;
+      }
     }
 
     $classpath = explode('\\', get_class($object));
     $classname = strtolower(end($classpath));
+#    error_log("returning classname '$classname'");
     return $classname;
   }
 
