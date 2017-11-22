@@ -80,6 +80,7 @@ class CSV
 
     if ($assoc)
     { // Generate an associative array. The first row is the headers.
+#      error_log("building associative array from CSV data");
       $header = null;
       $assoc  = [];
       foreach ($rows as $row)
@@ -87,6 +88,7 @@ class CSV
         if (!isset($header))
         {
           $header = $row;
+#          error_log("found header: ".json_encode($header));
         }
         else
         {

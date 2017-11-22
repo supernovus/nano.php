@@ -211,10 +211,7 @@ trait Users
           // user puts in an invalid email address.
           return $this->invalid("Invalid e-mail in handle_forget: $email");
         }
-        $template = $this->get_prop('email_forgot',   'forgot_password');
-        $subject  = $this->get_prop('subject_forgot', 'subject.forgot');
-        $subject  = $this->text[$subject];
-        $this->mail_reset_pw($user, $opts, $template, $subject);
+        $user->send_forgot_email();
       }
     }
     return $this->display();
@@ -302,111 +299,6 @@ trait Users
     }
     return $this->display();
   }
-
-  // A method to be called from an administrative frontend.
-  // This is one of the few cases where one controller calls another
-  // directly as a helper object.
-  public function send_activation_email ($user, $opts=[])
-  {
-    if 
-    ( // Ensure it's a valid User object.
-      isset($user) 
-      && is_object($user)
-      && $user->get_id() 
-      && isset($user->hash) 
-      && isset($user->token)
-      && isset($user->email)
-    )
-    {
-      $template = $this->get_prop('email_activate',   'activate_account');
-      $subject  = $this->get_prop('subject_activate', 'subject.activate');
-      $subject  = $this->text[$subject];
-      return $this->mail_reset_pw($user, $opts, $template, $subject);
-    }
-    else
-    {
-      throw new \Exception("send_activation_email: invalid user");
-    }
-  }
-
-  // Backend method to start the reset process and send an e-mail to the
-  // user with the appropriate message.
-  protected function mail_reset_pw ($user, $opts, $template, $subject)
-  {
-    // Pre-email check, if it returns false, we fail.
-    // You can populate $opts with extended data if required.
-    if (method_exists($this, 'pre_email'))
-    {
-      if (!$this->pre_email($user, $opts))
-      { // Cannot continue.
-        return False;
-      }
-    }
-
-    // Get our required information.
-    $nano = \Nano\get_instance();
-    $code = $user->resetReset();
-    $uid  = $user->get_id();
-
-    // Set up a validation code to send to the user.
-    $validInfo = array('uid'=>$uid, 'code'=>$code);
-    $validCode = $nano->url->encodeArray($validInfo);
-
-    // E-mail rules for the Nano mailer.
-    $mail_rules = array
-    (
-      'username' => True,
-      'siteurl'  => True,
-      'code'     => True,
-    );
-
-    // Our mailer options.
-    $mail_opts             = $nano->conf->mail;
-    $mail_opts['views']    = $this->get_prop('email_views', 'mail_messages');
-    $mail_opts['subject']  = $subject;
-    $mail_opts['to']       = $user->email;
-    $mail_opts['template'] = $template;
-    if (property_exists($this, 'email_class') 
-        && isset($this->email_class) && !isset($mail_opts['handler']))
-    {
-      $mail_opts['handler'] = $this->email_class;
-    }
-
-    // Populate $mail_rules and $mail_opts with further data here.
-    if (method_exists($this, 'prep_email_options'))
-    {
-      $this->prep_email_options($mail_opts, $mail_rules, $opts);
-    }
-
-    // Build our mailer object.
-    $mailer = new \Nano\Utils\Mailer($mail_rules, $mail_opts);
-
-    // The message data for the template.
-    $mail_data = array
-    (
-      'username' => $user->name ? $user->name : $user->email,
-      'siteurl'  => $this->url(),
-      'code'     => $validCode,
-    );
-
-    // Populate $mail_data, and make any changes to $mailer here.
-    if (method_exists($this, 'prep_email_data'))
-    {
-      $this->prep_email_data($mailer, $mail_data, $opts);
-    }
-
-    // Send the message.
-    $sent = $mailer->send($mail_data);
-
-    // One last check after sending the message.
-    if (method_exists($this, 'post_email'))
-    {
-      $this->post_email($mailer, $sent, $opts);
-    }
-
-    // Return the response from $mailer->send();
-    return $sent;
-  } // end function mail_reset_pw();
 
 } // end trait Auth
 

@@ -175,6 +175,11 @@ EOD;
     }
     $curl = $this->newCurl($xml);
     $response = $curl->post($this->url, $xml, true);
+    if (is_array($response))
+    {
+      error_log("Curl error: ".json_encode($response));
+      throw new CurlErrorException();
+    }
     if (substr($response, 0, 5) !== '<?xml')
       throw new InvalidResponseException();
     return get_sres($response);
@@ -523,5 +528,13 @@ class InvalidItemException extends \Exception
 class InvalidResponseException extends \Exception
 {
   protected $message = 'Invalid response';
+}
+
+/**
+ * Exception for Curl errors.
+ */
+class CurlErrorException extends \Exception
+{
+  protected $message = 'Curl returned error';
 }
 
