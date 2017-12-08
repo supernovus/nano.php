@@ -136,6 +136,7 @@ abstract class Container extends Arrayish
   // Overridden to_array() method.
   public function to_array ($opts=array())
   {
+    $unwrap = isset($opts['unwrap']) ? $opts['unwrap'] : true;
     if (isset($opts['null']))
     {
       $allownull = $opts['null'];
@@ -147,7 +148,7 @@ abstract class Container extends Arrayish
     $array = array();
     foreach ($this->data as $val)
     {
-      if (is_object($val) && is_callable(array($val, 'to_array')))
+      if ($unwrap && is_object($val) && is_callable(array($val, 'to_array')))
       { // Unwrap Data objects.
         $val = $val->to_array($opts);
       }
