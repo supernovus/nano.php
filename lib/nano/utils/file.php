@@ -14,6 +14,7 @@ class File
   public $type;      // Mime type, if any.
   public $size;      // The size of the file.
   public $file;      // The filename on the system.
+  public $encoding;  // The text encoding, if applicable.
   
   /**
    * Build a new File object.
@@ -184,14 +185,21 @@ class File
     $string = file_get_contents($this->file);
     if ($forceUTF8)
     {
-      $bom = substr($string, 0, 2);
-      if ($bom === chr(0xff).chr(0xfe) || $bom === chr(0xfe).chr(0xff))
-      { // UTF-16 Byte Order Mark found.
-        $encoding = 'UTF-16';
+      if (isset($this->encoding))
+      { // Use the manually specified encoding.
+        $encoding = $this->encoding;
       }
       else
-      {
-        $encoding = mb_detect_encoding($string, 'UTF-8, UTF-7, ASCII, EUC-JP,SJIS, eucJP-win, SJIS-win, JIS, ISO-2022-JP, ISO-8859-1', true);
+      { // Try to detect the encoding.
+        $bom = substr($string, 0, 2);
+        if ($bom === chr(0xff).chr(0xfe) || $bom === chr(0xfe).chr(0xff))
+        { // UTF-16 Byte Order Mark found.
+          $encoding = 'UTF-16';
+        }
+        else
+        {
+          $encoding = mb_detect_encoding($string, 'UTF-8, UTF-7, ASCII, EUC-JP,SJIS, eucJP-win, SJIS-win, JIS, ISO-2022-JP, ISO-8859-1', true);
+        }
       }
       if ($encoding)
       {
