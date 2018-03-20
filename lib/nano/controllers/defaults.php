@@ -12,17 +12,18 @@ trait Defaults
   {
     $nano = \Nano\get_instance();
 
-    if (isset($nano['default_theme']) && is_callable([$this,'setTheme']))
+    // We don't recommend using the 'construct_defaults' style anymore.
+    if (isset($nano['construct_defaults']) && $nano['construct_defaults'])
     {
-      $this->setTheme($nano['default_theme'], false);
-    }
+      if (isset($nano['default_theme']) && is_callable([$this,'setTheme']))
+      {
+        $this->setTheme($nano['default_theme'], ['override'=>false]);
+      }
 
-    if (!isset($this->layout))
-    {
-      if (isset($nano['default_layout']))
+      if (!isset($this->layout) && isset($nano['default_layout']))
+      {
         $this->layout = $nano['default_layout'];
-      elseif (isset($nano['layout.default']))
-        $this->layout = $nano['layout.default'];
+      }
     }
 
     // We want to be able to access the data, via the $data attribute

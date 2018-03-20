@@ -277,5 +277,13 @@ trait Resources
     return $this->use_resource('css', $name, true);
   }
 
+  /**
+   * Add resource paths to the front of the list.
+   */
+  public function add_resource_paths ($type, $paths)
+  {
+    array_splice($this->resources[$type]['path'], 1, 0, $paths);
+  }
+
 }
 
