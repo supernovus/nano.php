@@ -90,6 +90,10 @@ trait Themes
         { // Add CSS paths from theme.
           $this->add_resource_paths('css', $themeDef['add_css_path']);
         }
+        if (isset($localopts['add_css_path']))
+        { // Add CSS paths from generic localopts.
+          $this->add_resource_paths('css', $localopts['add_css_path']);
+        }
         if (isset($localopts[$themeName], $localopts[$themeName]['add_css_path']))
         { // Add CSS paths from localopts specific to the theme.
           $this->add_resource_paths('css', $localopts[$themeName]['add_css_path']);
@@ -98,6 +102,10 @@ trait Themes
         if (isset($themeDef['add_js_path']))
         { // Add JS paths from theme.
           $this->add_resource_paths('js', $themeDef['add_js_path']);
+        }
+        if (isset($localopts['add_js_path']))
+        { // Add JS paths from generic localopts.
+          $this->add_resource_paths('js', $localopts['add_js_path']);
         }
         if (isset($localopts[$themeName], $localopts[$themeName]['add_js_path']))
         { // Add JS paths from localopts specific to the theme. 
