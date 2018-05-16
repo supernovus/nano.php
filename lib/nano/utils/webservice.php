@@ -12,7 +12,7 @@ class WebService
   public $_debug_level = 0;
 
   protected $client;      // Guzzle client.
-  protected $base_url;    // Base URL for requests.
+  protected $base_uri;    // Base URI for requests.
   protected $servicename; // Optional way of specifying a default service.
   protected $meths = [];  // Method definitions. Override in sub-classes.
 
@@ -74,11 +74,11 @@ class WebService
 
     if (isset($service['url']))
     {
-      $this->base_url = $service['url'];
+      $this->base_uri = $service['url'];
     }
     elseif (isset($opts['url']))
     {
-      $this->base_url = $opts['url'];
+      $this->base_uri = $opts['url'];
     }
 
     if (isset($service['methods']))
@@ -93,7 +93,7 @@ class WebService
     {
       foreach ($opts['routing'] as $rname => $rvalue)
       {
-        $this->base_url = preg_replace("/:$rname/", $rvalue, $this->base_url);
+        $this->base_uri = preg_replace("/:$rname/", $rvalue, $this->base_uri);
       }
     }
 
