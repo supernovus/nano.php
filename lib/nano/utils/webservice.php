@@ -15,6 +15,7 @@ class WebService
   protected $base_uri;    // Base URI for requests.
   protected $servicename; // Optional way of specifying a default service.
   protected $meths = [];  // Method definitions. Override in sub-classes.
+  protected $headers = [];// Extra headers to add to every request.
 
   // We support a built-in 'json' data type by default.
   // Further types may be added by sub-classes.
@@ -123,12 +124,33 @@ class WebService
     $this->client = new \GuzzleHttp\Client($guzopts);
   }
 
-  protected function build_json_request ($meth, $data, $opts)
+  protected function build_common_request ($data, $opts)
   {
     $request = [];
+    $headers = $this->headers;
+    if (isset($opts['headers']))
+    {
+      foreach ($opts['headers'] as $k => $v)
+      {
+        $headers[$k] = $v;
+      }
+    }
+    if (count($headers) > 0)
+    {
+      $request['headers'] = $headers;
+    }
+    return $request;
+  }
+
+  protected function build_json_request ($meth, $data, $opts)
+  {
+    $request = $this->build_common_request($data, $opts);
     if (is_string($data))
     {
-      $request['headers'] = ['Content-Type' => 'application/json'];
+      if (isset($request['headers']))
+        $request['headers']['Content-Type'] = 'application/json';
+      else
+        $request['headers'] = ['Content-Type' => 'application/json'];
       $request['body'] = $data;
     }
     elseif (is_array($data))
@@ -182,7 +204,7 @@ class WebService
             }
           }
         };
-        $path = preg_replace("/\:([\w-]+)/g", $replace, $path);
+        $path = preg_replace_callback("/\:([\w-]+)/", $replace, $path);
         return $path;
       }
     }
@@ -201,6 +223,16 @@ class WebService
       }
     }
     return $this->default_http;
+  }
+
+  public function set_header ($key, $val)
+  {
+    $this->headers[$key] = $val;
+  }
+
+  public function del_header ($key)
+  {
+    unset($this->headers[$key]);
   }
 
   public function send_request ($meth, $data, $opts=[])
@@ -235,7 +267,7 @@ class WebService
       error_log("Sending request: ".json_encode($debugData, JSON_PRETTY_PRINT));
     }
 
-    $response = $this->client->request($type, $path, $request);
+    $response = $this->client->request($http, $path, $request);
 
     if (isset($opts['rawResponse']) && $opts['rawResponse'])
     {
