@@ -933,7 +933,7 @@ class Route
     $debug = $this->parent->log ? $this->parent->debug['matching'] : 0;
     if ($debug > 0)
     {
-      error_log("Route[{$this->uri}]::match($uri)");
+      error_log("Route[{$this->uri}]::match($uri, $method)");
     }
 
     if (! in_array($method, $this->methods)) return; // Doesn't match method.
