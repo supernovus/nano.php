@@ -5,13 +5,11 @@ namespace Nano\Controllers;
 /**
  * A Trait that handles translatable text strings, status messages,
  * and adds the HTML template handler for Views (also with translatable text.)
- *
- * If you're going to use the add_status_json() method, you'll need the
- * JSON trait loaded first.
  */
 
 trait Messages
 {
+  protected $notifications;     // The notification library.
   protected $text;              // Our translation table.
   protected $lang;              // Our language.
 
@@ -60,6 +58,15 @@ trait Messages
     }
     $this->data['html'] = new \Nano\Utils\HTML($html_opts);
 
+    $notifications = \Nano\Utils\Notifications::getInstance(
+    [
+      'parent' => $this,
+      'text'   => $translations,
+    ]);
+
+    $this->notifications = $notifications;
+    $this->data['notifications'] = $notifications;
+
     // Okay, first look for the 'title' key. If it's set, typically in the
     // translation table for this namespace, we'll use it.
     if (!isset($this->data['title']))
@@ -70,30 +77,6 @@ trait Messages
         $pagetitle = ucfirst($name);
       }
       $this->data['title'] = $pagetitle;
-    }
-
-#    error_log("about to process status messages");
-
-    // Process any messages that may be in the session.
-    $sess = $nano->sess;
-    if (isset($sess->messages))
-    {
-#      error_log("processing status messages");
-      $this->data['messages'] = $sess->messages;
-      unset($nano->sess->messages);
-      $this->data['has_status'] = [];
-      $status_keys = [];
-      foreach ($this->data['messages'] as $msg)
-      {
-        $this->data['has_status'][$msg['class']] = True;
-        $key = $msg['key'];
-        if (isset($status_keys[$key]))
-          $status_keys[$key]++;
-        else
-          $status_keys[$key] = 1;
-      }
-#      error_log("status keys: '$status_keys'");
-      $this->data['has_status_key'] = $status_keys;
     }
 
     // And a wrapper to our has_errors() method.
@@ -107,6 +90,11 @@ trait Messages
     return $this->text;
   }
 
+  public function get_notifications ()
+  {
+    return $this->notifications;
+  }
+
   // An alias for message()
   public function msg ($name, $opts=[])
   {
@@ -116,171 +104,7 @@ trait Messages
   // Add a message to the stack.
   public function message ($name, $opts=[])
   {
-    // Get some default types.
-    if (isset($opts['type']))
-    {
-      $opts += $this->status_types[$opts['type']];
-    }
-    else
-    {
-      $opts += $this->status_types['default'];
-    }
-
-    $class = $opts['class'];
-
-    if (is_array($name))
-    { // Complex structure, we must do further processing.
-      if (isset($name['key']))
-      { // Associative array format.
-        if (isset($name['args']))
-        {
-          $opts['reps'] = $name['args'];
-        }
-        elseif (isset($name['vars']))
-        {
-          $opts['vars'] = $name['vars'];
-        }
-        $name = $name['key'];
-      }
-      elseif (isset($name[0]))
-      {
-        if (count($name) > 1)
-        {
-          $opts['reps'] = array_slice($name, 1);
-        }
-        $name = $name[0];
-      }
-    }
-
-    if (!is_numeric(strpos(':', $name)) && isset($opts['prefix']))
-    {
-      $prefix = $opts['prefix'];
-    }
-    else
-    {
-      $prefix = '';
-    }
-
-    if (isset($opts['suffix']))
-    {
-      $suffix = $opts['suffix'];
-    }
-    else
-    {
-      $suffix = '';
-    }
-
-    $text = $this->text->getStr($prefix.$name.$suffix, $opts);
-
-    if (isset($opts['prefix']))
-    {
-      $text = str_replace($opts['prefix'], '', $text);
-    }
-    if (isset($opts['suffix']))
-    {
-      $text = str_replace($opts['suffix'], '', $text);
-    }
-
-    $key = preg_replace('/\s+/', '_', $name);
-
-    $message = ['key'=>$key, 'name'=>$name, 'class'=>$class, 'text'=>$text];
-
-    if (isset($opts['title_suffix']))
-    {
-      $tsuffix = $opts['title_suffix'];
-      $topts = isset($opts['title_opts']) ? $opts['title_opts'] : $opts;
-      $title = $this->text->getStr($name.$tsuffix, $topts);
-      if ($title != $name.$tsuffix)
-        $message['title'] = $title;
-    }
-
-    if (isset($opts['icon']))
-    {
-      $message['icon'] = $opts['icon'];
-    }
-
-    if (isset($opts['msg_opts']))
-    {
-      $msgopts = $opts['msg_opts'];
-      foreach ($msgopts as $mkey => $mval)
-      {
-        $message[$mkey] = $mval;
-      }
-    }
-
-    // Handle 
-    if (isset($opts['actions']))
-    {
-      $actions = array();
-      foreach ($opts['actions'] as $aid => $adef)
-      {
-        if (is_array($adef))
-          $action = $adef;
-        else
-          $action = array();
-
-        if (!isset($action['name']))
-        {
-          if (is_numeric($aid) && is_string($adef))
-            $action['name'] = $adef;
-          elseif (is_string($aid))
-            $action['name'] = $aid;
-          else
-            throw new \Exception("Status action requires a name.");
-        }
-
-        if (isset($action['ns']))
-          $ns = $action['ns'];
-        else
-          $ns = 'action.';
-
-        $action['text'] = $this->text->getStr($ns.$action['name'], $action);
-
-        if (!isset($action['type']))
-          $action['type'] = $this->status_action_type; 
-
-        $actions[] = $action;
-      }
-      $message['actions'] = $actions;
-    }
-
-    if (isset($opts['session']) && $opts['session'])
-    {
-      $nano = \Nano\get_instance();
-      if (isset($nano->sess->messages))
-      {
-        $messages = $nano->sess->messages;
-      }
-      else
-      {
-        $messages = array();
-      }
-      $messages[] = $message;
-      $nano->sess->messages = $messages;
-    }
-    else
-    {
-      if (!isset($this->data['messages']))
-      {
-        $this->data['messages'] = array();
-      }
-      $this->data['messages'][] = $message;
-      if (!isset($this->data['has_status']))
-      {
-        $this->data['has_status'] = array();
-      }
-      $this->data['has_status'][$message['class']] = True;
-      $key = $message['key'];
-      if (isset($this->data['has_status_key']))
-        $status_keys = $this->data['has_status_key'];
-      else
-        $status_keys = [];
-      if (isset($status_keys[$key]))
-        $status_keys[$key]++;
-      else
-        $status_keys[$key] = 1;
-      $this->data['has_status_key'] = $status_keys;
-    }
+    return $this->notifications->addMessage($name, $opts);
   }
 
   /**
@@ -289,11 +113,7 @@ trait Messages
    */
   public function store_messages ()
   {
-    if (isset($this->data['messages']) && is_array($this->data['messages']))
-    {
-      $nano = \Nano\get_instance();
-      $nano->sess->messages = $this->data['messages'];
-    }
+    $this->notifications->store();
   }
 
   // Redirect to another page, and show a message.
@@ -370,15 +190,7 @@ trait Messages
   // Check to see if we have any of a certain class of status  messages.
   public function has_status ($type)
   {
-    if (isset($this->data['has_status']))
-    {
-      $has = $this->data['has_status'];
-      if (isset($has[$type]))
-      {
-        return $has[$type];
-      }
-    }
-    return False;
+    return $this->notifications->hasStatus($type);
   }
 
   // Wrapper for the above checking for errors.
@@ -393,7 +205,15 @@ trait Messages
    */
   public function add_status_json ($messages)
   {
-    $this->add_json('status_messages', $this->text->strArray($messages));
+    $msgArray = $this->text->strArray($messages);
+    if (isset($this->data['json'], $this->data['json']['status_messages']))
+    {
+      $this->data['json']['status_messages'] += $msgArray;
+    }
+    else
+    {
+      $this->add_json('status_messages', $msgArray);
+    }
   }
 
   /**
@@ -407,9 +227,6 @@ trait Messages
    *       echo $html->json($json_name, $json_data);
    * ?>
    *
-   * The above assumes you're using the Messages trait, which should be loaded
-   * after this one, and includes the $html template helper. You could also
-   * choose to build the JSON fields manually, but the helper is simpler.
    */
   public function add_json ($name, $data)
   {
