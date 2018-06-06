@@ -199,6 +199,18 @@ trait Messages
     return $this->has_status('error');
   }
 
+  public function add_notification_messages ()
+  {
+    $codes = [];
+    $msgs = $this->notifications->getMessages();
+    foreach ($msgs as $msg)
+    {
+      $msgid = $msg->getMsgId();
+      $codes[] = $msgid;
+    }
+    $this->add_status_json($codes);
+  }
+
   /**
    * Add a 'status_messages' JSON element.
    * Pass it a list of messages to include in the JSON.

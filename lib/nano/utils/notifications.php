@@ -70,6 +70,7 @@ class Notifications
     if (isset($opts['type']))
     {
       $opts += $this->status_types[$opts['type']];
+      unset($opts['type']);
     }
     else
     {
@@ -165,9 +166,9 @@ class Notification extends \Nano\Data\Arrayish
   protected $newconst = true;
 
   /**
-   * Get the rendered message text.
+   * Get message id
    */
-  public function getText ()
+  public function getMsgId ()
   {
     $name = $this->name;
     $opts = $this->opts;
@@ -190,7 +191,18 @@ class Notification extends \Nano\Data\Arrayish
       $suffix = '';
     }
 
-    $text = $this->parent->text->getStr($prefix.$name.$suffix, $opts);
+    return $prefix.$name.$suffix;
+  }
+
+  /**
+   * Get the rendered message text.
+   */
+  public function getText ()
+  {
+    $opts = $this->opts;
+    $msgid = $this->getMsgId();
+
+    $text = $this->parent->text->getStr($msgid, $opts);
 
     if (isset($opts['prefix']))
     {
