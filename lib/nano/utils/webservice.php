@@ -32,7 +32,7 @@ class WebService
    *
    *  'service'   Get service options from $nano->conf->services[$service].
    *  'url'       The base URL requests are sent to.
-   *  'type'      The content type (defaults to 'application/json'.)
+   *  'type'      The content type (defaults to 'json'.)
    *
    * If opts are omitted, but we have a $this->servicename set, that will
    * be used as if a 'service' option was passed.
@@ -297,7 +297,10 @@ class WebService
    */
   public function __call ($method, $arguments)
   {
-    $data = $arguments[0]; // Pass the data as the first parameter.
+    if (isset($arguments[0]))
+      $data = $arguments[0]; // Pass the data as the first parameter.
+    else
+      $data = [];
     return $this->send_request($method, $data);
   }
 
