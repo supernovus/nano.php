@@ -55,6 +55,29 @@ class Swift
     if (isset($opts['to']))
       $this->message->setTo($opts['to']);
 
+    if (is_array($message))
+    {
+      $html = $message[0];
+      $text = $message[1];
+      $this->message->setBody($html, 'text/html');
+      $this->message->addPart($text, 'text/plain');
+    }
+    elseif (is_string($message))
+    {
+      if (substr($message, 0, 1) === '<')
+      {
+        $this->message->setBody($message, 'text/html');
+      }
+      else
+      {
+        $this->message->setBody($message, 'text/plain');
+      }
+    }
+    else
+    {
+      throw new \Exception("Unsupported message format");
+    }
+
     $this->message->setBody($message);
     return $this->mailer->send($this->message, $this->parent->failures);
   }
