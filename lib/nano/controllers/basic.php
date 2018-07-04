@@ -364,6 +364,13 @@ abstract class Basic
   {
     $nano = \Nano\get_instance();
     $nano->pragmas['xml no-cache'];
+
+    $fancy = isset($opts['fancy']) 
+           ? (bool)$opts['fancy'] 
+           : isset($opts['reformat'])
+           ? (bool)$opts['reformat']
+           : false;
+
     if (is_string($data))
     { // Passthrough.
       $xml = $data;
@@ -371,12 +378,6 @@ abstract class Basic
     elseif (is_object($data))
     {
       $method = $this->to_xml_method;
-
-      $fancy = isset($opts['fancy']) 
-             ? (bool)$opts['fancy'] 
-             : isset($opts['reformat'])
-             ? (bool)$opts['reformat']
-             : false;
 
       if ($data instanceof \SimpleXMLElement)
         $xml = $data->asXML();

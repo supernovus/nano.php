@@ -67,6 +67,8 @@ class Item extends \Nano\DB\Child
 
       if (isset($this->new_query_fields))
         $opts['cols'] = $this->new_query_fields;
+      elseif (isset($this->parent->get_fields))
+        $opts['cols'] = $this->parent->get_fields;
 
       // Insert the row and get the new primary key.
       $newpk = $this->parent->insert($data, $opts);
