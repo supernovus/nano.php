@@ -82,7 +82,7 @@ class Debug
       }
       elseif (is_numeric($checkvalue) && is_numeric($debugvalue))
       { // Both checkvalue and debugvalue are numeric.
-        return ($checkvalue >= $debugvalue);
+        return ($debugvalue >= $checkvalue);
       }
       elseif (isset($checkvalue))
       { // There's a checkvalue, but it's not the same data type.
@@ -121,8 +121,10 @@ class Debug
   public static function parseException ($exception, $errorlog=false)
   {
     $nano = \Nano\get_instance();
+    $classname = get_class($exception);
     $log =
     [
+      'classname' => $classname,
       'message' => $exception->getMessage(),
       'code'    => $exception->getCode(),
       'file'    => $exception->getFile(),
