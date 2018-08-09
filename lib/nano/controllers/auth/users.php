@@ -107,6 +107,10 @@ trait Users
         $regengerate = True; 
         $usertoken = $uinfo->email;
       }
+      elseif (!$auth->hash_is_current($userhash))
+      { // We're not using the current hashing algorithm.
+        $regenerate = True;
+      }
 
       if ($auth->login($userid, $pass, $userhash, $usertoken, $tval))
       {

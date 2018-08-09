@@ -20,7 +20,7 @@ trait User
     $tfield = $this->parent->token_field();
     $hfield = $this->parent->hash_field();
     $this->$tfield = hash($hash, time());
-    $this->$hfield = $auth->generate_hash($this->token, $newpass);
+    $this->$hfield = $auth->generate_hash($this->$tfield, $newpass);
     if ($autosave) $this->save();
   }
 

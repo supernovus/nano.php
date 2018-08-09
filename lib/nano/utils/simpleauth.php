@@ -21,7 +21,12 @@ class SimpleAuth
 {
   public $log = False;            // Enable logging?
 
-  protected $hashType = 'sha256'; // Default hash algorithm.
+  // If this is set to null, we will default to using hash() instead.
+  protected $passwordHash = PASSWORD_DEFAULT;
+  protected $pwHashOpts   = [];   // Options for password_hash().
+  protected $pwHashHeader = '$';  // Hashes from password_hash() start with.
+
+  protected $hashType = 'sha256'; // Default hash algorithm if using hash().
 
   protected $userid;              // The currently logged in user.
 
@@ -87,11 +92,17 @@ class SimpleAuth
 
   // Generate a password hash from a username and password.
   // If you override this, it will break compatibility with the
-  // default implementation. The default version is designed to
-  // be able to be called as a object or class method.
-  public function generate_hash ($token, $pass)
+  // default implementation.
+  public function generate_hash ($token, $pass, $forceHash=false)
   {
-    return hash($this->hashType, trim($token.$pass));
+    if ($forceHash || !isset($this->passwordHash))
+    {
+      return hash($this->hashType, trim($token.$pass));
+    }
+    else
+    {
+      return password_hash(trim($token.$pass), $this->passwordHash);
+    }
   }
 
   // Returns if a user is logged in or not.
@@ -131,12 +142,19 @@ class SimpleAuth
     }
 
     if ($this->check_credentials($usertoken, $pass, $userhash))
-    { $this->userid = $userid;
+    { 
+      $this->setUser($userid);
       if ($this->log) error_log("User '$userid' logged in.");
-      $this->update();
       return true;
     }
     return false;
+  }
+
+  // Set the user id that's currently logged in.
+  public function setUser ($userid)
+  {
+    $this->userid = $userid;
+    $this->update();
   }
 
   // Process a logout request.
@@ -159,8 +177,34 @@ class SimpleAuth
 
   public function check_credentials ($usertoken, $pass, $userhash)
   {
-    $checkhash = $this->generate_hash($usertoken, $pass);
-    return (strcmp($userhash, $checkhash) == 0);
+    if ($this->is_password_hash($userhash))
+    { // The hash is in the new format.
+      return password_verify(trim($usertoken.$pass), $userhash);
+    }
+    else
+    { // Use the old hash algorithm.
+      $checkhash = $this->generate_hash($usertoken, $pass, true);
+      return (strcmp($userhash, $checkhash) == 0);
+    }
+  }
+
+  public function is_password_hash ($userhash)
+  {
+    $pwheader = $this->pwHashHeader;
+    return (substr($userhash, 0, strlen($pwheader)) == $pwheader);
+  }
+
+  public function hash_is_current ($userhash)
+  {
+    $ispw = $this->is_password_hash($userhash);
+    if (isset($this->passwordHash))
+    { // We want a password_hash() generated hash.
+      return $ispw;
+    }
+    else
+    { // We want a hash() generated hash.
+      return (!$ispw);
+    }
   }
 
 }
