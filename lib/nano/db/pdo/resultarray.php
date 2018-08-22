@@ -51,7 +51,7 @@ class ResultArray implements \ArrayAccess, \Countable, \Iterator
     }
 
     if (isset($opts['pk']))
-      $this->primary_ley = $opts['pk'];
+      $this->primary_key = $opts['pk'];
     if (isset($pk))
       $this->primary_key = $pk;
 
