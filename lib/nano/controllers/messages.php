@@ -23,7 +23,7 @@ trait Messages
 
   protected function __init_messages_controller ($opts)
   {
-    error_log("__init_messages_controller()");
+#    error_log("__init_messages_controller()");
     $nano = \Nano\get_instance();
 
     if (!isset($this->lang))
