@@ -18,12 +18,18 @@ function huc ($code)
   return html_entity_decode("&#x$code;", ENT_NOQUOTES, 'UTF-8');
 }
 
-function pad ($str, $len, $align=ALIGN_LEFT, $trunc='~', $pad=' ')
+function pad ($str, $len, $start=0, $align=ALIGN_LEFT, $trunc='', $pad=' ')
 {
-  if (strlen($str) > $len)
+  $slen = strlen($str);
+  if ($start >= $slen)
+  {
+    return str_pad('', $len, $pad, $align);
+  }
+  elseif ($slen > $len)
   {
     $tlen = $len - strlen($trunc);
-    return substr($str, 0, $tlen).$trunc;
+    $sstr = substr($str, $start, $tlen).$trunc;
+    return str_pad($sstr, $len, $pad, $align);
   }
   else
   {
@@ -41,6 +47,8 @@ class Table
 
   public $headerColor = "\033[1;38m";
   public $normalColor = "\e[0m";
+
+  public $multiline = false;
 
   protected $tl = '2554';
   protected $tr = '2557';
@@ -63,33 +71,18 @@ class Table
 
   public function __construct ($opts=[])
   {
-    if (isset($opts['trunc']))
+    $optfilter = ['columns'];
+    $optmap = array_keys(get_object_vars($this));
+    foreach ($optmap as $opt)
     {
-      $this->trunc = $opts['trunc'];
-    }
-    if (isset($opts['pad']))
-    {
-      $this->pad = $opts['pad'];
-    }
-    if (isset($opts['deflen']))
-    {
-      $this->deflen = $opts['deflen'];
-    }
-    if (isset($opts['term']))
-    {
-      $this->term = $opts['term'];
-    }
-    if (isset($opts['addline']))
-    {
-      $this->addline = $opts['addline'];
-    }
-    if (isset($opts['headerColor']))
-    {
-      $this->headerColor = $opts['headerColor'];
-    }
-    if (isset($opts['normalColor']))
-    {
-      $this->normalColor = $opts['normalColor'];
+      if (in_array($opt, $optfilter))
+      { // Skip filtered options.
+        continue;
+      }
+      if (isset($opts[$opt]))
+      { // Redefining a property via the constructor.
+        $this->$opt = $opts[$opt];
+      }
     }
     if (isset($opts['columns']) && is_array($opts['columns']))
     {
@@ -187,7 +180,7 @@ class Table
   public function addRow (Array $def, $opts=[])
   {
     $addLine = isset($opts['addline']) ? $opts['addline'] : $this->addline;
-    $color   = isset($opts['color'])   ? $opts['color']   : null;
+    $color = isset($opts['color']) ? $opts['color'] : null;
 
     $cc = count($this->columns);
     $lc = $cc-1;
@@ -204,6 +197,36 @@ class Table
     $l = huc($this->vl);
     $h = huc($this->vh);
 
+    if ($this->multiline)
+    { // First we need to figure out how many pages.
+      $pageCount = 1;
+      foreach ($this->columns as $c => $col)
+      {
+        $colCount = $col->pagecount($def[$c]);
+        if ($colCount > $pageCount)
+        {
+          $pageCount = $colCount;
+        }
+      }
+      // Okay, now for each page, let's draw a row line.
+      for ($page=1; $page<=$pageCount; $page++)
+      {
+        $this->addRowLine($row, $def, $page, $color, $l, $h, $lc, false);
+      }
+    }
+    else
+    { // Single-line rows are easy.
+      $this->addRowLine($row, $def, 1, $color, $l, $h, $lc, true);
+    }
+
+    if ($addLine & LINE_AFTER)
+      $row .= $this->addLine();
+
+    return $row;
+  }
+
+  protected function addRowLine (&$row, $def, $page, $color, $l, $h, $lc, $tr)
+  {
     foreach ($this->columns as $c => $col)
     {
       if ($c == 0)
@@ -217,7 +240,7 @@ class Table
 
       if (isset($color))
         $row .= $color;
-      $row .= ' ' . $col->get($def[$c]) . ' ';
+      $row .= ' ' . $col->get($def[$c], $page, $tr) . ' ';
       if (isset($color))
         $row .= $this->normalColor;
 
@@ -228,11 +251,6 @@ class Table
     }
 
     $row .= $this->term;
-
-    if ($addLine & LINE_AFTER)
-      $row .= $this->addLine();
-
-    return $row;
   }
 }
 
@@ -255,8 +273,15 @@ class Column
     }
   }
 
-  public function get ($text)
+  public function pagecount ($text)
   {
-    return pad($text, $this->length, $this->align, $this->table->trunc, $this->table->pad);
+    return ceil(strlen($text) / $this->length);
+  }
+
+  public function get ($text, $page=1, $addTrunc=true)
+  {
+    $start = ($this->length * ($page - 1));
+    $trunc = $addTrunc ? $this->table->trunc : '';
+    return pad($text, $this->length, $start, $this->align, $trunc, $this->table->pad);
   }
 }
