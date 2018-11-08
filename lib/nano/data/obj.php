@@ -41,7 +41,7 @@ namespace Nano\Data;
  * detect_string_type() methods is easy, so go crazy!
  *
  */
-abstract class Object implements \JsonSerializable
+abstract class Obj implements \JsonSerializable
 {
   use \Nano\Meta\ClassInfo, JSON;
 

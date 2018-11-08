@@ -8,7 +8,7 @@
 
 namespace Nano\Data;
 
-abstract class Arrayish extends Object
+abstract class Arrayish extends Obj
                         implements \Iterator, \ArrayAccess, \Countable
 {
 

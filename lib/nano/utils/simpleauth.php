@@ -51,6 +51,16 @@ class SimpleAuth
       $this->hashType = $opts['hash'];
     }
 
+    if (isset($opts['passwordHash']))
+    {
+      $this->passwordHash = $opts['passwordHash'];
+    }
+
+    if (isset($opts['passwordHashOpts']))
+    {
+      $this->pwHashOpts = $opts['passwordHashOpts'];
+    }
+
     // To disable auto-store, pass 'store' => False
     // to the constructor/getInstance() options.
     if (!isset($opts['store']) || $opts['store'])
