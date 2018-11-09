@@ -284,8 +284,8 @@ class Worksheet
         continue;
       }
       foreach ($row as $c => $col)
-      {
-        $this->worksheet->setCellValueByColumnAndRow($c, $r, $col);
+      { // $c and $r are 0-based indexes, but the method needs 1-based.
+        $this->worksheet->setCellValueByColumnAndRow($c+1, $r+1, $col);
       }
     }
   }
