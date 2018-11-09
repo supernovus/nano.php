@@ -8,6 +8,8 @@
 
 namespace Nano\Plugins;
 
+use finfo;
+
 class URL
 {
   const FORMAT_JSON   = 0;
