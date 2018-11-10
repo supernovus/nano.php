@@ -105,7 +105,10 @@ class Spreadsheet
     // The following options are only used if $zip is true.
     $close = isset($csvopts['close']) ? $csvopts['close'] : true;
     $retzip = isset($csvopts['returnZip']) ? $csvopts['returnZip'] : !$close;
-    $delcsv = isset($csvopts['delete'])? $csvopts['delete'] : true;
+    if (!$close)
+      $delcsv = false;
+    else
+      $delcsv = isset($csvopts['delete'])? $csvopts['delete'] : true;
 
     if (isset($csvopts['delimiter']))
     {
@@ -137,6 +140,7 @@ class Spreadsheet
         $writer->setSheetIndex($w);
         $subname = $ws->getIdentifier() . '.csv';
         $subpath = $filename.'_'.$subname;
+        $compiled[$subname] = $subpath;
         $writer->save($subpath);
       }
     }
@@ -162,24 +166,31 @@ class Spreadsheet
         foreach ($compiled as $subname => $subpath)
         {
           $zipfile->addFile($subpath, $subname);
-          if ($delcsv)
-          {
-            unlink($subpath);
-          }
         }
       }
       else
       { // Adding a single file.
         $zipfile->addFile($subpath, $subname);
-        if ($delcsv)
-        {
-          unlink($subpath);
-        }
       }
 
       if ($close)
       { // Close the zip file.
         $zipfile->close();
+      }
+
+      if ($delcsv)
+      {
+        if ($all)
+        {
+          foreach ($compiled as $subname => $subpath)
+          {
+            unlink($subpath);
+          }
+        }
+        else
+        {
+          unlink($subpath);
+        }
       }
     }
 
