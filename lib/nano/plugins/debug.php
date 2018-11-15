@@ -59,6 +59,20 @@ class Debug
     }  
   }
 
+  public static function get ($flag, $default=null)
+  {
+    $nano = \Nano\get_instance();
+    $debugval = $nano["debug.$flag"];
+    if (isset($debugval))
+    {
+      return $debugval;
+    }
+    else
+    {
+      return $default;
+    }
+  }
+
   /**
    * Is a Nano debugging flag set?
    *

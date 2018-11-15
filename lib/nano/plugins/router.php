@@ -141,6 +141,22 @@ class Router
   }
 
   /**
+   * Set the debugging information from the Nano Debug plugin.
+   */
+  public function useNanoDebug ()
+  {
+    $nano = \Nano\get_instance();
+    $router_debug =
+    [
+      'init'     => $nano->debug->get('router.init',     0),
+      'matching' => $nano->debug->get('router.matching', 0),
+      'routing'  => $nano->debug->get('router.routing',  0),
+      'building' => $nano->debug->get('router.building', 0),
+    ];
+    $this->debug = $router_debug;
+  }
+
+  /**
    * Set the base_uri.
    */
   public function base_uri ($newval=Null)
