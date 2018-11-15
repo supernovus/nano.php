@@ -10,8 +10,8 @@ class Permissions
   /**
    * Convert a permission string into an integer value.
    *
-   * @param str $string     The permission string we are parsing.
-   * @param int $inmode     Initial mode value (default: 0).
+   * @param str $string      The permission string we are parsing.
+   * @param int|str $inmode  Initial mode value (default: 0).
    *
    * @return int   The integer mode value.
    *
@@ -119,7 +119,7 @@ class Permissions
    * Convert a UGOA string into a 10 character permissions string.
    *
    * @param str $string     The UGOA string we are parsing.
-   * @param int $inmode     The initial permissions value (default: 0).
+   * @param int|str $inmode The initial permissions value (default: 0).
    * @param bool $isDir     Is this a directory? (Default: false).
    *
    * @return int  The modified permissions value.
@@ -131,7 +131,19 @@ class Permissions
    */
   static function convert_mod ($instring, $inmode=0, $isDir=false)
   {
-    $outstring = static::encode($inmode, $isDir);
+    if (is_int($inmode))
+    {
+      $outstring = static::encode($inmode, $isDir);
+    }
+    elseif (is_string($inmode) && strlen($inmode) == 10)
+    {
+      $outstring = $inmode;
+    }
+    else
+    {
+      $outstring = ($isDir ? 'd' : '-').'---------';
+    }
+
     $psets = explode(',', $instring);
     foreach ($psets as $pset)
     {
