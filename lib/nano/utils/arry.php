@@ -192,6 +192,15 @@ class Arry
     return $return; 
   }
 
+  public static function is_assoc ($array)
+  {
+    if (!is_array($array) || empty($array))
+    {
+      return false;
+    }
+    return array_keys($array) !== range(0, count($array)-1);
+  }
+
   // TODO: add permutations and other useful helpers.
 
 }

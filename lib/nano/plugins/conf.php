@@ -2,6 +2,7 @@
 
 namespace Nano\Plugins;
 use Nano\Exception;
+use Nano\Utils\Arry;
 
 /**
  * Nano Configuration Object
@@ -56,6 +57,18 @@ class Conf extends \Nano\Data\Arrayish
   protected $_file_type_include_pos = 6; // Keep the first x file type exts.
 
   public $strict_mode = false;  // If true, we die on failure.
+
+  // The following are used in getPath() calls.
+  public $path_sep = '/'; 
+  public $parent_ref = '../'; 
+  public $root_ref = '//';
+
+  // The maximum depth we'll search for '@use' statements.
+  // You'll generally want this to be higher than 0 if using '@use' statements.
+  public $max_use_depth = 0;
+
+  // We can create short aliases to traits.
+  protected $known_traits = [];
 
   public function dir ()
   {
@@ -118,7 +131,13 @@ class Conf extends \Nano\Data\Arrayish
     elseif ($type == 'dir')
     { // We create another config object, representing the nested
       // data structure.
-      $diropts = array('dir'=>$filename);
+      $diropts = 
+      [
+        'parent'   => $this,
+        'useDepth' => $this->max_use_depth,
+        'strict'   => $this->strict,
+        'dir'      => $filename,
+      ];
       if (file_exists("$filename/autoload"))
       {
         $diropts['scan'] = True;
@@ -126,7 +145,7 @@ class Conf extends \Nano\Data\Arrayish
       return new $this($diropts);
     }
     else
-    { // Assume the type is handled by the Data Object library.q
+    { // Assume the type is handled by the Data Object library.
 #      error_log("Going to load '$filename' as '$type'");
       $text = file_get_contents($filename);
 #      error_log("Text: $text");
@@ -143,9 +162,19 @@ class Conf extends \Nano\Data\Arrayish
    */
   public function __construct ($opts=array())
   {
+    if (isset($opts['parent']))
+    {
+      $this->parent = $opts['parent'];
+    }
+
     if (isset($opts['strict']))
     {
       $this->strict_mode = $opts['strict'];
+    }
+
+    if (isset($opts['useDepth']))
+    {
+      $this->max_use_depth = $opts['useDepth'];
     }
 
     if (isset($opts['scan']))
@@ -224,14 +253,14 @@ class Conf extends \Nano\Data\Arrayish
 
   /**
    * A wrapper for load_file() that supports chaining configuration
-   * files using a special include statement.
+   * files using a special '@include' statement.
    */
   protected function load_file_chain ($filename, $type=Null)
   {
     $data = $this->load_file($filename, $type);
 
     if (is_array($data) && isset($data['@include']))
-    {
+    { // Include more files.
       $infiles = $data['@include'];
       if (!is_array($infiles))
       {
@@ -242,7 +271,7 @@ class Conf extends \Nano\Data\Arrayish
       foreach ($infiles as $infile)
       {
         $include = Null;
-        if (isset($this->autoload_dir) && strpos($infile, '.') === FALSE)
+        if (isset($this->autoload_dir) && !file_exists($infile))
         {
           $exts = $this->_file_type_extensions;
           $pos  = $this->_file_type_include_pos;
@@ -268,18 +297,126 @@ class Conf extends \Nano\Data\Arrayish
         }
       }
     }
+
+    if (is_array($data) && isset($data['@useDepth']))
+    { // A top-level configuration option to change '@use' depth.
+      $this->max_use_depth = intval($data['@useDepth']);
+      unset($data['@useDepth']);
+    }
+
+    if (is_array($data) && isset($data['@traits']) && Arry::is_assoc($data['@traits']))
+    {
+      $this->known_traits = $data['@traits'];
+    }
+
     return $data;
+  }
+
+  /**
+   * Check for "@use" statements, and parse them.
+   */
+  protected function parse_use (&$data, $level=0)
+  {
+    if (isset($data['@use']))
+    { // Traits, allow you to reuse common sets of properties.
+      $traits = $data['@use'];
+#      error_log("parsing '@use' ($level) statement: ".json_encode($traits));
+      if (!is_array($traits))
+      {
+        $traits = [$traits];
+      }
+      unset($data['@use']);
+
+      $pathopts = [];
+
+      $overrides =
+      [
+        '@pathSeparator'   => 'pathSep',
+        '@parentReference' => 'parentRef',
+        '@rootReference'   => 'rootRef',
+      ];
+      foreach ($overrides as $dname => $oname)
+      {
+        if (isset($data[$dname]))
+        {
+          $pathopts[$oname] = $data[$dname];
+          unset($data[$dname]);
+        }
+      }
+
+      foreach ($traits as $trait)
+      {
+        if (isset($this->known_traits[$trait]))
+        { // A registered trait, look it up.
+          $tname = $this->known_traits[$trait];
+          if (is_string($tname))
+          {
+            $tdata = $this->getPath($tname, $pathopts);
+            $this->known_traits[$trait] = $tdata;
+          }
+          elseif (is_array($tname))
+          {
+            $tdata = $tname;
+          }
+        }
+        else
+        { // Look it up directly.
+          $tdata = $this->getPath($trait, $pathopts);
+        }
+#        error_log("Looked up '$trait' and found: ".json_encode($tdata));
+        if (isset($tdata))
+        {
+          if (Arry::is_assoc($tdata))
+          { // An associative array, let's add it.
+            $data += $tdata;
+          }
+          elseif (is_object($tdata) && $tdata instanceof Conf)
+          { // Another Conf object, recurse it's data.
+            foreach ($tdata as $tkey => $tval)
+            {
+              if (!isset($data[$tkey]))
+              {
+                $data[$tkey] = $tval;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // If we're on the final recurse depth, we're done.
+    if ($level == $this->max_use_depth) return;
+
+    // Increment the level.
+    $level++;
+
+    // Recurse further down the tree.
+    $keys = array_keys($data);
+#    error_log("Going to scan ".json_encode($keys)." for '@use' statements.");
+    foreach ($keys as $dkey)
+    {
+      $dval = &$data[$dkey];
+#      error_log("Checking '$dkey' for '@use' statements.");
+      if (Arry::is_assoc($dval))
+      { // Call parse_use on the nested data structure.
+        $this->parse_use($dval, $level);
+      }
+    }
   }
 
   /**
    * Load the data from an external file.
    *
-   * @params string $filenname  The file to load data from.
-   * @params string $type       If set, specifies the file type
+   * @param string $filenname  The file to load data from.
+   * @param string $type       If set, specifies the file type
    */
   public function loadFile ($filename, $type=Null)
   {
     $this->data = $this->load_file_chain($filename, $type);
+    if (Arry::is_assoc($this->data))
+    {
+      $this->parse_use($this->data);
+    }
   }
 
   /**
@@ -295,6 +432,10 @@ class Conf extends \Nano\Data\Arrayish
     $data = $this->load_file_chain($filename, $type);
 #    error_log("Loaded: ".json_encode($data));
     $this->data[$id] = $data;
+    if (Arry::is_assoc($data))
+    {
+      $this->parse_use($this->data[$id]);
+    }
   }
 
   /**
@@ -417,11 +558,23 @@ class Conf extends \Nano\Data\Arrayish
 
   /**
    * Get a section of data based on a path string.
+   *
+   * @param str $path    The path we are retreiving.
+   * @param array $opts  Options to pass to parse_paths().
    */
-  public function getPath ($path)
+  public function getPath ($path, $opts=[])
   {
-    $paths = explode('/', trim($path, '/'));
-    $section = $this;
+    if (isset($opts, $opts['paths'], $opts['section']))
+    { // It's the already parsed pathSpec.
+      $pathSpec = $opts;
+    }
+    else
+    { // Parse the options.
+      $pathSpec = $this->parse_paths($path, $opts);
+    }
+
+    $paths = $pathSpec['paths'];
+    $section = $pathSpec['section'];
     foreach ($paths as $path)
     {
       if (isset($section[$path]))
@@ -436,16 +589,85 @@ class Conf extends \Nano\Data\Arrayish
     return $section;
   }
 
+  protected function parse_paths ($path, $opts=[])
+  {
+    $psep = isset($opts['pathSep'])   ? $opts['pathSep']   : $this->path_sep;
+    $pref = isset($opts['parentRef']) ? $opts['parentRef'] : $this->parent_ref;
+    $rref = isset($opts['rootRef'])   ? $opts['rootRef']   : $this->root_ref;
+    $psc  = strlen($psep);
+    $prc  = strlen($pref);
+    $rrc  = strlen($rref);
+
+    $hasParent = (isset($this->parent) && $this->parent instanceof Conf);
+
+    $section = $this;
+
+    if (substr($path, 0, $rrc) == $rref)
+    { // Root path.
+      $path = substr($path, $rrc);
+      if ($hasParent)
+      { // Find the parent Conf object.
+        while($parent = $section->parent())
+        {
+          if ($parent instanceof Conf)
+          { 
+            $section = $parent;
+          }
+          else
+          {
+            break;
+          }
+        }
+      }
+    }
+    elseif (substr($path, 0, $prc) == $pref)
+    { // A parent path, there might be multiple.
+      while (substr($path, 0, $prc) == $pref)
+      {
+        $path = substr($path, $prc);
+        if ($hasParent)
+        {
+          $parent = $section->parent();
+          if (isset($parent) && $parent instanceof Conf)
+          {
+            $section = $parent;
+          }
+          else
+          {
+            $hasParent = false;
+          }
+        }
+      }
+    }
+
+    $paths = explode($psep, trim($path, $psep));
+
+    $retval =
+    [
+      'paths'        => $paths,
+      'section'      => $section,
+      'pathSep'      => $psep,
+      'parentRef'    => $pref,
+      'rootRef'      => $rref,
+      'pathSepLen'   => $psc,
+      'parentRefLen' => $prc,
+      'rootRefLen'   => $rrc,
+    ];
+    return $retval;
+  }
+
   /**
    * Get a section of data based on a path string, and convert it
-   * to a PHP array and/or string value.
+   * to a PHP array and/or scalar value.
    *
+   * @param str $path    The path we are retreiving.
    * @param bool $full   If true, return a full array, otherwise return keys.
+   * @param array $opts  Options to pass to getPath().
    *
    */
-  public function getPathValues ($path, $full=False)
+  public function getPathValues ($path, $full=False, $opts=[])
   {
-    $section = $this->getPath($path);
+    $section = $this->getPath($path, $opts);
     if ($full)
     {
       if (is_object($section))
@@ -486,7 +708,7 @@ class Conf extends \Nano\Data\Arrayish
       {
         $keys = array_keys($section);
       }
-      elseif (is_string($section) || is_numeric($section))
+      elseif (is_scalar($section))
       {
         return $section;
       }

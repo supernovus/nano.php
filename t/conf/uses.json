@@ -1,0 +1,39 @@
+{
+  "@useDepth": 1,
+  "@traits":
+  {
+    "first":
+    {
+      "name": "First",
+      "foo": "Bar",
+      "bar": "Foo"
+    },
+    "second": "uses/@moreTraits/second"
+  },
+  "@moreTraits":
+  {
+    "second":
+    {
+      "name": "Second",
+      "foo": "Baz",
+      "baz": "Doh"
+    },
+    "third":
+    {
+      "note": "Unlisted"
+    }
+  },
+  "one":
+  {
+    "@use": "first"
+  },
+  "two":
+  {
+    "@use": "second"
+  },
+  "three":
+  {
+    "@use": ["first","second","/uses/@moreTraits/third"],
+    "name": "Third"
+  }
+}

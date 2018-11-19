@@ -1,0 +1,5 @@
+{
+  "name": "Include third child",
+  "foo": "this won't be inlcuded",
+  "note": "There is no second."
+}
