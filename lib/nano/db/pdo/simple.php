@@ -192,8 +192,14 @@ class Simple
    */
   protected function handle_db_error ($einfo, $context, $name='database')
   {
-    error_log("A $name error occurred: " . json_encode($einfo));
-    error_log("  -- " . json_encode($context));
+    $fullinfo = json_encode(
+    [
+      'einfo' => $einfo,
+      'context' => $context,
+    ], JSON_PRETTY_PRINT);
+    throw new \Exception("A $name error occurred: $fullinfo");
+#    error_log("A $name error occurred: " . json_encode($einfo));
+#    error_log("  -- " . json_encode($context));
   }
 
   /**
@@ -655,10 +661,17 @@ class Simple
     if (is_object($where))
     {
       $pval = get_query_property($where, 'where');
-      if (isset($pval))
+      if (isset($pval) && is_array($pval) && count($pval) == 2 && isset($pval[0]) && isset($pval[1]))
       {
         $where = $pval[0];
         $wdata = $pval[1];
+      }
+      elseif (isset($pval) && is_string($pval))
+      {
+        $where = $pval;
+        $pval = get_query_property($query, 'whereData');
+        if (isset($pval))
+          $wdata = $pval;
       }
       else
       {

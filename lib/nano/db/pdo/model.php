@@ -159,7 +159,6 @@ abstract class Model implements \Iterator, \ArrayAccess
       $opts['data']   = $data;
       $opts['pk']     = $this->primary_key;
       $opts['table']  = $this->table;
-      $class = $this->childclass;
       $object = new $class($opts);
       return $object;
     }
