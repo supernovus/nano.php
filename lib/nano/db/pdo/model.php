@@ -86,6 +86,18 @@ abstract class Model implements \Iterator, \ArrayAccess
     $this->db->reconnect();
   }
 
+  public function toggle_strict ($toggle=null)
+  {
+    if (isset($toggle) && is_bool($toggle))
+    {
+      $this->db->strict = $toggle;
+    }
+    else
+    {
+      $this->db->strict = $this->db->strict ? false : true;
+    }
+  }
+
   /**
    * Return our table name.
    */

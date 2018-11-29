@@ -64,6 +64,11 @@ class Simple
   public $server_id;
 
   /**
+   * Should database errors log silently, or throw exceptions?
+   */
+  public $strict = false;
+
+  /**
    * The database configuration, if 'keep_config' is true.
    * It's a protected property, so only this class can use it.
    */
@@ -197,9 +202,14 @@ class Simple
       'einfo' => $einfo,
       'context' => $context,
     ], JSON_PRETTY_PRINT);
-    throw new \Exception("A $name error occurred: $fullinfo");
-#    error_log("A $name error occurred: " . json_encode($einfo));
-#    error_log("  -- " . json_encode($context));
+    if ($this->strict)
+    {
+      throw new \Exception("A $name error occurred: $fullinfo");
+    }
+    else
+    {
+      error_log("A $name error occurred: $fullinfo");
+    }
   }
 
   /**
