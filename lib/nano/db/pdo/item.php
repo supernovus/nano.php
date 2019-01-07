@@ -93,7 +93,9 @@ class Item extends \Nano\DB\Child
    */
   public function delete ()
   {
+    if (!isset($this->primary_key)) return false;
     $pk = $this->primary_key;
+    if (!isset($this->data[$pk])) return false;
     $where = [$pk => $this->data[$pk]];
     return $this->parent->delete($where);
   }

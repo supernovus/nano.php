@@ -78,7 +78,6 @@ class Swift
       throw new \Exception("Unsupported message format");
     }
 
-    $this->message->setBody($message);
     return $this->mailer->send($this->message, $this->parent->failures);
   }
 
