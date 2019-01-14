@@ -210,10 +210,10 @@ class RouterMenu
               {
                 $text = $this->parent->translate[$text];
               }
+              $item = $container->addChild($label_class, $text);
             }
-            $item = $container->addChild($label_class, $text);
+            $built = True;
           }
-          $built = True;
         }
       }
 
@@ -305,6 +305,13 @@ class RouterMenu
           {
             $link = $item->addChild('a', $name);
           }
+          if (isset($def['attrs']))
+          {
+            foreach ($def['attrs'] as $ak => $av)
+            {
+              $link->addAttribute($ak, $av);
+            }
+          }
           $link->addAttribute('href',  $url);
         }
         else
@@ -321,6 +328,13 @@ class RouterMenu
           else
           {
             $item = $container->addChild('a', $name);
+          }
+          if (isset($def['attrs']))
+          {
+            foreach ($def['attrs'] as $ak => $av)
+            {
+              $item->addAttribute($ak, $av);
+            }
           }
           $item->addAttribute('href', $url);
         }
