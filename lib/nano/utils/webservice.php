@@ -148,9 +148,16 @@ class WebService
     if (is_string($data))
     {
       if (isset($request['headers']))
-        $request['headers']['Content-Type'] = 'application/json';
+      {
+        if (!isset($request['headers']['Content-Type']))
+        {
+          $request['headers']['Content-Type'] = 'application/json';
+        }
+      }
       else
+      {
         $request['headers'] = ['Content-Type' => 'application/json'];
+      }
       $request['body'] = $data;
     }
     elseif (is_array($data))
