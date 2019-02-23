@@ -25,7 +25,7 @@ trait Resources
    *   groups:    An array of arrays, each being named groups.
    *              It is recommended to prefix groups with an identifier
    *              such as '#'.
-   *              We include '#common' and '#webapp' as example groups,
+   *              We include '#common' and '#webcore' as example groups,
    *              they depend upon the Nano.js library set.
    *   added:     An empty array, will be populated by use_resource();
    *
@@ -47,19 +47,11 @@ trait Resources
         '#common' =>
         [ // The base scripts we expect everywhere.
           'jquery', 
-          'json3', 
+//          'json3',  // modern browsers support JSON and don't need this.
           'coreutils',
           'json.jq', 
           'disabled.jq',
           'exists.jq',
-        ],
-        '#webapp' =>
-        [ // The Webapp library with Riot.js (to be removed in the future.)
-          '#common',
-          'riot-core',
-          'riot.render',
-          'modelapi',
-          'webapp',
         ],
         '#webcore' =>
         [ // A simplified web app model core. No rendering engine specified.
