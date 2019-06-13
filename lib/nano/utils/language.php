@@ -15,7 +15,16 @@ class Language
   static function accept ($langs=Null)
   {
     if (!isset($langs))
-      $lang_string = $_SERVER['HTTP_ACCEPT_LANGUAGE'];
+    {
+      if (isset($_SERVER['HTTP_ACCEPT_LANGUAGE']))
+      {
+        $lang_string = $_SERVER['HTTP_ACCEPT_LANGUAGE'];
+      }
+      else
+      {
+        return ['en'=>'1'];
+      }
+    }
 
     preg_match_all('/([a-z]{1,8}(-[a-z]{1,8})?)\s*(;\s*q\s*=\s*(1|0\.[0-9]+))?/i', $lang_string, $lang_parse);
 
@@ -25,7 +34,7 @@ class Language
 
       foreach ($langs as $lang => $val)
       {
-        if ($val === '') $langs[$lang] = 1;
+        if ($val === '') $langs[$lang] = '1';
       }
 
       arsort($langs, SORT_NUMERIC);

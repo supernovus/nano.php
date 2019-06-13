@@ -11,6 +11,9 @@ trait Resources
 {
   public $warn_on_missing_resources = true;
 
+  public $use_link_header = false;
+  public $link_header_prefix;
+
   /**
    * Resources represent external files, such as scripts, stylesheets, etc.
    * They are managed through a generic system that allows for easy future
@@ -39,6 +42,7 @@ trait Resources
   [
     'js' =>
     [
+      'as'   => 'script',
       'name' => 'scripts',
       'path' => ['scripts', 'scripts/nano', 'scripts/ext'],
       'exts' => ['.min.js', '.js'],
@@ -93,6 +97,7 @@ trait Resources
     ],
     'css' =>
     [
+      'as'     => 'style',
       'name'   => 'stylesheets',
       'path'   => ['style'],
       'exts'   => ['.min.css', '.css'],
@@ -203,6 +208,12 @@ trait Resources
         if ($this->warn_on_missing_resources)
           error_log("Could not find $type file for: '$name'.");
         return False;
+      }
+      if ($this->use_link_header)
+      {
+        $prefix = $this->link_header_prefix;
+        $astype = $this->resources[$type]['as'];
+        header("Link: <${prefix}${file}>; rel=preload; as=$astype", false);
       }
     }
 
