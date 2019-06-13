@@ -42,7 +42,22 @@ trait Messages
       // Let's load our translation table, and page title.
       $trconf = $nano->conf->translations;
       $trns   = array($name, 'common');
-      $translations = new \Nano\Utils\Translation($trconf, $trns, $this->lang);  
+      $tropts = [];
+      if (isset($this->lang))
+      {
+        $tropts['default'] = $this->lang;
+      }
+      $useaccept = $nano['use_accept_lang'];
+      if (isset($useaccept) && is_bool($useaccept))
+      {
+        $tropts['accept'] = $useaccept;
+      }
+      $fallback = $nano['fallback_lang'];
+      if (isset($fallback) && is_string($fallback))
+      {
+        $tropts['fallback'] = $fallback;
+      }
+      $translations = new \Nano\Utils\Translation($trconf, $trns, $tropts);  
     }
     $this->text = $translations;
     $this->data['text'] = $translations;

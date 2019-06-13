@@ -1,12 +1,6 @@
 <?php
 /**
- * Translation Framework
- *
- * Making handling translations easy.
- * Based on my older Translation framework, but updated for simplicity.
- * NOTE: This is not directly compatibile with the older Translation framework
- * as namespaces are placed directly within languages alongside keys.
- * Also, "inherits" becomes ".inherits" in this implementation.
+ * Translation Library
  *
  * @package Nano\Utils\Translation
  *
@@ -29,10 +23,27 @@ class Translation implements \ArrayAccess
   /**
    * @var string  The default language to use.
    *
-   * If set to true, we use Accept-Language header.
-   * If none can be found, we fallback to 'en'.
+   * This can be a string indicating a single default language, or an
+   * array of strings representing multiple default languages.
+   *
+   * If this is set to the value 'auto', we will use the Accept-Language header
+   * regardless of if $use_accept is enabled.
+   * 
+   * If it's set to a boolean value, it will override the $use_accept property.
+   *
+   * If it's not set at all, we will ignore it.
    */
   public $default_lang;
+
+  /**
+   * @var string  The language to fall back on if no other is found.
+   */
+  public $fallback_lang = 'en';
+
+  /**
+   * @var use_accept  Always use the 'Accept-Language' header to add languages.
+   */
+  public $use_accept = false;
 
   /**
    * @var array   The namespaces to look in.
@@ -41,21 +52,94 @@ class Translation implements \ArrayAccess
 
   private $languages; // Storage for our configuration.
 
+  private $key_cache;
+
   /**
    * Create our object.
    *
    * @param array  $data    An associative array representing the translations.
    * @param array  $ns      Optional. Default namespaces to look in.
-   * @param string $lang    Optional. Language to use. Default: true
+   * @param array  $opts    Optional, associative array of options.
+   *                        'default'  (mixed)  Set $default_lang to this.
+   *                        'fallback' (string) Set $fallback_lang to this.
+   *                        'accept'   (bool)   Set $use_accept to this.
    */
-  public function __construct ($data, $ns=[], $lang=true)
+  public function __construct ($data, $ns=[], $opts=[])
   {
-    $this->languages    = $data;
-    $this->default_ns   = $ns;
-    $this->default_lang = $lang;
+    $this->languages  = $data;
+    $this->default_ns = isset($ns) ? $ns : [];
+    if (isset($opts))
+    {
+      if (isset($opts['default']))
+      {
+        $this->default_lang = $opts['default'];
+      }
+      if (isset($opts['fallback']) && is_string($opts['fallback']))
+      {
+        $this->fallback_lang = $opts['fallback'];
+      }
+      if (isset($opts['accept']) && is_bool($opts['accept']))
+      {
+        $this->use_accept = $opts['accept'];
+      }
+    }
+    $this->clear_cache();
   }
 
-  protected function get_opts ($opts)
+  public function clear_cache ()
+  {
+    $this->key_cache = [];
+  }
+
+  protected function add_lang ($add, &$langs)
+  {
+    if (is_string($add))
+    {
+      $add = [$add];
+    }
+    foreach ($add as $lang)
+    {
+      if (!in_array($lang, $langs))
+      {
+        if (isset($this->languages[$lang]))
+        {
+          $langdef = $this->languages[$lang];
+          $langs[$lang] = $langdef;
+          if (isset($langdef['.inherits']))
+          {
+            $this->add_lang($langdef['.inherits'], $langs);
+          }
+        }
+      }
+    }
+  }
+
+  protected function do_cache ($opts)
+  {
+    if (isset($opts['cache']))
+    {
+      return $opts['cache'];
+    }
+    if (isset($opts['setns']))
+    {
+      return false;
+    }
+    if (isset($opts['addns']))
+    {
+      return false;
+    }
+    if (isset($opts['insns']))
+    {
+      return false;
+    }
+    if (isset($opts['lang']))
+    {
+      return false;
+    }
+    return true;
+  }
+
+  protected function get_ns ($opts)
   {
     // Build a namespaces and language options.
     if (isset($opts['setns']))
@@ -102,69 +186,112 @@ class Translation implements \ArrayAccess
       }
     }
 
-    $lang = 'en'; // Fallback to english.
+    return $nses;
+  }
+
+  protected function get_langs ($opts)
+  {
+    $use_accept = $this->use_accept;
+    $langs = [];
     if (isset($opts['lang']))
     {
-      $lang = $opts['lang'];
+      $this->add_lang($opts['lang'], $langs);
     }
     elseif (is_string($this->default_lang))
     {
-      $lang = $this->default_lang;
-    }
-    elseif (is_bool($this->default_lang) && $this->default_lang)
-    {
-      $langs = Language::accept();
-      foreach ($langs as $langkey => $weight)
+      if ($this->default_lang == 'auto')
       {
-        if (isset($this->languages[$langkey]))
-        {
-          $lang = $langkey;
-          break;
-        }
+        $use_accept = true;
+      }
+      else
+      {
+        $this->add_lang($this->default_lang, $langs);
       }
     }
-
-    if (!isset($lang) || !isset($this->languages[$lang]))
+    elseif (is_array($this->default_lang))
     {
-      throw new LangException("Invalid language: '$lang'");
+      $this->add_lang($this->default_lang, $langs);
+    }
+    elseif (is_bool($this->default_lang))
+    { // Override the use_accept value.
+      $use_accept = $this->default_lang;
     }
 
-    $language = $this->languages[$lang];
+    if ($use_accept)
+    { // Add languages from the Accept-Language header.
+      $use_langs = Language::accept();
+      #error_log("Using accept langs: ".json_encode($use_langs));
+      $this->add_lang(array_keys($use_langs), $langs);
+    }
 
-    return ['namespaces' => $nses, 'language' => $language];
+    // Last but not least, add the fallback.
+    $this->add_lang($this->fallback_lang, $langs);
+
+    return $langs;
   }
 
   // Lookup a translation string.
   public function getStr ($key, $opts=[])
   {
-    $settings = $this->get_opts($opts);
-    $nses = $settings['namespaces'];
-    $language = $settings['language'];
-
-    $matches = [];
-    if (preg_match('/^(\w+):/', $key, $matches))
-    {
-      $prefix = $matches[1];
-      $strip  = $matches[0];
-      array_unshift($nses, $prefix);
-      $key = str_replace($strip, '', $key);
-    }
+    #error_log("getStr($key)");
+    $cache = $this->do_cache($opts);
+    $cachekey = $key; // The raw key is used for the cache.
 
     $value = Null;
-    foreach ($nses as $ns)
-    {
-      if (
-        isset($language[$ns]) 
-        && is_array($language[$ns]) 
-        && isset($language[$ns][$key])
-      )
+    if ($cache && isset($this->key_cache[$cachekey]))
+    { // Use cached value.
+      $cached = $this->key_cache[$cachekey];
+      #error_log("Using cached value for '$key': ".json_encode($cached));
+      $value = $cached['value'];
+      if ($cached['return'])
       {
-        $value = $language[$ns][$key];
-        break;
+        return $value;
+      }
+      $ns = $cached['ns'];
+      $cache = false; // Don't need to re-cache.
+    }
+    else
+    { // Find a value.
+      $nses = $this->get_ns($opts);
+      $languages = $this->get_langs($opts);
+
+      $matches = [];
+      if (preg_match('/^(\w+):/', $key, $matches))
+      {
+        $prefix = $matches[1];
+        $strip  = $matches[0];
+        array_unshift($nses, $prefix);
+        $key = str_replace($strip, '', $key);
+      }
+
+      foreach ($languages as $language)
+      {
+        foreach ($nses as $ns)
+        {
+          if (
+            isset($language[$ns]) 
+            && is_array($language[$ns]) 
+            && isset($language[$ns][$key])
+          )
+          {
+            $value = $language[$ns][$key];
+            break 2;
+          }
+        }
       }
     }
+
     if (isset($value))
     {
+      if ($cache)
+      {
+        $this->key_cache[$cachekey] = 
+        [
+          'ns'     => $ns, 
+          'value'  => $value, 
+          'return' => false
+        ];
+      }
       if (is_array($value))
       {
         if (isset($opts['complex']) && $opts['complex'])
@@ -178,7 +305,7 @@ class Translation implements \ArrayAccess
         else
         {
           throw new LangException
-            ("Invalid language definition: '$lang:$ns:$key'");
+           ("Invalid language definition: '$lang:$ns:$key'");
         }
       }
       else
@@ -208,11 +335,10 @@ class Translation implements \ArrayAccess
             $return['text'] = str_replace($varkey, $varval, $return['text']);
           }
         }
-        return $return;
       }
       elseif (isset($opts['reps']))
       {
-        return vsprintf($return, $opts['reps']);
+        $return = vsprintf($return, $opts['reps']);
       }
       elseif (isset($opts['vars']))
       {
@@ -224,14 +350,16 @@ class Translation implements \ArrayAccess
       return $return;
     }
 
-    // If we reached here, we didn't find a value yet.
-    if (isset($language['.inherits']))
-    {
-      $opts['lang'] = $language['.inherits'];
-      return $this->getStr($key, $opts);
+    // If we reached here, no string was found at all, return the key.
+    if ($cache)
+    { // Cache the unmatched key.
+      $this->key_cache[$key] =
+      [
+        'value'  => $key,
+        'ns'     => null,
+        'return' => true,
+      ];
     }
-
-    // If all else fails, return the original string.
     return $key;
   }
 
@@ -318,58 +446,56 @@ class Translation implements \ArrayAccess
   }
 
   // Reverse lookup of a string. If found, it returns the key.
+  // TODO: maybe look at implementing a string cache, similar to the key cache.
   public function lookupStr ($string, $opts=[])
   {
-    $settings = $this->get_opts($opts);
-    $nses = $settings['namespaces'];
-    $language = $settings['language'];
+    $nses = $this->get_ns($opts);
+    $languages = $this->get_lang($opts);
 
-    foreach ($nses as $ns)
+    foreach ($languages as $language)
     {
-      if (isset($language[$ns]) && is_array($language[$ns]))
+      foreach ($nses as $ns)
       {
-        foreach ($language[$ns] as $key=>$val)
+        if (isset($language[$ns]) && is_array($language[$ns]))
         {
-          if (is_string($val) && $val == $string)
+          foreach ($language[$ns] as $key=>$val)
           {
-            if (isset($opts['complex']) && $opts['complex'])
+            if (is_string($val) && $val == $string)
             {
-              $value = [
-                'ns'  => $ns,
-                'key' => $key,
-              ];
-              return $value;
+              if (isset($opts['complex']) && $opts['complex'])
+              {
+                $value = [
+                  'ns'  => $ns,
+                  'key' => $key,
+                ];
+                return $value;
+              }
+              else 
+              {
+                return $key;
+              }
             }
-            else 
+            elseif 
+              (is_array($val) && isset($val['text']) && $val['text'] == $string)
             {
-              return $key;
-            }
-          }
-          elseif 
-            (is_array($val) && isset($val['text']) && $val['text'] == $string)
-          {
-            if (isset($opts['complex']) && $opts['complex'])
-            {
-              $value = $val;
-              $value['ns']  = $ns;
-              $value['key'] = $key;
-              return $value;
-            }
-            else
-            {
-              return $key;
+              if (isset($opts['complex']) && $opts['complex'])
+              {
+                $value = $val;
+                $value['ns']  = $ns;
+                $value['key'] = $key;
+                return $value;
+              }
+              else
+              {
+                return $key;
+              }
             }
           }
         }
       }
     }
-    // If we reached here, we didn't find it.
-    if (isset($language['.inherits']))
-    {
-      $opts['lang'] = $language['inherits'];
-      return $this->lookupStr($string, $opts);
-    }
-    // If all else fails, the string was not found, return False.
+
+    // If we reached here, we didn't find it. Return false.
     return False;
   }
 
