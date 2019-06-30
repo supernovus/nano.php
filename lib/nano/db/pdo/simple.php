@@ -43,6 +43,17 @@ function get_query_property($object, $prop)
     return null;
 }
 
+function coerce_bool (&$data)
+{
+  foreach ($data as &$val)
+  {
+    if (is_bool($val))
+    {
+      $val = $val ? 1 : 0;
+    }
+  }
+}
+
 /**
  * A simple, lightweight DB class.
  */
@@ -67,6 +78,11 @@ class Simple
    * Should database errors log silently, or throw exceptions?
    */
   public $strict = false;
+
+  /**
+   * Should we coerce boolean data values to int?
+   */
+  public $coerce_boolean = false;
 
   /**
    * The database configuration, if 'keep_config' is true.
@@ -559,6 +575,8 @@ class Simple
       return [$sql, $data];
 
     $stmt = $this->query($sql);
+    if ($this->coerce_boolean)
+      coerce_bool($data);
     $stmt->execute($data);
     $einfo = $stmt->errorInfo();
     if ($einfo[0] != $this::success)
@@ -648,6 +666,8 @@ class Simple
       return [$sql, $data, $wdata, $cdata];
   
     $stmt = $this->query($sql);
+    if ($this->coerce_boolean)
+      coerce_bool($data);
     $stmt->execute($data);
     $einfo = $stmt->errorInfo();
     if ($einfo[0] != $this::success)
