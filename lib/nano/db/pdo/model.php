@@ -18,6 +18,9 @@ abstract class Model implements \Iterator, \ArrayAccess
 
   protected $db;             // A Nano\DB\PDO\Simple object.
 
+  // Change to true to coerce boolean on construction.
+  protected $coerce_boolean;
+
   protected $resultset;      // Used if you use the iterator interface.
 
   public $parent;            // The object which spawned us.
@@ -46,6 +49,11 @@ abstract class Model implements \Iterator, \ArrayAccess
     // Build our Simple DB object.
     // It will throw an exception of there are missing parameters.
     $this->db = new Simple($opts, true);
+
+    if (isset($this->coerce_boolean))
+    {
+      $this->coerce_boolean($this->coerce_boolean);
+    }
 
     // Initialize our classid that is passed from the module loader.
     if (isset($opts['__classid']))
@@ -84,6 +92,18 @@ abstract class Model implements \Iterator, \ArrayAccess
   public function __wakeup ()
   {
     $this->db->reconnect();
+  }
+
+  public function coerce_boolean ($toggle=null)
+  {
+    if (isset($toggle) && is_bool($toggle))
+    {
+      $this->db->coerce_boolean = $toggle;
+    }
+    else
+    {
+      $this->db->coerce_boolean = $this->db->coerce_boolean ? false : true;
+    }
   }
 
   public function toggle_strict ($toggle=null)
