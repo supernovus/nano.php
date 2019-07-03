@@ -21,7 +21,12 @@ class Sendgrid
       throw new \Exception("Use of Sendgrid requires 'apikey' parameter.");
     }
 
-    $this->message = new \SendGrid\Email();
+    if (class_exists('\SendGrid\Mail\Mail'))
+      $this->message = new \SendGrid\Mail\Mail();
+    elseif (class_exists('\SendGrid\Email'))
+      $this->message = new \SendGrid\Email();
+    else
+      throw new \Exception("Unknown version of SendGrid API");
 
     if (isset($opts['subject']))
       $this->message->setSubject($opts['subject']);
@@ -31,6 +36,10 @@ class Sendgrid
 
     if (isset($opts['to']))
       $this->message->addTo($opts['to']);
+    if (isset($opts['cc']))
+      $this->message->addCc($opts['cc']);
+    if (isset($opts['bcc']))
+      $this->message->addBcc($opts['bcc']);
   }
 
   public function send_message ($message, $opts=[])
@@ -42,23 +51,41 @@ class Sendgrid
     // Find the recipient.
     if (isset($opts['to']))
       $this->message->addTo($opts['to']);
+    if (isset($opts['cc']))
+      $this->message->addCc($opts['cc']);
+    if (isset($opts['bcc']))
+      $this->message->addBcc($opts['bcc']);
 
     if (is_array($message))
     {
       $html = $message[0];
       $text = $message[1];
-      $this->message->setText($text);
-      $this->message->setHtml($html);
+      if ($this->message instanceof \SendGrid\Email)
+      {
+        $this->message->setHtml($html);
+        $this->message->setText($text);
+      }
+      else
+      {
+        $this->message->addContent('text/html', $html);
+        $this->message->addContent('text/plain', $text);
+      }
     }
     elseif (is_string($message))
     {
       if (substr($message, 0, 1) === '<')
       {
-        $this->message->setHtml($message);
+        if ($this->message instanceof \SendGrid\Email)
+          $this->message->setHtml($message);
+        else
+          $this->message->addContent('text/html', $message);
       }
       else
       {
-        $this->message->setText($message);
+        if ($this->message instanceof \SendGrid\Email)
+          $this->message->setText($message);
+        else
+          $this->message->addContent('text/plain', $message);
       }
     }
     else

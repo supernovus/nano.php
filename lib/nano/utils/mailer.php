@@ -14,9 +14,10 @@ class Mailer
 {
   // Internal rules.
   protected $fields;     // Field rules. 'true' required, 'false' optional.
-  protected $template;   // Default template to use for e-mails.
   protected $views;      // Nano loader to use to load template.
   protected $handler;    // The underlying handler. Use get_handler()
+  protected $def_template;  // Default template to use for e-mails.
+  protected $alt_template;  // Alternative template to use for e-mails.
 
   // Public fields. Reset on each send().
   public $failures;     // A list of messages that failed.
@@ -33,12 +34,13 @@ class Mailer
       $this->fields = $fields;
 
     if (isset($opts['template']))
-      $this->template = $opts['template'];
+      $this->def_template = $opts['template'];
+
+    if (isset($opts['alt_template']))
+      $this->alt_template = $opts['alt_template'];
 
     if (isset($opts['views']))
       $this->views = $opts['views'];
-    elseif (!isset($this->views))
-      $this->views = 'views'; // Default if nothing else is set.
 
     if (!isset($opts['handler']))
       $opts['handler'] = 'swift'; // The default handler.
@@ -71,10 +73,18 @@ class Mailer
     // Find the template to use.
     if (isset($opts['template']))
       $template = $opts['template'];
-    elseif (isset($this->template))
-      $template = $this->template;
+    elseif (isset($this->def_template))
+      $template = $this->def_template;
     else
       $template = Null; // We're not using a template.
+
+    // If the main template is HTML, we can have a text alternative.
+    if (isset($opts['alt_template']))
+      $alt_template = $opts['alt_template'];
+    elseif (isset($this->alt_template))
+      $alt_template = $this->alt_template;
+    else
+      $alt_template = Null; // No alt template.
 
     if (is_array($data))
     {
@@ -110,17 +120,7 @@ class Mailer
       // Templates are highly recommended.
       if (isset($template))
       { // We're using templates (recommended.)
-        $nano = \Nano\get_instance();
-        $loader = $this->views;
-        #error_log("template: '$template', loader: '$loader'");
-        if (isset($nano->lib[$loader]))
-        { // We're using a view loader.
-          $message = $nano->lib[$loader]->load($template, $fields);
-        }
-        else
-        { // View library wasn't found. Assuming a full PHP include file path.
-          $message = \Nano\get_php_content($template, $fields);
-        }
+        $message = $this->renderTemplate($template, $fields);
       }
       else
       { // We're not using a template. Build the message manually.
@@ -130,6 +130,13 @@ class Mailer
           $message .= " $field: $value\n";
         }
         $message .= "---\n";
+      }
+
+      // How about a fallback template?
+      if (isset($alt_template))
+      {
+        $message = [$message];
+        $message[] = $this->renderTemplate($alt_template, $fields);
       }
     }
     elseif (is_string($data))
@@ -153,11 +160,26 @@ class Mailer
 
     if ($this->log_errors && !$sent)
     {
-      error_log("Error sending mail to '$to' with subject: $subject");
+      error_log("Error sending mail, errors: ".serialize($this->failures));
       if ($this->log_message)
         error_log("The message was:\n$message");
     }
     return $sent;
+  }
+
+  protected function renderTemplate ($template, $fields)
+  {
+    $nano = \Nano\get_instance();
+    $loader = $this->views;
+    #error_log("template: '$template', loader: '$loader'");
+    if (isset($loader, $nano->lib[$loader]))
+    { // We're using a view loader.
+      $message = $nano->lib[$loader]->load($template, $fields);
+    }
+    else
+    { // View library wasn't found. Assuming a full PHP include file path.
+      $message = \Nano\get_php_content($template, $fields);
+    }
   }
 
 }

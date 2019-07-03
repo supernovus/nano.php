@@ -43,6 +43,10 @@ class Swift
 
     if (isset($opts['to']))
       $this->message->setTo($opts['to']);
+    if (isset($opts['cc']))
+      $this->message->setCc($opts['cc']);
+    if (isset($opts['bcc']))
+      $this->message->setBcc($opts['bcc']);
   }
 
   public function send_message ($message, $opts=[])
@@ -51,9 +55,13 @@ class Swift
     if (isset($opts['subject']))
       $this->message->setSubject($opts['subject']);
 
-    // Find the recipient.
+    // Find the recipient(s).
     if (isset($opts['to']))
       $this->message->setTo($opts['to']);
+    if (isset($opts['cc']))
+      $this->message->setCc($opts['cc']);
+    if (isset($opts['bcc']))
+      $this->message->setBcc($opts['bcc']);
 
     if (is_array($message))
     {
