@@ -179,7 +179,8 @@ class Mailer
     else
     { // View library wasn't found. Assuming a full PHP include file path.
       $message = \Nano\get_php_content($template, $fields);
-    }
+    } 
+    return $message;
   }
 
 }
