@@ -288,7 +288,7 @@ class RouterMenu
 
         $icon_name = isset($def['icon']) ? $def['icon'] : null;
 
-        $inner = $link = $icon =null;
+        $inner = $link = $icon = null;
         if (isset($item_el) && $item_el != 'a')
         { // We're using a custom container. We put an <a/> within it.
           $item = $container->addChild($item_el);
@@ -373,12 +373,16 @@ class RouterMenu
       // Now deal with post-build handlers.
       foreach ($post_rules as $rkey => $rule)
       {
+#        error_log("Testing for post rule '$rkey'");
         if (isset($def[$rkey]))
         {
+#          error_log(" -- found");
           if (is_callable($rule))
           {
 #            error_log("calling $rkey rule for $key");
+#            $res = 
             $rule($def, $key, $context, $item, $link, $inner);
+#            error_log(" -- result: ".json_encode($res));
           }
         }
       }
