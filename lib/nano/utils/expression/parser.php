@@ -67,9 +67,9 @@ class Parser
         while ($op2 
           && $op2 !== $this->lp 
           && (
-            ($op->assoc == ASSOC_LEFT && $op->precedence <= $op2->precedence)
+            ($op->leftAssoc() && $op->precedence <= $op2->precedence)
             ||
-            ($op->assoc == ASSOC_RIGHT && $op->precedence < $op2->precedence)
+            ($op->rightAssoc() && $op->precedence < $op2->precedence)
           )
         )
         {
