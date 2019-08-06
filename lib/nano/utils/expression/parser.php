@@ -52,7 +52,7 @@ class Parser
 
   public function loadInfix (Array $data)
   { // Convert to postfix using Shunting-Yard, then parse that data.
-    // TODO: Add associativity and proper unary operator support in natively.
+    // TODO: Handle unary operators differently.
     $this->data = [];
     $operators = [];
     $operands  = [];
@@ -63,10 +63,18 @@ class Parser
       if (isset($this->operators[$v]))
       { // It's an operator.
         $op = $this->operators[$v];
-        while ($operators && end($operators) !== $this->lp 
-          && (end($operators)->precedence) >= ($op->precedence))
+        $op2 = end($operators);
+        while ($op2 
+          && $op2 !== $this->lp 
+          && (
+            ($op->assoc == ASSOC_LEFT && $op->precedence <= $op2->precedence)
+            ||
+            ($op->assoc == ASSOC_RIGHT && $op->precedence < $op2->precedence)
+          )
+        )
         {
           $operands[] = array_pop($operators)->name;
+          $op2 = end($operators);
         }
         $operators[] = $op;
       }
@@ -267,10 +275,14 @@ class Operator
   public function __construct ($name, $opts=[])
   {
     $this->name = $name;
+    if (isset($opts['unary']) && $opts['unary'])
+    {
+      $this->operands = 1;
+      $this->assoc = ASSOC_RIGHT;
+    }
+
     if (isset($opts['operands']))
       $this->operands = $opts['operands'];
-    elseif (isset($opts['unary']) && $opts['unary'])
-      $this->operands = 1;
     if (isset($opts['precedence']))
       $this->precedence = $opts['precedence'];
     if (isset($opts['assoc']))

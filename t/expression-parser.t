@@ -57,7 +57,6 @@ $in =
 // A 'loose' infix expression, depending on precedence rules.
 $loose_infix = ['not', 1, 'gt', 2, 'and', 4, 'eq', 4];
 
-// TODO: adjust these once unary operator support is in properly.
 $operators =
 [
   'eq'  => ['precedence'=>3],
@@ -70,7 +69,7 @@ $expy = new \Nano\Utils\Expression\Parser(['operators'=>$operators]);
 
 $to_types = array_keys($in);
 
-$want_parsed = '[{"op":{"name":"and","operands":2,"precedence":1,"assoc":1},"items":[{"op":{"name":"not","operands":1,"precedence":2,"assoc":1},"items":[{"op":{"name":"gt","operands":2,"precedence":3,"assoc":1},"items":[1,2]}]},{"op":{"name":"eq","operands":2,"precedence":3,"assoc":1},"items":[4,4]}]}]';
+$want_parsed = '[{"op":{"name":"and","operands":2,"precedence":1,"assoc":1},"items":[{"op":{"name":"not","operands":1,"precedence":2,"assoc":2},"items":[{"op":{"name":"gt","operands":2,"precedence":3,"assoc":1},"items":[1,2]}]},{"op":{"name":"eq","operands":2,"precedence":3,"assoc":1},"items":[4,4]}]}]';
 
 // First, let's do the 12 automated conversion tests.
 foreach ($in as $type => $exp_in)
