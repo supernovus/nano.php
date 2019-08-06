@@ -131,6 +131,10 @@ class Parser
         $substack = array_reverse(array_splice($this->data, $z-$s, $s));
         $this->data[] = new Condition($op, $substack);
       }
+      elseif ($v == $this->lp || $v == $this->rp)
+      { // Parens are ignored in prefix.
+        continue;
+      }
       else
       { // It's an operand, add it to the stack.
         $this->data[] = $v;
@@ -156,6 +160,10 @@ class Parser
         }
         $substack = array_splice($this->data, $z-$s, $s);
         $this->data[] = new Condition($op, $substack);
+      }
+      elseif ($v == $this->lp || $v == $this->rp)
+      { // Parens are ignored in postfix.
+        continue;
       }
       else
       { // It's an operand, add it to the stack.
@@ -210,20 +218,19 @@ class Parser
     }
     else
     {
-      throw new \Exception("Operator must have only 1 or 2 operands, $opn has $ops which is invalid.");
+      throw new \Exception("Operator must have only 1 or 2 operands, {$opn->name} has $ops which is invalid.");
     }
     $out[] = $this->rp;
   }
 
   public function savePrefix ()
   {
-    $in = $this->data;
     $out = [];
-    $this->serialize_prefix($in, $out);
+    $this->serialize_prefix($this->data, $out);
     return $out;
   }
 
-  protected function serialize_prefix (&$in, &$out)
+  protected function serialize_prefix ($in, &$out)
   {
     foreach ($in as $item)
     {
@@ -241,13 +248,12 @@ class Parser
 
   public function savePostfix ()
   {
-    $in = $this->data;
     $out = [];
-    $this->serialize_postfix($in, $out);
+    $this->serialize_postfix($this->data, $out);
     return $out;
   }
 
-  protected function serialize_postfix (&$in, &$out)
+  protected function serialize_postfix ($in, &$out)
   {
     foreach ($in as $item)
     {
