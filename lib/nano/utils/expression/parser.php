@@ -24,11 +24,11 @@ class Parser
       }
     }
 
-    if (isset($opts['lp']) && is_array($opts['lp']))
+    if (isset($opts['lp']) && is_string($opts['lp']))
     {
       $this->lp = $opts['lp'];
     }
-    if (isset($opts['rp']) && is_array($opts['rp']))
+    if (isset($opts['rp']) && is_string($opts['rp']))
     {
       $this->rp = $opts['rp'];
     }
