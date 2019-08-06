@@ -263,6 +263,23 @@ class Parser
     }
   }
 
+  public function evaluate ()
+  {
+    if (count($this->data) > 1)
+    {
+      throw new \Exception("Expression does not parse to a single top item, cannot evaluate.");
+    }
+    $topItem = $this->data[0];
+    if ($topItem instanceof Condition)
+    {
+      return $topItem->evaluate();
+    }
+    else
+    {
+      return $topItem;
+    }
+  }
+
 }
 
 class Operator
@@ -271,6 +288,8 @@ class Operator
   public $operands   = 2;
   public $precedence = 1;
   public $assoc      = ASSOC_LEFT;
+
+  protected $evaluator;
 
   public function __construct ($name, $opts=[])
   {
@@ -281,12 +300,158 @@ class Operator
       $this->assoc = ASSOC_RIGHT;
     }
 
-    if (isset($opts['operands']))
+    if (isset($opts['operands']) && is_int($opts['operands']))
+    {
       $this->operands = $opts['operands'];
-    if (isset($opts['precedence']))
+    }
+
+    if (isset($opts['precedence']) && is_numeric($opts['precedence']))
+    {
       $this->precedence = $opts['precedence'];
+    }
+
     if (isset($opts['assoc']))
-      $this->assoc = $opts['assoc'];
+    {
+      if (is_numeric($opts['assoc']))
+      {
+        $this->assoc = $opts['assoc'];
+      }
+    }
+
+    if (isset($opts['evaluate']))
+    {
+      if (is_callable($opts['evaluate']))
+      { // Using a custom evaluator.
+        $this->evaluator = $opts['evaluate'];
+      }
+      elseif (is_string($opts['evaluate']))
+      { // Using a built-in evaluator.
+        $evaluator = [$this, 'eval_'.strtolower($opts['evaluate'])];
+        $this->setEvaluator($evaluator);
+      }
+      elseif ($opts['evaluate'] === true)
+      { // Use the name as a built-in evaluator.
+        $evaluator = [$this, 'eval_'.strtolower($name)];
+        $this->setEvaluator($evaluator);
+      }
+      else
+      {
+        throw new \Exception("Invalid evaluator".$opts['evaluate']);
+      }
+    }
+  }
+
+  public function setEvaluator ($evaluator)
+  {
+    if (is_callable($evaluator))
+    {
+      $this->evaluator = $evaluator;
+    }
+    else
+    {
+      throw new \Exception("Invalid evaluator passed to setEvaluator()");
+    }
+  }
+
+  public function evaluate ($items)
+  {
+    if (!isset($this->evaluator))
+    {
+      throw new \Exception("Attempt to evaluate an operator without a handler.");
+    }
+    if (count($items) != $this->operands)
+    {
+      throw new \Exception("Invalid number of operands in operator evaluation.");
+    }
+    // Now make sure the items are scalar values, not objects.
+    for ($i = 0; $i < count($items); $i++)
+    {
+      $item = $items[$i];
+      if (is_object($item))
+      { // It's a Condition, or a custom object.
+        if (is_callable([$item, 'evaluate']))
+        { // Get the value by evaluating it.
+          $items[$i] = $item->evaluate();
+        }
+      }
+    }
+    // Okay, our items are all scalars now, let's do this.
+    return call_user_func($this->evaluator, $items);
+  }
+
+  protected function eval_not ($items)
+  { // Unary operator, only one item is used.
+    return !($items[0]);
+  }
+
+  protected function eval_eq ($items)
+  {
+    return ($items[0] == $items[1]);
+  }
+
+  protected function eval_ne ($items)
+  {
+    return ($items[0] != $items[1]);
+  }
+
+  protected function eval_gt ($items)
+  {
+    return ($items[0] > $items[1]);
+  }
+
+  protected function eval_lt ($items)
+  {
+    return ($items[0] < $items[1]);
+  }
+
+  protected function eval_gte ($items)
+  {
+    return ($items[0] >= $items[1]);
+  }
+
+  protected function eval_lte ($items)
+  {
+    return ($items[0] <= $items[1]);
+  }
+
+  protected function eval_and ($items)
+  {
+    return ($items[0] and $items[1]);
+  }
+
+  protected function eval_or ($items)
+  {
+    return ($items[0] or $items[1]);
+  }
+
+  protected function eval_xor ($items)
+  {
+    return ($items[0] xor $items[1]);
+  }
+
+  protected function eval_add ($items)
+  {
+    return ($items[0] + $items[1]);
+  }
+
+  protected function eval_sub ($items)
+  {
+    return ($items[0] - $items[1]);
+  }
+
+  protected function eval_mult ($items)
+  {
+    return ($items[0] * $items[1]);
+  }
+
+  protected function eval_div ($items)
+  {
+    return ($items[0] / $items[1]);
+  }
+
+  protected function eval_neg ($items)
+  { // Unary operator, only one item is used.
+    return ($items[0] * -1);
   }
 
   public function leftAssoc ()
@@ -310,10 +475,15 @@ class Condition
   public $op;
   public $items;
 
-  public function __construct ($op, $items)
+  public function __construct (Operator $op, $items)
   {
     $this->op = $op;
     $this->items = $items;
+  }
+
+  public function evaluate ()
+  {
+    return $this->op->evaluate($this->items);
   }
 }
 

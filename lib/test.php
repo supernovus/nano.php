@@ -80,10 +80,8 @@ function is ($got, $want, $desc=Null)
   __test($desc, $test);
   if (!$test)
   {
-    if (is_bool($got) || is_null($got) || !is_scalar($got))
-      $got = json_encode($got);
-    if (is_bool($want) || is_null($want) || !is_scalar($want))
-      $want = json_encode($want);
+    $got = json_encode($got);
+    $want = json_encode($want);
     echo "#       got: $got\n";
     echo "#  expected: $want\n";
   }
