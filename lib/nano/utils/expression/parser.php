@@ -316,6 +316,26 @@ class Operator
       {
         $this->assoc = $opts['assoc'];
       }
+      elseif (is_string($opts['assoc']))
+      {
+        $assocStr = strtolower(substr($opts['assoc'], 0, 1));
+        if ($assocStr == 'l')
+        {
+          $this->assoc = ASSOC_LEFT;
+        }
+        elseif ($assocStr == 'r')
+        {
+          $this->assoc = ASSOC_RIGHT;
+        }
+        else
+        {
+          $this->assoc = ASSOC_NONE;
+        }
+      }
+      elseif ($opts['assoc'] === false)
+      {
+        $this->assoc = ASSOC_NONE;
+      }
     }
 
     if (isset($opts['evaluate']))
@@ -326,13 +346,11 @@ class Operator
       }
       elseif (is_string($opts['evaluate']))
       { // Using a built-in evaluator.
-        $evaluator = [$this, 'eval_'.strtolower($opts['evaluate'])];
-        $this->setEvaluator($evaluator);
+        $this->setEvaluator($opts['evaluate']);
       }
       elseif ($opts['evaluate'] === true)
       { // Use the name as a built-in evaluator.
-        $evaluator = [$this, 'eval_'.strtolower($name)];
-        $this->setEvaluator($evaluator);
+        $this->setEvaluator($name);
       }
       else
       {
@@ -343,6 +361,10 @@ class Operator
 
   public function setEvaluator ($evaluator)
   {
+    if (is_string($evaluator))
+    {
+      $evaluator = [$this, 'eval_'.strtolower($evaluator)];
+    }
     if (is_callable($evaluator))
     {
       $this->evaluator = $evaluator;
