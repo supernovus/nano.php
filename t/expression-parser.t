@@ -7,7 +7,7 @@ require_once 'lib/test.php';
 
 \Nano\register();
 
-plan(23);
+plan(24);
 
 $in =
 [
@@ -103,6 +103,8 @@ $expy->loadInfix($loose_infix);
 $parsed_obj = $expy->getData();
 $parsed_json = json_encode($parsed_obj);
 is($parsed_json, $want_parsed, "parsed loose infix");
+$exp_val = $expy->evaluate();
+is($exp_val, true, "evaluated loose infix");
 foreach ($to_types as $to_type)
 {
   $tometh = 'save'.ucfirst($to_type);
