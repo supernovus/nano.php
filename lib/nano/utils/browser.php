@@ -8,9 +8,13 @@ namespace Nano\Utils;
 
 class Browser
 {
-  public static function is_ie ()
+  public static function is_ie ($ua=null)
   {
-    if (isset($_SERVER['HTTP_USER_AGENT']) && preg_match('/MSIE/i', $_SERVER['HTTP_USER_AGENT']))
+    if (!isset($ua))
+    {
+      $ua = $_SERVER['HTTP_USER_AGENT'];
+    }
+    if ($ua && preg_match('/MSIE|Trident/i', $ua))
     {
       return True;
     }
@@ -22,15 +26,20 @@ class Browser
    *
    * Returns False if the browser is not IE.
    */
-  public static function get_ie_ver ()
+  public static function get_ie_ver ($ua=null)
   {
-    if (!isset($_SERVER['HTTP_USER_AGENT'])) return False;
+    if (!isset($ua))
+    {
+      $ua = $_SERVER['HTTP_USER_AGENT'];
+    }
+    
+    if (!$ua) return False;
 
-    preg_match('/MSIE (.*?);/', $_SERVER['HTTP_USER_AGENT'], $matches);
+    preg_match('/MSIE (.*?);/', $ua, $matches);
     if (count($matches) < 2)
     {
       $trident = '/Trident\/\d{1,2}.\d{1,2}; rv:([0-9]*)/';
-      preg_match($trident, $_SERVER['HTTP_USER_AGENT'], $matches);
+      preg_match($trident, $ua, $matches);
     }
 
     if (count($matches) > 1)
