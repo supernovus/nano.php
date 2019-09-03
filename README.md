@@ -55,5 +55,5 @@ Timothy Totten <2010@totten.ca>
 
 ## License
 
-[Artistic License 2.0](http://www.perlfoundation.org/artistic_license_2_0)
+[MIT](https://spdx.org/licenses/MIT.html)
 

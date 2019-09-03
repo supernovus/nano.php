@@ -51,8 +51,8 @@ trait Resources
         '#common' =>
         [ // The base scripts we expect everywhere.
           'jquery', 
-//          'json3',  // modern browsers support JSON and don't need this.
           'coreutils',
+          'hash',
           'json.jq', 
           'disabled.jq',
           'exists.jq',
