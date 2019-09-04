@@ -7,7 +7,7 @@ namespace Nano\Utils;
  *
  * Can be used for a completely Javascript powered notification system using
  * the Nano.Notifications library from Nano.js, or for a purely PHP rendered
- * notifications system.
+ * notifications system. Using the Javascript version is recommended.
  */
 
 class Notifications
@@ -19,6 +19,7 @@ class Notifications
     'default' => ['class'=>'message', 'prefix'=>'msg.'],
     'error'   => ['class'=>'error',   'prefix'=>'err.'],
     'warning' => ['class'=>'warning', 'prefix'=>'warn.'],
+    'notice'  => ['class'=>'notice',  'noGroup'=>true],
   ];
 
   protected $messages = [];
