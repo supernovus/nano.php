@@ -214,6 +214,12 @@ trait Messages
     return $this->has_status('error');
   }
 
+  /**
+   * Add all of the strings needed for our current notifications to the
+   * 'status_messages' JSON element (using the add_status_json() method.)
+   *
+   * @return array The notification messages.
+   */
   public function add_notification_messages ()
   {
     $codes = [];
@@ -224,11 +230,16 @@ trait Messages
       $codes[] = $msgid;
     }
     $this->add_status_json($codes);
+    return $msgs;
   }
 
   /**
    * Add a 'status_messages' JSON element.
-   * Pass it a list of messages to include in the JSON.
+   *
+   * Uses $this->text->strArray() to build a map of translations, then
+   * uses $this->add_json() to add the element.
+   *
+   * @param string[] $messages  The message codes to add.
    */
   public function add_status_json ($messages)
   {

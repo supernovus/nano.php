@@ -27,6 +27,12 @@ class Notifications
 
   public $reparent = false;
 
+  /**
+   * Get the 'notifications' instance from the PHP Session if it exists,
+   * or create a new Notifications object if it doesn't exist.
+   *
+   * @param array $opts Options to pass to constructor.
+   */
   public static function getInstance ($opts=[])
   {
     $nano = \Nano\get_instance();
@@ -48,10 +54,42 @@ class Notifications
     }
   }
 
+  /**
+   * Create a new Notifications instance.
+   *
+   * @param array $opts  Options:
+   *
+   *   'text'  The Translations instance to use to get message text.
+   *   'status_types'  A map of name=>def to pass to addStatusType().
+   *   
+   */
   public function __construct ($opts=[])
   {
     if (isset($opts['text']))
+    {
       $this->text = $opts['text'];
+    }
+
+    if (isset($opts['status_types']) && is_array($opts['status_types']))
+    {
+      foreach ($opts['status_types'] as $name => $def)
+      {
+        $this->addStatusType($name, $def);
+      }
+    }
+  }
+
+  /**
+   * Add a custom status type.
+   *
+   * @param string $name The name of the status type.
+   * @param array  $def  The status type definition.
+   */
+  public function addStatusType ($name, $def)
+  {
+    if (!is_string($name)) throw new \Exception("addStatusType 'name' must be a string.");
+    if (!is_array($def)) throw new \Exception("addStatusType 'def' must be an associative array.");
+    $this->status_types[$name] = $def;
   }
 
   public function store ()
