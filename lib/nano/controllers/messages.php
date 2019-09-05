@@ -13,14 +13,6 @@ trait Messages
   protected $text;              // Our translation table.
   protected $lang;              // Our language.
 
-  // A list of default status message types.
-  protected $status_types = array
-  (
-    'default' => array('class'=>'message', 'prefix'=>'msg.'),
-    'error'   => array('class'=>'error',   'prefix'=>'err.'),
-    'warning' => array('class'=>'warning', 'prefix'=>'warn.'),
-  );
-
   protected function __init_messages_controller ($opts)
   {
 #    error_log("__init_messages_controller()");
@@ -119,6 +111,8 @@ trait Messages
   // Add a message to the stack.
   public function message ($name, $opts=[])
   {
+    if (!isset($opts['type']))
+      $opts['type'] = 'message';
     return $this->notifications->addMessage($name, $opts);
   }
 
@@ -151,6 +145,13 @@ trait Messages
   public function error ($name, $opts=array())
   {
     $opts['type'] = 'error';
+    $this->message($name, $opts);
+  }
+
+  // Add a dismissable notification to the stack.
+  public function notify ($name, $opts=[])
+  {
+    $opts['type'] = 'notice';
     $this->message($name, $opts);
   }
 

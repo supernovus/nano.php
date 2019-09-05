@@ -85,6 +85,11 @@ class Simple
   public $coerce_boolean = false;
 
   /**
+   * Enable some debugging stuff?
+   */
+  public $debugging = false;
+
+  /**
    * The database configuration, if 'keep_config' is true.
    * It's a protected property, so only this class can use it.
    */
@@ -497,7 +502,7 @@ class Simple
       $fetch_mode = \PDO::FETCH_ASSOC;
     }
 
-    if (isset($opts['debug']) && $opts['debug'])
+    if ($this->debugging)
     {
       error_log("SQL: $sql");
       error_log("Data: ".json_encode($data));
@@ -568,8 +573,11 @@ class Simple
 
     $sql = "INSERT INTO $table ($flist) VALUES ($dlist)";
 
-#    error_log("INSERT SQL: $sql");
-#    error_log("INSERT data: ".json_encode($data));
+    if ($this->debugging)
+    {
+      error_log("SQL: $sql");
+      error_log("Data: ".json_encode($data));
+    }
 
     if (!isset($this->db))
       return [$sql, $data];
@@ -662,6 +670,12 @@ class Simple
   
     $sql = "UPDATE $table SET $set WHERE $where";
 
+    if ($this->debugging)
+    {
+      error_log("SQL: $sql");
+      error_log("Data: ".json_encode($data));
+    }
+
     if (!isset($this->db))
       return [$sql, $data, $wdata, $cdata];
   
@@ -720,6 +734,12 @@ class Simple
 
     $sql = "DELETE FROM $table WHERE $where";
 
+    if ($this->debugging)
+    {
+      error_log("SQL: $sql");
+      error_log("Data: ".json_encode($data));
+    }
+    
     if (!isset($this->db))
       return [$sql, $wdata];
 

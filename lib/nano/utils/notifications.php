@@ -16,10 +16,11 @@ class Notifications
 
   protected $status_types =
   [
-    'default' => ['class'=>'message', 'prefix'=>'msg.'],
+    'default' => ['class'=>'message'],
+    'message' => ['class'=>'message', 'prefix'=>'msg.'],
     'error'   => ['class'=>'error',   'prefix'=>'err.'],
     'warning' => ['class'=>'warning', 'prefix'=>'warn.'],
-    'notice'  => ['class'=>'notice',  'noGroup'=>true],
+    'notice'  => ['class'=>'notice',  'noGroup'=>true, 'actions'=>['dismiss']],
   ];
 
   protected $messages = [];
@@ -106,7 +107,7 @@ class Notifications
   public function addMessage ($name, $opts=[])
   {
     // Get some default types.
-    if (isset($opts['type']))
+    if (isset($opts['type'], $this->status_types[$opts['type']]))
     {
       $opts += $this->status_types[$opts['type']];
       unset($opts['type']);

@@ -94,6 +94,18 @@ abstract class Model implements \Iterator, \ArrayAccess
     $this->db->reconnect();
   }
 
+  public function toggle_debug ($toggle=null)
+  {
+    if (isset($toggle) && is_bool($toggle))
+    {
+      $this->db->debugging = $toggle;
+    }
+    else
+    {
+      $this->db->debugging = $this->db->debugging ? false : true;
+    }
+  }
+
   public function coerce_boolean ($toggle=null)
   {
     if (isset($toggle) && is_bool($toggle))
