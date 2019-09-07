@@ -17,10 +17,11 @@ class Notifications
   protected $status_types =
   [
     'default' => ['class'=>'message'],
-    'message' => ['class'=>'message', 'prefix'=>'msg.'],
+    'message' => ['class'=>'message', 'prefix'=>'msg.', 'actions'=>['dismiss']],
     'error'   => ['class'=>'error',   'prefix'=>'err.'],
-    'warning' => ['class'=>'warning', 'prefix'=>'warn.'],
+    'warning' => ['class'=>'warning', 'prefix'=>'warn.', 'actions'=>['dismiss']],
     'notice'  => ['class'=>'notice',  'noGroup'=>true, 'actions'=>['dismiss']],
+    'system'  => ['class'=>'system',  'noGroup'=>true],
   ];
 
   protected $messages = [];
