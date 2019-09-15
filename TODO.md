@@ -47,8 +47,10 @@ be optional now, but kept to make using the autoloaders simple.) Because the
 Composer support would be expected out of the box, the `pragmas/composer.php`
 file would be removed entirely and it's code integrated with the new `init.php`.
 
-Unlike previous versions, all of these would be in new repositories, the old
-'nano.php' repository would be archived with a note to use the new ones.
+All of these new packages would be in their own standalone repositories, and
+this repository (which would be renamed to `lum.php`) would be changed to
+contain only the README.md file, which would simply be a list of all of the
+new packages with links to their standalone repositories.
 
 ### lum-core (lum.core.php)
 
@@ -160,6 +162,13 @@ Provides both Socket and Socket\Daemon (replaces SocketDaemon).
 #### Requirements
 
 * phpoffice/phpspreadsheet
+
+### lum-test (lum.test.php)
+
+This will replace the `lib/test.php`, and will be redesigned to be more
+like the JS version I wrote for Lum.js.
+
+All of the tests in every other package will depend on this.
 
 ### lum-text (lum.text.php)
 ### lum-translation (lum.translation.php)
