@@ -51,7 +51,8 @@ trait Resources
         '#common' =>
         [ // The base scripts we expect everywhere.
           'jquery', 
-          'coreutils',
+          'core',
+          'helpers',
           'hash',
           'json.jq', 
           'disabled.jq',
