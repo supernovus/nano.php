@@ -1,8 +1,14 @@
 # Nano.php v5
 
-## Notice
+## Notice for v6
 
-Nano.php v5 is currently being implemented. Some things have not been finished.
+I am working on the plans for v6 of this library set, to be renamed Lum.php
+and split into a set of Composer libraries. See the TODO.md for details.
+
+## Notice for v5
+
+Some things were never finished in this version.
+
 In particular, the bin/initapp.php and anything in skel/ are not updated to the
 new libraries yet. Don't use them.
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Nano\Utils\RIML;
+namespace Nano\Router;
 
 /**
  * A map of RIML property names to Nano Router parameter names.
@@ -23,8 +23,10 @@ const RIML_ROUTER_ARRAY = ['methods'];
 
 /**
  * Take a RIML object, and generate a Nano Route configuration from it.
+ *
+ * Requires the 'riml/riml-parser' library from Composer.
  */
-class Routes
+class FromRIML
 {
   public $auto_route_names = []; // Automatically generated route names.
 

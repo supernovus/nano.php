@@ -77,6 +77,9 @@ $__nano_registered = false;
 
 /**
  * Set up autoloader.
+ *
+ * This also will auto-detect composer and load it's autoloader, unless
+ * 'skip_composer' is true.
  */
 function register ($opts=[])
 {
@@ -94,6 +97,19 @@ function register ($opts=[])
   set_include_path(get_include_path().PATH_SEPARATOR.$classroot);
   spl_autoload_extensions('.php');
   spl_autoload_register('spl_autoload');
+
+  if (!isset($opts['skip_composer']) || !$opts['skip_composer'])
+  {
+    $compfile = "vendor/autoload.php";
+    foreach (["$classroot/$compfile", "./$compfile"] as $compfile)
+    {
+      if (file_exists($compfile))
+      {
+        require_once $compfile;
+      }
+    }
+  }
+
   $__nano_registered = true;
 }
 

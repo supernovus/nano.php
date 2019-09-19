@@ -82,6 +82,10 @@ to be kept, but new support for PSR-4 style classes would have to be added.
 
 ### lum-framework (lum.framework.php)
 
+I want to totally rework the 'controllers/resources.php' to be able to load
+it's resource sets from configuration files. I'd started on this once before
+and abandoned it. It's time.
+
 #### Dependencies
 
 * lum-core
@@ -191,29 +195,6 @@ Provides both XML and XML\UTF8NCR (replaces UTF8XML).
 #### Required Extensions
 
 * zip
-
-### riml (riml.php)
-
-Moved from \Nano\Utils to \RIML namespace, classes renamed.
-
-Basically all of the Riml prefixes of the current class names would be
-removed, as they'd all be in the \RIML namespace now, so the class names
-can be shortened.
-
-The old \Nano\Utils\RIML namespace would be renamed \RIML\Compiler.
-
-A couple examples of the renamed classes/traits/etc.
-
-| Type  | Old Name                      | New Name                           |
-| ----- | ----------------------------- | ---------------------------------- |
-| trait | \Nano\Utils\RimlRouteInfo     | \RIML\RouteInfo                    |
-| class | \Nano\Utils\RIML              | \RIML\Document                     |
-| class | \Nano\Utils\RIML\HTML         | \RIML\Compiler\HTML                |
-
-I'd probably still keep all of the RIML parser classes in one file since the
-`RIML\Document` class would be the entry point for all parsing.
-
-The compilers as before would be in their own files.
 
 #### Required Extensions
 
