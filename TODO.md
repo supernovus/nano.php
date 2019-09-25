@@ -60,7 +60,7 @@ new packages with links to their standalone repositories.
 
 #### Recommendations
 
-* lum-base91
+* lum-hash
 * lum-ubjson
 * simpledom
 
@@ -80,6 +80,9 @@ The `loaders` would have to be updated to support a few new features, as
 they currently depend on the `spl_autoload` case-insensitivity. That would have
 to be kept, but new support for PSR-4 style classes would have to be added.
 
+I am moving the Utils\Language::accept() static method into
+Plugins\Url::acceptLanguage() as it doesn't need it's own class.
+
 ### lum-framework (lum.framework.php)
 
 I want to totally rework the 'controllers/resources.php' to be able to load
@@ -90,11 +93,9 @@ and abandoned it. It's time.
 
 * lum-core
 * lum-simpleauth
-* lum-translation
 * lum-html
-* lum-language
 * lum-mailer
-* lum-notifications
+* lum-uimsg
 
 #### Recommendations
 
@@ -124,36 +125,27 @@ and abandoned it. It's time.
 | `db/schemata/*.php`   | PDO extensions for managing DB schemata.          |
 
 ### lum-array (lum.array.php)
-### lum-base91 (lum.base91.php)
 ### lum-browser (lum.browser.php)
-### lum-csv (lum.csv.php)
 ### lum-curl (lum.curl.php)
 ### lum-currency (lum.currency.php)
 ### lum-expression (lum.expression.php)
 ### lum-file (lum.file.php)
+
+Contains File, File\CSV, and File\Zip.
 
 #### Required Extensions
 
 * mbstring
 * zip (if using getZip() or getZipDir() functions).
 
-#### Recommendations
-
-* lum-csv (used in getDelimited() function).
-
-### lum-flags (lum.flags.php)
 ### lum-hash (lum.hash.php)
+
+Provides both Hash, and Base91.
+
 ### lum-html (lum.html.php)
 ### lum-json-patch (lum.json-patch.php)
 ### lum-json-rpc (lum.json-rpc.php)
-### lum-language (lum.language.php)
 ### lum-mailer (lum.mailer.php)
-### lum-notifications (lum.notifications.php)
-
-#### Requirements
-
-* lum-core
-
 ### lum-opensrs (lum.opensrs.php)
 ### lum-simpleauth (lum.simpleauth.php)
 ### lum-socket (lum.socket.php)
@@ -175,9 +167,17 @@ like the JS version I wrote for Lum.js.
 All of the tests in every other package will depend on this.
 
 ### lum-text (lum.text.php)
-### lum-translation (lum.translation.php)
 ### lum-ubjson (lum.ubjson.php)
 ### lum-units (lum.units.php)
+### lum-uimsg (lum.uimsg.php)
+
+* UI\Strings (replaces Utils\Translation).
+* UI\Notifications (replaces Utils\Notifications).
+
+#### Requirements
+
+* lum-core
+
 ### lum-uuid (lum.uuid.php)
 ### lum-webservice (lum.webservice.php)
 
@@ -189,14 +189,4 @@ All of the tests in every other package will depend on this.
 ### lum-xml (lum.xml.php)
 
 Provides both XML and XML\UTF8NCR (replaces UTF8XML).
-
-### lum-zip (lum.zip.php)
-
-#### Required Extensions
-
-* zip
-
-#### Required Extensions
-
-* yaml
 
