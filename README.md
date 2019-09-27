@@ -55,7 +55,7 @@ require_once 'lib/nano/init.php';  // Load the bootstrap file.
 
 ```php
 require_once 'vendor/autoload.php' // Registers Composer autoloaders.
-\Lum\Autoload::registerSPL();      // Registers sql_autoload in './lib'.
+\Lum\Autoload::register();         // Registers sql_autoload in './lib'.
 // The rest of your code here.
 ```
 
@@ -71,7 +71,7 @@ $nano = \Nano\initialize();        // Register sql_autoload and create $nano.
 
 ```php
 require_once 'vendor/autoload.php';  // Registers Composer autoloaders.
-\Lum\Autoload::registerSQL();        // Registers sql_autoload in './lib'.
+\Lum\Autoload::register();           // Registers sql_autoload in './lib'.
 $lum = \Lum\Core::createInstance();  // Create a $lum object.
 /// The rest of your code here.
 ```
