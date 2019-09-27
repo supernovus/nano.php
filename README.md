@@ -1,59 +1,80 @@
-# Nano.php v5
+# Nano.php v6
 
-## Notice for v6
+Nano.php has been deprecated. It's replaced by the Lum.php set of libraries.
+These are available in Composer, and are handled differently from Nano.php.
 
-I am working on the plans for v6 of this library set, to be renamed Lum.php
-and split into a set of Composer libraries. See the TODO.md for details.
+If you want to migrate your code, you will need to find the new class name
+and update any code refering to the old class. Otherwise, Nano.php v5 still
+exists in the `nano5` branch of this repository.
 
-## Notice for v5
+## Lum.php Libraries
 
-Some things were never finished in this version.
+* [lum-core](https://github.com/supernovus/lum.core.php)
+* [lum-framework](https://github.com/supernovus/lum.framework.php)
+* [lum-arrays](https://github.com/supernovus/lum.arrays.php)
+* [lum-browser](https://github.com/supernovus/lum.browser.php)
+* [lum-curl](https://github.com/supernovus/lum.curl.php)
+* [lum-currency](https://github.com/supernovus/lum.currency.php)
+* [lum-db](https://github.com/supernovus/lum.db.php)
+* [lum-encode](https://github.com/supernovus/lum.encode.php)
+* [lum-expression](https://github.com/supernovus/lum.expression.php)
+* [lum-file](https://github.com/supernovus/lum.file.php)
+* [lum-html](https://github.com/supernovus/lum.html.php)
+* [lum-json-patch](https://github.com/supernovus/lum.json-patch.php)
+* [lum-json-rpc](https://github.com/supernovus/lum.json-rpc.php)
+* [lum-mailer](https://github.com/supernovus/lum.mailer.php)
+* [lum-opensrs](https://github.com/supernovus/lum.opensrs.php)
+* [lum-socket](https://github.com/supernovus/lum.socket.php)
+* [lum-spjs](https://github.com/supernovus/lum.spjs.php)
+* [lum-spreadsheet](https://github.com/supernovus/lum.spreadsheet.php)
+* [lum-test](https://github.com/supernovus/lum.test.php)
+* [lum-text](https://github.com/supernovus/lum.text.php)
+* [lum-uimsg](https://github.com/supernovus/lum.uimsg.php)
+* [lum-units](https://github.com/supernovus/lum.units.php)
+* [lum-uuid](https://github.com/supernovus/lum.uuid.php)
+* [lum-webservice](https://github.com/supernovus/lum.webservice.php)
+* [lum-xml](https://github.com/supernovus/lum.xml.php)
 
-In particular, the bin/initapp.php and anything in skel/ are not updated to the
-new libraries yet. Don't use them.
+## Changes to the bootstrap process
 
-## Summary
+Nano.php had it's own init.php file that registered the `sql_autoload`
+autoloader, and if found, the composer autoloaders. As Lum.php is using
+composer by default, the process has changed slightly. Assuming your app
+is still using `spl_autoload` style autoloading, here's an example of how
+the changes will took place.
 
-Nano is a PHP toolkit for building web application frameworks.
+### Nano.php with just autoloader
 
-The core library is a small object that loads plugins which give it
-different abilities as required by your application needs.
+```php
+require_once 'lib/nano/init.php';  // Load the bootstrap file.
+\Nano\register();                  // Registers sql_autoload in './lib'.
+// The rest of your script here.
+```
 
-Several extendable abstract classes for controllers and models are included, 
-as well as a flexible routing plugin, configuration plugin, and a set of
-simple helper libraries providing some useful functions for your applications.
+### Lum.php with just autoloader
 
-## Requirements
+```php
+require_once 'vendor/autoload.php' // Registers Composer autoloaders.
+\Lum\Autoload::registerSPL();      // Registers sql_autoload in './lib'.
+// The rest of your code here.
+```
 
-* A Unix-based operating system, or compatibility layer.
-* PHP 7.0 or higher.
-* A bourne compatible shell such as Bash for the .sh scripts in 'bin/'.
-* The Perl 5 'prove' utility for tests in 't'.
-* The 'rsync', 'find', 'xargs', and 'perl' utilities for 'bin/initapp.php'.
-* The phpDocumentor application if you want to build the API documents.
+### Nano.php with Nano core object
 
-## Usage
+```php
+require_once 'lib/nano/init.php';  // Load the bootstrap file.
+$nano = \Nano\initialize();        // Register sql_autoload and create $nano.
+// The rest of your code here.
+```
 
-Right now this collection of libraries is mostly used by myself for my own 
-projects. I am working on a friendly script that will use templates to build
-skeleton applications that you can fill out from there, but it's not yet
-finished. Feel free to browse the source for anything useful.
+### Lum.php with Lum core object
 
-Many parts of this library set are designed to work with the
-[Nano.js](https://github.com/supernovus/nano.js) libraries for client side
-scripting. In the future further Nano themed library sets may be released.
-
-## Changes
-
-Version 5 takes the foundation from version 4, and builds upon it.
-The namespace has become \Nano\ as going forward I don't want to have
-version specific namespaces. A few of the changes from v4 to v5:
-
- * Optimized Web Service experience.
- * Removed any unusued libraries and plugins.
- * Cleaned up database libraries.
- * Changed controller foundation to be more streamlined.
- * Completely overhauled authentication/authorization related code.
+```php
+require_once 'vendor/autoload.php';  // Registers Composer autoloaders.
+\Lum\Autoload::registerSQL();        // Registers sql_autoload in './lib'.
+$lum = \Lum\Core::createInstance();  // Create a $lum object.
+/// The rest of your code here.
+```
 
 ## Author
 
