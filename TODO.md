@@ -2,21 +2,10 @@
 
 ## General
 
-### UX Issues
-
-* Finish creating ./skel/flexible.d with the new app template and modules.
-* Make a new bin/user.php script for the new template(s).
-* Finish and test the bin/initapp.php script.
-
-* Fix the bugs in the JSONRPC library that are causing the tests to fail.
-
 * Add nginx configuration examples.
-
-### Library issues
-
+* Fix the bugs in the JSONRPC library that are causing the tests to fail.
 * Write JSONRPC\Client\Socket library.
 * Finish writing JSON\Patch library.
-
 * Add proper PHPDoc documentation to all class files.
 
 ## v6
@@ -40,35 +29,43 @@ into new packages, likely directly in the new \Lum namespace.
 With that in mind, my current list of proposed packages, with the proposed
 Composer package name first and the proposed Github package name in brackets.
 
+### Autoloader changes
+
 Because the existing version depends on the `spl_autoload` autoloader, but
-Composer uses it's own autoloader by default, support for both would have to
-be considered and put into a new version of the init.php library (which would
-be optional now, but kept to make using the autoloaders simple.) Because the
-Composer support would be expected out of the box, the `pragmas/composer.php`
-file would be removed entirely and it's code integrated with the new `init.php`.
+Composer uses it's own autoloader by default, we will support this with a new
+Lum\Autoload class, which will have a way of enabling the `spl_autoloader`
+with a simple static class method.
+
+Because Composer is now required, the old 'pragmas/composer.php' will be
+removed entirely.
+
+The old `init.php` will also be removed, as composer does the bootstrap now.
+
+### Repository changes
 
 All of these new packages would be in their own standalone repositories, and
 this repository (which would be renamed to `lum.php`) would be changed to
 contain only the README.md file, which would simply be a list of all of the
 new packages with links to their standalone repositories.
 
+I will also make sure the README.md has examples of the bootstrap changes.
+
 ### lum-core (lum.core.php)
 
 #### Dependencies
 
 * lum-file
+* lum-encode
 
 #### Recommendations
 
-* lum-hash
-* lum-ubjson
 * simpledom
 
 #### Provides
 
 | File                  | Description                                       |
 | --------------------- | ------------------------------------------------- |
-| `init.php`            | The bootstrap library, registers the autoloader.  |
+| `autoload.php`        | Provides \Lum\Autoload object.                    |
 | `core.php`            | Provides \Lum\Core object (replaces Nano\Nano).   |
 | `plugins/*.php`       | The core plugins.                                 |
 | `loader/*.php`        | The loader plugins.                               |
@@ -88,6 +85,10 @@ Plugins\Url::acceptLanguage() as it doesn't need it's own class.
 I want to totally rework the 'controllers/resources.php' to be able to load
 it's resource sets from configuration files. I'd started on this once before
 and abandoned it. It's time.
+
+I haven't decided if the `initapp.php` script will survive or not, and if
+it does what form it will take. If it does survive, it will likely be in a
+separate git repository from the framework libraries.
 
 #### Dependencies
 
@@ -128,19 +129,20 @@ and abandoned it. It's time.
 ### lum-browser (lum.browser.php)
 ### lum-curl (lum.curl.php)
 ### lum-currency (lum.currency.php)
+
+### lum-encode (lum.encode.php)
+
+Provides Lum\Hash, Lum\Base91, and Lum\UBJSON.
+
 ### lum-expression (lum.expression.php)
 ### lum-file (lum.file.php)
 
-Contains File, File\CSV, and File\Zip.
+Contains Lum\File, Lum\File\CSV, and Lum\File\Zip.
 
 #### Required Extensions
 
 * mbstring
 * zip (if using getZip() or getZipDir() functions).
-
-### lum-hash (lum.hash.php)
-
-Provides both Hash, and Base91.
 
 ### lum-html (lum.html.php)
 ### lum-json-patch (lum.json-patch.php)
@@ -167,12 +169,11 @@ like the JS version I wrote for Lum.js.
 All of the tests in every other package will depend on this.
 
 ### lum-text (lum.text.php)
-### lum-ubjson (lum.ubjson.php)
 ### lum-units (lum.units.php)
 ### lum-uimsg (lum.uimsg.php)
 
-* UI\Strings (replaces Utils\Translation).
-* UI\Notifications (replaces Utils\Notifications).
+* Lum\UI\Strings (replaces Utils\Translation).
+* Lum\UI\Notifications (replaces Utils\Notifications).
 
 #### Requirements
 
@@ -188,5 +189,5 @@ All of the tests in every other package will depend on this.
 
 ### lum-xml (lum.xml.php)
 
-Provides both XML and XML\UTF8NCR (replaces UTF8XML).
+Provides both Lum\XML and Lum\XML\UTF8NCR (replaces UTF8XML).
 
