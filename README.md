@@ -72,7 +72,7 @@ $nano = \Nano\initialize();        // Register sql_autoload and create $nano.
 ```php
 require_once 'vendor/autoload.php';  // Registers Composer autoloaders.
 \Lum\Autoload::register();           // Registers sql_autoload in './lib'.
-$lum = \Lum\Core::createInstance();  // Create a $lum object.
+$core = \Lum\Core::getInstance();     // Get or create a $core object.
 /// The rest of your code here.
 ```
 
