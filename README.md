@@ -1,9 +1,12 @@
 # Nano.php v5
 
-## Notice for v6
+## Notice of Upcoming Deprecation
 
-I am working on the plans for v6 of this library set, to be renamed Lum.php
-and split into a set of Composer libraries. See the TODO.md for details.
+This library set is being deprecated as I work on it's replacement,
+a set of Composer libraries in the new Lum namespace.
+
+When it is complete, I will set the `nano6` branch to be the default, which
+is simply a list of the new libraries that replace this.
 
 ## Notice for v5
 
