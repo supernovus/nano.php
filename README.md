@@ -36,7 +36,7 @@ exists in the `nano5` branch of this repository.
 
 ## Changes to the bootstrap process
 
-Nano.php had it's own init.php file that registered the `sql_autoload`
+Nano.php had it's own init.php file that registered the `spl_autoload`
 autoloader, and if found, the composer autoloaders. As Lum.php is using
 composer by default, the process has changed slightly. Assuming your app
 is still using `spl_autoload` style autoloading, here's an example of how
@@ -46,7 +46,7 @@ the changes will took place.
 
 ```php
 require_once 'lib/nano/init.php';  // Load the bootstrap file.
-\Nano\register();                  // Registers sql_autoload in './lib'.
+\Nano\register();                  // Registers spl_autoload in './lib'.
 // The rest of your script here.
 ```
 
@@ -54,7 +54,7 @@ require_once 'lib/nano/init.php';  // Load the bootstrap file.
 
 ```php
 require_once 'vendor/autoload.php' // Registers Composer autoloaders.
-\Lum\Autoload::register();         // Registers sql_autoload in './lib'.
+\Lum\Autoload::register();         // Registers spl_autoload in './lib'.
 // The rest of your code here.
 ```
 
@@ -62,7 +62,7 @@ require_once 'vendor/autoload.php' // Registers Composer autoloaders.
 
 ```php
 require_once 'lib/nano/init.php';  // Load the bootstrap file.
-$nano = \Nano\initialize();        // Register sql_autoload and create $nano.
+$nano = \Nano\initialize();        // Register spl_autoload and create $nano.
 // The rest of your code here.
 ```
 
@@ -70,8 +70,8 @@ $nano = \Nano\initialize();        // Register sql_autoload and create $nano.
 
 ```php
 require_once 'vendor/autoload.php';  // Registers Composer autoloaders.
-\Lum\Autoload::register();           // Registers sql_autoload in './lib'.
-$core = \Lum\Core::getInstance();     // Get or create a $core object.
+\Lum\Autoload::register();           // Registers spl_autoload in './lib'.
+$core = \Lum\Core::getInstance();    // Get or create a $core object.
 /// The rest of your code here.
 ```
 
