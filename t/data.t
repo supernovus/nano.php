@@ -7,7 +7,13 @@ require_once 'lib/nano/init.php';
 require_once 'lib/test.php';
 
 $nano = \Nano\initialize();
-$nano->pragmas->simpledom;
+try
+{
+  $nano->pragmas->simpledom;
+}
+catch (\Exception $e)
+{ // We're just silently ignoring exceptions from this.
+}
 
 $simpleDOM = function_exists('simpledom_import_simplexml');
 
