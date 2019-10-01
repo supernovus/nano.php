@@ -12,7 +12,6 @@ exists in the `nano5` branch of this repository.
 * [lum-core](https://github.com/supernovus/lum.core.php)
 * [lum-framework](https://github.com/supernovus/lum.framework.php)
 * [lum-arrays](https://github.com/supernovus/lum.arrays.php)
-* [lum-browser](https://github.com/supernovus/lum.browser.php)
 * [lum-curl](https://github.com/supernovus/lum.curl.php)
 * [lum-currency](https://github.com/supernovus/lum.currency.php)
 * [lum-db](https://github.com/supernovus/lum.db.php)
