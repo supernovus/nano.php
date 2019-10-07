@@ -19,7 +19,6 @@ exists in the `nano5` branch of this repository.
 * [lum-expression](https://github.com/supernovus/lum.expression.php)
 * [lum-file](https://github.com/supernovus/lum.file.php)
 * [lum-html](https://github.com/supernovus/lum.html.php)
-* [lum-json-patch](https://github.com/supernovus/lum.json-patch.php)
 * [lum-json-rpc](https://github.com/supernovus/lum.json-rpc.php)
 * [lum-mailer](https://github.com/supernovus/lum.mailer.php)
 * [lum-opensrs](https://github.com/supernovus/lum.opensrs.php)
