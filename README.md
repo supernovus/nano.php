@@ -74,6 +74,16 @@ $core = \Lum\Core::getInstance();    // Get or create a $core object.
 /// The rest of your code here.
 ```
 
+## Migration Script
+
+I am going to write a migration script that will search through a code-base
+for any references to the Nano.php libraries, and replace them with the
+appropriate calls in the new Lum.php libraries. It will also generate a file
+with the properties to add to your `composer.json` file to ensure the new
+libraries are included. It will only include libraries that are used in your
+source tree. I will add the script to this repo and update this README with
+instructions for how to use it once I've finished it.
+
 ## Author
 
 Timothy Totten <2010@totten.ca>
