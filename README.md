@@ -33,56 +33,64 @@ exists in the `nano5` branch of this repository.
 * [lum-webservice](https://github.com/supernovus/lum.webservice.php)
 * [lum-xml](https://github.com/supernovus/lum.xml.php)
 
-## Changes to the bootstrap process
-
-Nano.php had it's own init.php file that registered the `spl_autoload`
-autoloader, and if found, the composer autoloaders. As Lum.php is using
-composer by default, the process has changed slightly. Assuming your app
-is still using `spl_autoload` style autoloading, here's an example of how
-the changes will took place.
-
-### Nano.php with just autoloader
-
-```php
-require_once 'lib/nano/init.php';  // Load the bootstrap file.
-\Nano\register();                  // Registers spl_autoload in './lib'.
-// The rest of your script here.
-```
-
-### Lum.php with just autoloader
-
-```php
-require_once 'vendor/autoload.php' // Registers Composer autoloaders.
-\Lum\Autoload::register();         // Registers spl_autoload in './lib'.
-// The rest of your code here.
-```
-
-### Nano.php with Nano core object
-
-```php
-require_once 'lib/nano/init.php';  // Load the bootstrap file.
-$nano = \Nano\initialize();        // Register spl_autoload and create $nano.
-// The rest of your code here.
-```
-
-### Lum.php with Lum core object
-
-```php
-require_once 'vendor/autoload.php';  // Registers Composer autoloaders.
-\Lum\Autoload::register();           // Registers spl_autoload in './lib'.
-$core = \Lum\Core::getInstance();    // Get or create a $core object.
-/// The rest of your code here.
-```
-
 ## Migration Script
 
-I am going to write a migration script that will search through a code-base
-for any references to the Nano.php libraries, and replace them with the
-appropriate calls in the new Lum.php libraries. It will also generate a file
-with the properties to add to your `composer.json` file to ensure the new
-libraries are included. It will only include libraries that are used in your
-source tree. I will add the script to this repo and update this README with
-instructions for how to use it once I've finished it.
+A migration from Nano.php to Lum.php is cannot be fully automated, however
+a great deal of it can be assisted using the `nano2lum.php` script included
+in this repo.
+
+I hope I have support for all of the new classes in it. I'm still testing
+it, and will update it if it's missing anything.
+
+In addition to searching for changes to your PHP files, it can also look
+for references to the old Nano.js and replace them with the new Lum.js names.
+
+### Examples
+
+These example are non-destructive, they won't actually change the files it
+will simply make a report of what files WOULD be changed if you added
+the `-C` option to the command line.
+
+```
+php nano2lum.php -d /path/to/your/app -e vendor -p php > report.yaml
+```
+
+The output file would have a list of all files that would be modified,
+as well as a list of any Lum libraries you'd need to add to your `composer.json`
+file, and a list of any _bootstrap_ files (i.e. files that used to load the
+`lib/nano/init.php` which will need to be manually updated in many cases.)
+
+You can make the report more verbose by adding `-v` to the command line.
+You can make it _really_ verbose by adding `-vv` to the command line.
+
+Making a report for your JS files is just as simple:
+
+```
+php nano2lum.php -d /path/to/your/app -e node_modules -j js > report.yaml
+```
+
+The report would be very similar to the PHP one, except there is no
+library usage or _bootstrap_ information for the JS classes.
+
+You could combine the two into a single call:
+
+```
+php nano2lum.php -d /path/to/your/app -e vendor -e node_modules -p php -j js > report.yaml
+```
+
+For additional features of the `nano2lum.php` script, run it without any 
+parameters and it will display it's built-in usage information.
+
+Also if you don't have the PHP `yaml` extension installed, it will use
+JSON output instead of Yaml. You can force JSON output by passing `-J`.
+I think for these reports Yaml is easier to read which is why it's the default.
+
+For any of the above, if you add the `-C` command the script will actually
+change each of the files. It __does not make backups__, as I'm assuming you are
+using a version control system and would be smart enough to only run this
+script on your codebase in a development branch with all local changes 
+committed already. Be careful when running any kind of script that can change 
+your codebase. Make sure your work is committed first!
 
 ## Author
 
