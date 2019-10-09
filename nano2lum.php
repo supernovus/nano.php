@@ -1,6 +1,9 @@
 #!/usr/bin/env php
 <?php
 
+// I will bump this any time the report schema changes in a non-compatible way.
+const REPORT_VERSION = 3;
+
 function err ($msg, $code=1)
 {
   error_log($msg);
@@ -79,6 +82,7 @@ if (!$settings->isValid())
 
 $report = 
 [
+  'version' => REPORT_VERSION,
   'paths' => [],
 ];
 
@@ -97,24 +101,69 @@ foreach ($dirs as $dir)
 }
 
 foreach ($report['paths'] as $dir => $pathrep)
-{ // Next build the PHP summary if needed.
+{ // Next build the summaries.
   if (isset($pathrep['php']))
   {
+    if (!isset($report['phpSummary']))
+    {
+      $report['phpSummary'] = 
+      [
+        'fileCount'  => 0,
+        'uses'       => [],
+        'bootstraps' => [],
+      ];
+    }
+    if (isset($pathrep['php']['files']))
+    {
+      if ($settings->verbose > 1)
+      { // We need to only include files that matched.
+        foreach ($pathrep['php']['files'] as $fn => $fspec)
+        {
+          if ($fspec !== false)
+          {
+            $report['phpSummary']['fileCount']++;
+          }
+        }
+      }
+      else
+      { // Only files to be modified are in the report.
+        $report['phpSummary']['fileCount'] += count($pathrep['php']['files']);
+      }
+    }
     if (isset($pathrep['php']['uses']))
     {
-      if (!isset($report['uses']))
-      {
-        $report['uses'] = [];
-      }
-      add_uniq($report['uses'], $pathrep['php']['uses']);
+      add_uniq($report['phpSummary']['uses'], $pathrep['php']['uses']);
     }
     if (isset($pathrep['php']['bootstraps']))
     {
-      if (!isset($report['bootstraps']))
-      {
-        $report['bootstraps'] = [];
+      add_uniq($report['phpSummary']['bootstraps'], $pathrep['php']['bootstraps']);
+    }
+  }
+  if (isset($pathrep['js']))
+  {
+    if (!isset($report['jsSummary']))
+    {
+      $report['jsSummary'] = 
+      [
+        'fileCount'  => 0,
+      ];
+    }
+    if (isset($pathrep['js']['files']))
+    {
+      if ($settings->verbose > 1)
+      { // We need to only include files that matched.
+        foreach ($pathrep['js']['files'] as $fn => $fspec)
+        {
+          if ($fspec !== false)
+          {
+            $report['jsSummary']['fileCount']++;
+          }
+        }
       }
-      add_uniq($report['bootstraps'], $pathrep['php']['bootstraps']);
+      else
+      { // Only files to be modified are in the report.
+        $report['jsSummary']['fileCount'] += count($pathrep['js']['files']);
+      }
     }
   }
 }
