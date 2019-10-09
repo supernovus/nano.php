@@ -460,7 +460,7 @@ class PhpChangr extends PathChangr
     ],
     [
       '\\$nano->pragmas\[(.*?)\];',
-      '\\1; throw new Exception("Nano pragmas in use, get rid of them!");',
+      '\\0; throw new Exception("Nano pragmas in use, get rid of them!");',
     ],
 
     [
