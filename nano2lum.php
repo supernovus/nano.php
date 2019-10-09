@@ -1,3 +1,4 @@
+#!/usr/bin/env php
 <?php
 
 function err ($msg, $code=1)
@@ -30,6 +31,7 @@ function usage ($msg="", $code=1)
   $msg .= "\n      0 = Show files that were using Nano for each path.";
   $msg .= "\n      1 = Show which Nano calls were being used in each file.";
   $msg .= "\n      2 = Show files which didn't match but were scanned.";
+  $msg .= "\n   -s Allow symbolic links to count as files to scan.";
   err($msg, $code);
 }
 
@@ -59,7 +61,7 @@ function rm_uniq (&$arr1, $arr2)
 
 const BOOT = 'BOOTSTRAP';
 
-$opts = getopt('d:e:p:j:CYJv');
+$opts = getopt('d:e:p:j:CYJvs');
 
 if (!isset($opts['d']) || (!is_string($opts['d']) && !is_array($opts['d'])))
 {
@@ -81,18 +83,41 @@ $report =
 ];
 
 foreach ($dirs as $dir)
-{
+{ // First build the primary report.
   if (is_string($dir))
   {
     $dir = trim($dir);
     if (file_exists($dir) && is_dir($dir))
     {
       $finder = new PathFindr($settings, $dir);
-      $report['paths'][$dir] = $finder->getReport();
+      $pathrep = $finder->getReport();
+      $report['paths'][$dir] = $pathrep;
     }
   }
 }
 
+foreach ($report['paths'] as $dir => $pathrep)
+{ // Next build the PHP summary if needed.
+  if (isset($pathrep['php']))
+  {
+    if (isset($pathrep['php']['uses']))
+    {
+      if (!isset($report['uses']))
+      {
+        $report['uses'] = [];
+      }
+      add_uniq($report['uses'], $pathrep['php']['uses']);
+    }
+    if (isset($pathrep['php']['bootstraps']))
+    {
+      if (!isset($report['bootstraps']))
+      {
+        $report['bootstraps'] = [];
+      }
+      add_uniq($report['bootstraps'], $pathrep['php']['bootstraps']);
+    }
+  }
+}
 
 if (isset($opts['Y']))
 {
@@ -139,16 +164,16 @@ class PathSettings
   public $jsexts  = [];
   public $exclude = [];
   public $change;
-  public $yaml;
   public $verbose;
+  public $symlink;
 
   public function __construct ($opts)
   {
     $this->add_from_opt($opts, 'p', 'add_php');
     $this->add_from_opt($opts, 'j', 'add_js');
     $this->add_from_opt($opts, 'e', 'add_exclude');
+    $this->symlink = isset($opts['s']);
     $this->change = isset($opts['C']);
-    $this->yaml = isset($opts['Y']);
     $this->verbose = isset($opts['v']) 
       ? (is_array($opts['v']) ? count($opts['v']) : 1) 
       : 0;
@@ -273,7 +298,11 @@ class PathFindr
           continue;
         }
         $fullpath = join(DIRECTORY_SEPARATOR, [$path, $c]);
-        if (!file_exists($fullpath))
+        if (!$this->settings->symlink && is_link($fullpath))
+        { // Skip symlinks.
+          continue;
+        }
+        elseif ($this->settings->symlink && !file_exists($fullpath))
         { // Skip broken symlinks.
           continue;
         }
