@@ -2,7 +2,7 @@
 <?php
 
 // I will bump this any time the report schema changes in a non-compatible way.
-const REPORT_VERSION = 3;
+const REPORT_VERSION = 4;
 
 function err ($msg, $code=1)
 {
@@ -109,35 +109,34 @@ foreach ($report['paths'] as $dir => $pathrep)
       $report['phpSummary'] = 
       [
         'fileCount'  => 0,
-        'uses'       => [],
+        'allUses'    => [],
+        'allDeps'    => [],
+        'minUses'    => [],
         'bootstraps' => [],
       ];
     }
-    if (isset($pathrep['php']['files']))
-    {
-      if ($settings->verbose > 1)
-      { // We need to only include files that matched.
-        foreach ($pathrep['php']['files'] as $fn => $fspec)
+
+    $pathfiles = $pathrep['php']['files'];
+    if ($settings->verbose > 1)
+    { // We need to only include files that matched.
+      foreach ($pathfiles as $fn => $fspec)
+      {
+        if ($fspec !== false)
         {
-          if ($fspec !== false)
-          {
-            $report['phpSummary']['fileCount']++;
-          }
+          $report['phpSummary']['fileCount']++;
         }
       }
-      else
-      { // Only files to be modified are in the report.
-        $report['phpSummary']['fileCount'] += count($pathrep['php']['files']);
-      }
     }
-    if (isset($pathrep['php']['uses']))
-    {
-      add_uniq($report['phpSummary']['uses'], $pathrep['php']['uses']);
+    else
+    { // Only files to be modified are in the report.
+      $report['phpSummary']['fileCount'] += count($pathrep['php']['files']);
     }
-    if (isset($pathrep['php']['bootstraps']))
-    {
-      add_uniq($report['phpSummary']['bootstraps'], $pathrep['php']['bootstraps']);
-    }
+
+    $phpuses = $pathrep['php']['uses'];
+    $phpdeps = $pathrep['php']['deps'];
+    add_uniq($report['phpSummary']['allUses'], $phpuses);
+    add_uniq($report['phpSummary']['allUses'], $phpdeps);
+    add_uniq($report['phpSummary']['allDeps'], $phpdeps);
   }
   if (isset($pathrep['js']))
   {
@@ -148,24 +147,29 @@ foreach ($report['paths'] as $dir => $pathrep)
         'fileCount'  => 0,
       ];
     }
-    if (isset($pathrep['js']['files']))
-    {
-      if ($settings->verbose > 1)
-      { // We need to only include files that matched.
-        foreach ($pathrep['js']['files'] as $fn => $fspec)
+    $pathfiles = $pathrep['js']['files'];
+    if ($settings->verbose > 1)
+    { // We need to only include files that matched.
+      foreach ($pathfiles as $fn => $fspec)
+      {
+        if ($fspec !== false)
         {
-          if ($fspec !== false)
-          {
-            $report['jsSummary']['fileCount']++;
-          }
+          $report['jsSummary']['fileCount']++;
         }
       }
-      else
-      { // Only files to be modified are in the report.
-        $report['jsSummary']['fileCount'] += count($pathrep['js']['files']);
-      }
+    }
+    else
+    { // Only files to be modified are in the report.
+      $report['jsSummary']['fileCount'] += count($pathrep['js']['files']);
     }
   }
+}
+
+// One final thing for the php summary.
+if (isset($report['phpSummary']))
+{
+  add_uniq($report['phpSummary']['minUses'], $report['phpSummary']['allUses']);
+  rm_uniq($report['phpSummary']['minUses'], $report['phpSummary']['allDeps']);
 }
 
 if (isset($opts['Y']))
@@ -840,6 +844,7 @@ class PhpChangr extends PathChangr
       rm_uniq($uses, $deps);
     }
     $report['uses'] = $uses;
+    $report['deps'] = $deps;
     $report['bootstraps'] = $boots;
     return $report;
   }
