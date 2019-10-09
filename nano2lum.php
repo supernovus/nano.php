@@ -137,6 +137,9 @@ foreach ($report['paths'] as $dir => $pathrep)
     add_uniq($report['phpSummary']['allUses'], $phpuses);
     add_uniq($report['phpSummary']['allUses'], $phpdeps);
     add_uniq($report['phpSummary']['allDeps'], $phpdeps);
+
+    $phpboots = $pathrep['php']['bootstraps'];
+    add_uniq($report['phpSummary']['bootstraps'], $phpboots);
   }
   if (isset($pathrep['js']))
   {
