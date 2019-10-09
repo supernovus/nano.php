@@ -429,7 +429,7 @@ class lp
   const ss   = 'lum/lum-spreadsheet';
   const test = 'lum/lum-test';
   const text = 'lum/lum-text';
-  const msgs = 'lum/lum-uimsgs';
+  const msgs = 'lum/lum-uimsg';
   const unit = 'lum/lum-units';
   const uuid = 'lum/lum-uuid';
   const ws   = 'lum/lum-webservice';
