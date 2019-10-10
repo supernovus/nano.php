@@ -442,7 +442,7 @@ class lp
 
   const deps =
   [
-    self::core => [self::file, self::enc],
+    self::core => [self::file, self::enc, self::arr],
     self::fw   => [self::core, self::html, self::mail, self::msgs, self::db],
     self::curr => [self::curl, self::xml],
     self::db   => [self::core],
@@ -685,7 +685,7 @@ class PhpChangr extends PathChangr
     ],
     [
       '\\\\Nano\\\\Utils\\\\Translation',
-      '\\Lum\\UI\\String',
+      '\\Lum\\UI\\Strings',
       lp::msgs,
     ],
     [
