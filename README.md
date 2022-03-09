@@ -23,10 +23,11 @@ exists in the `nano5` branch of this repository.
 | [lum-encode](https://github.com/supernovus/lum.encode.php) | Simple encoding/decoding libraries. Includes `Base91`, `UBJSON`, and `Safe64`. |
 | [lum-expression](https://github.com/supernovus/lum.expression.php) | Minimalistic expression parser library. |
 | [lum-file](https://github.com/supernovus/lum.file.php) | File utilities. |
-| [lum-framework](https://github.com/supernovus/lum.framework.php) | Base classes for application Controllers, a few common Models, and a very simplistic Auth system. |
+| [lum-framework](https://github.com/supernovus/lum.framework.php) | A _nano-sized_ app framework using a bunch of the other `lum` libraries. Provides base classes for a wide variety of Controllers, a few common Models, and a very simplistic Auth system. |
 | [lum-html](https://github.com/supernovus/lum.html.php) | HTML utilities. |
 | [lum-json-rpc](https://github.com/supernovus/lum.json-rpc.php) | A limited, but functional JSON-RPC implementation. |
 | [lum-mailer](https://github.com/supernovus/lum.mailer.php) | A modular mail system. Currently in a state of limbo and requiring a full rewrite. |
+| lum-meta | Coming soon. |
 | [lum-opensrs](https://github.com/supernovus/lum.opensrs.php) | Libraries for working with OpenSRS's reseller APIs. |
 | lum-router | Coming soon. |
 | [lum-socket](https://github.com/supernovus/lum.socket.php) | Really old Client and Server classes using sockets. Not recommended. Use Ratchet or React instead. |
