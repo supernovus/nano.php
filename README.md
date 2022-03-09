@@ -9,29 +9,37 @@ exists in the `nano5` branch of this repository.
 
 ## Lum.php Libraries
 
-* [lum-core](https://github.com/supernovus/lum.core.php)
-* [lum-framework](https://github.com/supernovus/lum.framework.php)
-* [lum-arrays](https://github.com/supernovus/lum.arrays.php)
-* [lum-curl](https://github.com/supernovus/lum.curl.php)
-* [lum-currency](https://github.com/supernovus/lum.currency.php)
-* [lum-db](https://github.com/supernovus/lum.db.php)
-* [lum-encode](https://github.com/supernovus/lum.encode.php)
-* [lum-expression](https://github.com/supernovus/lum.expression.php)
-* [lum-file](https://github.com/supernovus/lum.file.php)
-* [lum-html](https://github.com/supernovus/lum.html.php)
-* [lum-json-rpc](https://github.com/supernovus/lum.json-rpc.php)
-* [lum-mailer](https://github.com/supernovus/lum.mailer.php)
-* [lum-opensrs](https://github.com/supernovus/lum.opensrs.php)
-* [lum-socket](https://github.com/supernovus/lum.socket.php)
-* [lum-spjs](https://github.com/supernovus/lum.spjs.php)
-* [lum-spreadsheet](https://github.com/supernovus/lum.spreadsheet.php)
-* [lum-test](https://github.com/supernovus/lum.test.php)
-* [lum-text](https://github.com/supernovus/lum.text.php)
-* [lum-uimsg](https://github.com/supernovus/lum.uimsg.php)
-* [lum-units](https://github.com/supernovus/lum.units.php)
-* [lum-uuid](https://github.com/supernovus/lum.uuid.php)
-* [lum-webservice](https://github.com/supernovus/lum.webservice.php)
-* [lum-xml](https://github.com/supernovus/lum.xml.php)
+| Library | Description |
+| ------- | ----------- |
+| [lum-arrays](https://github.com/supernovus/lum.arrays.php) | Some simple array utility functions. |
+| lum-cli | Coming soon. |
+| [lum-compat](https://github.com/supernovus/lum.compat.php) | The foundational package that all other `lum` packages depend upon. |
+| lum-conf | Coming soon. |
+| [lum-core](https://github.com/supernovus/lum.core.php) | The `Core` object is a module loader (controllers, models, views, components, etc.) and can be extended with many useful plugins. |
+| [lum-curl](https://github.com/supernovus/lum.curl.php) | A wrapper around the PHP `curl` extension. | 
+| [lum-currency](https://github.com/supernovus/lum.currency.php) | Currency conversion and formatting utilities. |
+| lum-data | Coming soon. |
+| [lum-db](https://github.com/supernovus/lum.db.php) | Simple database libraries. Supports `PDO` and `mongodb` extensions. |
+| [lum-encode](https://github.com/supernovus/lum.encode.php) | Simple encoding/decoding libraries. Includes `Base91`, `UBJSON`, and `Safe64`. |
+| [lum-expression](https://github.com/supernovus/lum.expression.php) | Minimalistic expression parser library. |
+| [lum-file](https://github.com/supernovus/lum.file.php) | File utilities. |
+| [lum-framework](https://github.com/supernovus/lum.framework.php) | Base classes for application Controllers, a few common Models, and a very simplistic Auth system. |
+| [lum-html](https://github.com/supernovus/lum.html.php) | HTML utilities. |
+| [lum-json-rpc](https://github.com/supernovus/lum.json-rpc.php) | A limited, but functional JSON-RPC implementation. |
+| [lum-mailer](https://github.com/supernovus/lum.mailer.php) | A modular mail system. Currently in a state of limbo and requiring a full rewrite. |
+| [lum-opensrs](https://github.com/supernovus/lum.opensrs.php) | Libraries for working with OpenSRS's reseller APIs. |
+| lum-router | Coming soon. |
+| [lum-socket](https://github.com/supernovus/lum.socket.php) | Really old Client and Server classes using sockets. Not recommended. Use Ratchet or React instead. |
+| [lum-spjs](https://github.com/supernovus/lum.spjs.php) | An old, extremely limited data manipulation engine. |
+| [lum-spreadsheet](https://github.com/supernovus/lum.spreadsheet.php) | A library for working with spreadsheets (both reading existing ones, and creating new ones.) |
+| [lum-test](https://github.com/supernovus/lum.test.php) | A TAP-based testing library and harness. Inspired by `Perl` and `Raku` which were the languages I used before moving to PHP. |
+| [lum-text](https://github.com/supernovus/lum.text.php) | Text manipulation libraries. |
+| [lum-uimsg](https://github.com/supernovus/lum.uimsg.php) | UI messages; has simplistic translation strings, and a notification system that can integrate with [lum.js](https://github.com/supernovus/lum.js) or stand on its own. |
+| [lum-units](https://github.mcom/supernovus/lum.units.php) | Common unit conversion and formatting utilities. |
+| [lum-uuid](https://github.com/supernovus/lum.uuid.php) | A pure-PHP UUID library. |
+| lum-web | Coming soon. |
+| [lum-webservice](https://github.com/supernovus/lum.webservice.php) | A client library for web-services. Designed to work along side my [lum.js](https://github.com/supernovus/lum.js) and [lum.kt](https://github.com/supernovus/android-libs) libraries. |
+| [lum-xml](https://github.com/supernovus/lum.xml.php) | Simple XML utilities. Depends on my fork of [SimpleDOM](https://github.com/supernovus/simpledom). |
 
 ## Migration Script
 
